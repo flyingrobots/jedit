@@ -72,6 +72,8 @@ test('The application loads a saved layout again after a new launch', async () =
   model = app.update({ type: 'key', key: 'left' }, model)[0];
   assert.equal(model.footerLayout, 'compact');
   assert.equal(JSON.parse(readFileSync(path, 'utf8')).footerLayout, 'compact');
+  assert.deepEqual(create().saveFilepaths('absolute'), { ok: true });
   const restarted = createWorkspaceApp({ ...options, footerPreferences: create() }, production);
   assert.equal(restarted.init()[0].footerLayout, 'compact');
+  assert.equal(restarted.init()[0].filepathStyle, 'absolute');
 });

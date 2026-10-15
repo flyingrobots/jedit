@@ -159,6 +159,10 @@
             "footer_layout": {
               "label": "Footer layout",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Filepaths",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -178,12 +182,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Focused + workspace",
             "footer_per_pane": "Per-pane + workspace",
-            "footer_compact": "Compact"
+            "footer_compact": "Compact",
+            "paths_git_root": "Git root",
+            "paths_absolute": "Fully qualified"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Settings not saved",
-            "save_failed_message": "Could not save ~/.jimrc. Check its JSON and permissions. The footer layout is unchanged."
+            "save_failed_message": "Could not save ~/.jimrc. Check its JSON and permissions. The setting is unchanged."
           }
         },
         "worldline": {
@@ -365,6 +371,10 @@
             "footer_layout": {
               "label": "Disposition du pied",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Chemins",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -384,12 +394,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Focus + espace",
             "footer_per_pane": "Par panneau + espace",
-            "footer_compact": "Compact"
+            "footer_compact": "Compact",
+            "paths_git_root": "Racine Git",
+            "paths_absolute": "Chemins absolus"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Réglages non enregistrés",
-            "save_failed_message": "Impossible d’enregistrer ~/.jimrc. Vérifiez le JSON et les permissions. La disposition reste inchangée."
+            "save_failed_message": "Impossible d’enregistrer ~/.jimrc."
           }
         },
         "worldline": {
@@ -571,6 +583,10 @@
             "footer_layout": {
               "label": "Layout piè di pagina",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Percorsi",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -590,12 +606,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Focus + area di lavoro",
             "footer_per_pane": "Pannelli + area lavoro",
-            "footer_compact": "Compatto"
+            "footer_compact": "Compatto",
+            "paths_git_root": "Radice Git",
+            "paths_absolute": "Percorsi assoluti"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Impostazioni non salvate",
-            "save_failed_message": "Impossibile salvare ~/.jimrc. Controlla JSON e permessi. Il layout resta invariato."
+            "save_failed_message": "Impossibile salvare ~/.jimrc."
           }
         },
         "worldline": {
@@ -777,6 +795,10 @@
             "footer_layout": {
               "label": "Fußzeilenlayout",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Dateipfade",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -796,12 +818,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Fokus + Arbeitsbereich",
             "footer_per_pane": "Je Bereich + global",
-            "footer_compact": "Kompakt"
+            "footer_compact": "Kompakt",
+            "paths_git_root": "Git-Wurzel",
+            "paths_absolute": "Vollständige Pfade"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Nicht gespeichert",
-            "save_failed_message": "~/.jimrc konnte nicht gespeichert werden. JSON und Rechte prüfen. Das Layout bleibt unverändert."
+            "save_failed_message": "~/.jimrc konnte nicht gespeichert werden."
           }
         },
         "worldline": {
@@ -983,6 +1007,10 @@
             "footer_layout": {
               "label": "Diseño del pie",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Rutas",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -1002,12 +1030,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Foco + espacio",
             "footer_per_pane": "Por panel + espacio",
-            "footer_compact": "Compacto"
+            "footer_compact": "Compacto",
+            "paths_git_root": "Raíz de Git",
+            "paths_absolute": "Rutas absolutas"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Ajustes no guardados",
-            "save_failed_message": "No se pudo guardar ~/.jimrc. Revisa el JSON y los permisos. El diseño no ha cambiado."
+            "save_failed_message": "No se pudo guardar ~/.jimrc."
           }
         },
         "worldline": {
@@ -1189,6 +1219,10 @@
             "footer_layout": {
               "label": "하단 표시 형식",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "파일 경로",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -1208,12 +1242,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "포커스 + 작업 공간",
             "footer_per_pane": "패널별 + 작업 공간",
-            "footer_compact": "간결하게"
+            "footer_compact": "간결하게",
+            "paths_git_root": "Git 루트 기준",
+            "paths_absolute": "절대 경로"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "설정 저장 실패",
-            "save_failed_message": "~/.jimrc를 저장할 수 없습니다. JSON과 권한을 확인하세요. 하단 표시 형식은 유지됩니다."
+            "save_failed_message": "~/.jimrc를 저장할 수 없습니다. JSON과 권한을 확인하세요."
           }
         },
         "worldline": {
@@ -1395,6 +1431,10 @@
             "footer_layout": {
               "label": "フッターの配置",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "ファイルパス",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -1414,12 +1454,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "フォーカス＋作業領域",
             "footer_per_pane": "ペイン別＋作業領域",
-            "footer_compact": "コンパクト"
+            "footer_compact": "コンパクト",
+            "paths_git_root": "Gitルート相対",
+            "paths_absolute": "絶対パス"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "設定を保存できません",
-            "save_failed_message": "~/.jimrc のJSONと権限を確認してください。フッターの配置は変更されません。"
+            "save_failed_message": "~/.jimrc を保存できません。JSON と権限を確認してください。"
           }
         },
         "worldline": {
@@ -1601,6 +1643,10 @@
             "footer_layout": {
               "label": "页脚布局",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "文件路径",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -1620,12 +1666,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "焦点与工作区",
             "footer_per_pane": "分面板与工作区",
-            "footer_compact": "紧凑"
+            "footer_compact": "紧凑",
+            "paths_git_root": "相对 Git 根目录",
+            "paths_absolute": "绝对路径"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "设置未保存",
-            "save_failed_message": "无法保存 ~/.jimrc。请检查 JSON 和权限。页脚布局未更改。"
+            "save_failed_message": "无法保存 ~/.jimrc。请检查 JSON 和权限。"
           }
         },
         "worldline": {
@@ -1807,6 +1855,10 @@
             "footer_layout": {
               "label": "Layout do rodapé",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Caminhos",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -1826,12 +1878,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Foco + espaço",
             "footer_per_pane": "Por painel + espaço",
-            "footer_compact": "Compacto"
+            "footer_compact": "Compacto",
+            "paths_git_root": "Raiz do Git",
+            "paths_absolute": "Caminhos absolutos"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Configurações não salvas",
-            "save_failed_message": "Não foi possível salvar ~/.jimrc. Verifique o JSON e as permissões. O layout não mudou."
+            "save_failed_message": "Não foi possível salvar ~/.jimrc."
           }
         },
         "worldline": {
@@ -2013,6 +2067,10 @@
             "footer_layout": {
               "label": "Вид строки состояния",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Пути файлов",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -2032,12 +2090,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Фокус + рабочая область",
             "footer_per_pane": "По панелям + общее",
-            "footer_compact": "Компактный"
+            "footer_compact": "Компактный",
+            "paths_git_root": "От корня Git",
+            "paths_absolute": "Абсолютные пути"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Настройки не сохранены",
-            "save_failed_message": "Не удалось сохранить ~/.jimrc. Проверьте JSON и права доступа. Вид строки состояния не изменён."
+            "save_failed_message": "Не удалось сохранить ~/.jimrc."
           }
         },
         "worldline": {
@@ -2219,6 +2279,10 @@
             "footer_layout": {
               "label": "تخطيط التذييل",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "مسارات الملفات",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -2238,12 +2302,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "التركيز ومساحة العمل",
             "footer_per_pane": "لكل لوحة ومساحة العمل",
-            "footer_compact": "مضغوط"
+            "footer_compact": "مضغوط",
+            "paths_git_root": "جذر Git",
+            "paths_absolute": "مسارات كاملة"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "لم تُحفظ الإعدادات",
-            "save_failed_message": "تعذر حفظ ~/.jimrc. تحقق من JSON والصلاحيات. لم يتغير تخطيط التذييل."
+            "save_failed_message": "تعذر حفظ ~/.jimrc."
           }
         },
         "worldline": {
@@ -2425,6 +2491,10 @@
             "footer_layout": {
               "label": "Tata letak footer",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Jalur berkas",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -2444,12 +2514,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Fokus + ruang kerja",
             "footer_per_pane": "Per panel + ruang kerja",
-            "footer_compact": "Ringkas"
+            "footer_compact": "Ringkas",
+            "paths_git_root": "Akar Git",
+            "paths_absolute": "Jalur lengkap"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Pengaturan tidak disimpan",
-            "save_failed_message": "Tidak dapat menyimpan ~/.jimrc. Periksa JSON dan izin. Tata letak footer tidak berubah."
+            "save_failed_message": "Tidak dapat menyimpan ~/.jimrc."
           }
         },
         "worldline": {
@@ -2631,6 +2703,10 @@
             "footer_layout": {
               "label": "Alt çubuk düzeni",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Dosya yolları",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -2650,12 +2726,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Odak + çalışma alanı",
             "footer_per_pane": "Bölme + çalışma alanı",
-            "footer_compact": "Kompakt"
+            "footer_compact": "Kompakt",
+            "paths_git_root": "Git kökü",
+            "paths_absolute": "Tam yollar"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Ayarlar kaydedilmedi",
-            "save_failed_message": "~/.jimrc kaydedilemedi. JSON ve izinleri kontrol edin. Alt çubuk düzeni değişmedi."
+            "save_failed_message": "~/.jimrc kaydedilemedi."
           }
         },
         "worldline": {
@@ -2837,6 +2915,10 @@
             "footer_layout": {
               "label": "फ़ुटर लेआउट",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "फ़ाइल पथ",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -2856,12 +2938,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "फ़ोकस + कार्यक्षेत्र",
             "footer_per_pane": "प्रति पैनल + कार्यक्षेत्र",
-            "footer_compact": "संक्षिप्त"
+            "footer_compact": "संक्षिप्त",
+            "paths_git_root": "Git रूट",
+            "paths_absolute": "पूर्ण पथ"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "सेटिंग सहेजी नहीं गई",
-            "save_failed_message": "~/.jimrc सहेजा नहीं जा सका। JSON और अनुमतियाँ जाँचें। फ़ुटर लेआउट नहीं बदला है।"
+            "save_failed_message": "~/.jimrc सहेजा नहीं जा सका। JSON और अनुमतियाँ जाँचें। फ़ुटर लेआउट नहीं बदला है।."
           }
         },
         "worldline": {
@@ -3043,6 +3127,10 @@
             "footer_layout": {
               "label": "Voettekstindeling",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Bestandspaden",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -3062,12 +3150,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Focus + werkruimte",
             "footer_per_pane": "Per paneel + werkruimte",
-            "footer_compact": "Compact"
+            "footer_compact": "Compact",
+            "paths_git_root": "Git-hoofdmap",
+            "paths_absolute": "Volledige paden"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Instellingen niet bewaard",
-            "save_failed_message": "Kan ~/.jimrc niet opslaan. Controleer JSON en rechten. De indeling is niet gewijzigd."
+            "save_failed_message": "Kan ~/.jimrc niet opslaan."
           }
         },
         "worldline": {
@@ -3249,6 +3339,10 @@
             "footer_layout": {
               "label": "Układ stopki",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Ścieżki plików",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -3268,12 +3362,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Fokus + obszar pracy",
             "footer_per_pane": "Panele + obszar pracy",
-            "footer_compact": "Kompaktowy"
+            "footer_compact": "Kompaktowy",
+            "paths_git_root": "Katalog Git",
+            "paths_absolute": "Pełne ścieżki"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Ustawienia niezapisane",
-            "save_failed_message": "Nie można zapisać ~/.jimrc. Sprawdź JSON i uprawnienia. Układ stopki nie zmienił się."
+            "save_failed_message": "Nie można zapisać ~/.jimrc."
           }
         },
         "worldline": {
@@ -3455,6 +3551,10 @@
             "footer_layout": {
               "label": "Bố cục chân trang",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "Đường dẫn",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -3474,12 +3574,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "Tiêu điểm + không gian",
             "footer_per_pane": "Theo ngăn + không gian",
-            "footer_compact": "Gọn"
+            "footer_compact": "Gọn",
+            "paths_git_root": "Gốc Git",
+            "paths_absolute": "Đường dẫn đầy đủ"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "Chưa lưu cài đặt",
-            "save_failed_message": "Không thể lưu ~/.jimrc. Kiểm tra JSON và quyền truy cập. Bố cục chân trang không đổi."
+            "save_failed_message": "Không thể lưu ~/.jimrc."
           }
         },
         "worldline": {
@@ -3661,6 +3763,10 @@
             "footer_layout": {
               "label": "รูปแบบแถบล่าง",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "เส้นทางไฟล์",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -3680,12 +3786,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "โฟกัส + พื้นที่ทำงาน",
             "footer_per_pane": "แยกแผง + พื้นที่ทำงาน",
-            "footer_compact": "กะทัดรัด"
+            "footer_compact": "กะทัดรัด",
+            "paths_git_root": "ราก Git",
+            "paths_absolute": "เส้นทางเต็ม"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "ไม่ได้บันทึกการตั้งค่า",
-            "save_failed_message": "บันทึก ~/.jimrc ไม่ได้ ตรวจสอบ JSON และสิทธิ์ รูปแบบแถบล่างไม่เปลี่ยนแปลง"
+            "save_failed_message": "บันทึก ~/.jimrc ไม่ได้ ตรวจสอบ JSON และสิทธิ์"
           }
         },
         "worldline": {
@@ -3867,6 +3975,10 @@
             "footer_layout": {
               "label": "چیدمان پانوشت",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "مسیر پرونده‌ها",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -3886,12 +3998,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "تمرکز و فضای کار",
             "footer_per_pane": "هر بخش و فضای کار",
-            "footer_compact": "فشرده"
+            "footer_compact": "فشرده",
+            "paths_git_root": "ریشه Git",
+            "paths_absolute": "مسیر کامل"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "تنظیمات ذخیره نشد",
-            "save_failed_message": "ذخیره ~/.jimrc ممکن نشد. JSON و مجوزها را بررسی کنید. چیدمان پانوشت تغییر نکرد."
+            "save_failed_message": "ذخیره ~/.jimrc ممکن نشد."
           }
         },
         "worldline": {
@@ -4073,6 +4187,10 @@
             "footer_layout": {
               "label": "פריסת שורת מצב",
               "description": "{layout} · ~/.jimrc"
+            },
+            "filepaths": {
+              "label": "נתיבי קבצים",
+              "description": "{style} · ~/.jimrc"
             }
           },
           "values": {
@@ -4092,12 +4210,14 @@
             "causal_gutter_selected_tick": "Selected tick",
             "footer_focused": "מיקוד וסביבת עבודה",
             "footer_per_pane": "לפי חלונית וסביבה",
-            "footer_compact": "קומפקטי"
+            "footer_compact": "קומפקטי",
+            "paths_git_root": "שורש Git",
+            "paths_absolute": "נתיבים מלאים"
           },
           "toast": {
             "changed_title": "Settings changed",
             "save_failed_title": "ההגדרות לא נשמרו",
-            "save_failed_message": "לא ניתן לשמור את ~/.jimrc. יש לבדוק JSON והרשאות. פריסת שורת המצב לא השתנתה."
+            "save_failed_message": "לא ניתן לשמור את ~/.jimrc."
           }
         },
         "worldline": {

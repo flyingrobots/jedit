@@ -1,4 +1,5 @@
-import { footerLayoutRow, footerVisibilityRow } from './settings-footer-rows.js';
+import type { FilepathStyle } from '../ports/filepath-style.js';
+import { footerLayoutRow, footerVisibilityRow, filepathStyleRow } from './settings-footer-rows.js';
 import type { FooterLayout } from '../ui/footer-layout.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { I18nDirection } from '../ports/i18n.js';
@@ -18,6 +19,7 @@ export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
+  CycleFilepaths: Symbol('jedit.settings.action.cycle-filepaths'),
   CycleFooterLayout: Symbol('jedit.settings.action.cycle-footer-layout'),
   ToggleLineNumberMode: Symbol('jedit.settings.action.toggle-line-number-mode'),
   ToggleGutterDimmed: Symbol('jedit.settings.action.toggle-gutter-dimmed'),
@@ -49,6 +51,7 @@ export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
   readonly footerLayout?: FooterLayout;
+  readonly filepathStyle?: FilepathStyle;
   readonly lineNumberMode: SourceLineNumberMode;
   readonly gutterDimmed?: boolean;
   readonly causalGutterBasis?: WorkspaceCausalGutterBasis;
@@ -86,6 +89,7 @@ export interface JeditSettingsKeyMsg {
 export interface JeditSettingsHandlers<Model, Command> {
   cycleTheme(model: Model): [Model, Cmd<Command>[]];
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
+  cycleFilepaths(model: Model): [Model, Cmd<Command>[]];
   cycleFooterLayout(model: Model, delta: JeditSettingsActivationDelta): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
@@ -192,6 +196,7 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
 ]);
 
 type NonLocaleSettingsHandlerName =
+  | 'cycleFilepaths'
   | 'cycleTheme'
   | 'toggleThemeMode'
   | 'toggleFooter'
@@ -204,6 +209,7 @@ const SETTINGS_ACTION_HANDLERS: ReadonlyMap<
   JeditSettingAction,
   NonLocaleSettingsHandlerName
 > = new Map([
+  [JEDIT_SETTING_ACTION.CycleFilepaths, 'cycleFilepaths'],
   [JEDIT_SETTING_ACTION.CycleTheme, 'cycleTheme'],
   [JEDIT_SETTING_ACTION.ToggleThemeMode, 'toggleThemeMode'],
   [JEDIT_SETTING_ACTION.ToggleFooter, 'toggleFooter'],
@@ -222,6 +228,7 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
     themeModeSettingsRow(state),
     footerVisibilityRow(state, JEDIT_SETTING_ACTION.ToggleFooter, JEDIT_SETTING_ROW_KIND.Toggle),
     footerLayoutRow(state, JEDIT_SETTING_ACTION.CycleFooterLayout, JEDIT_SETTING_ROW_KIND.Choice),
+    filepathStyleRow(state, JEDIT_SETTING_ACTION.CycleFilepaths, JEDIT_SETTING_ROW_KIND.Choice),
     lineNumbersSettingsRow(state),
     gutterDimmedSettingsRow(state),
     causalGutterBasisSettingsRow(state),

@@ -273,8 +273,8 @@ operators and nonzero modified/pending counts use normal foreground. Command
 input remains normal foreground with existing error styling. Inactive pane modes
 stay muted so focus remains clear. Existing light/dark theme tokens own colors.
 
-- [ ] Slice 5: Mode badge and muted footer hierarchy, with cell-style assertions.
-- [ ] Slice 6: Remembered filepath style, Git-root discovery and display-only formatting.
+- [x] Slice 5: Mode badge and muted footer hierarchy, with cell-style assertions.
+- [x] Slice 6: Remembered filepath style, Git-root discovery and display-only formatting.
 - [ ] Slice 7: Full checks, native terminal witnesses and final-head CI.
 
 Tests must cover all layouts, active/inactive badges, light/dark themes, muted
@@ -298,4 +298,4 @@ The Settings border must explicitly paint the drawer background. Selected rows
 use a filled theme selection derived from cursor colors without cursor inverse
 modifiers. Tests reproduce both defects with distinct light/dark colors.
 
-- [ ] Slice 8: Footer-owned explorer filtering and compact active-query header.
+- [x] Slice 8: Footer-owned explorer filtering and compact active-query header.

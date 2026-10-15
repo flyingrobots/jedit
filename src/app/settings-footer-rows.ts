@@ -1,9 +1,11 @@
+import { FILEPATH_STYLE, type FilepathStyle } from '../ports/filepath-style.js';
 import { FOOTER_LAYOUT, type FooterLayout } from '../ui/footer-layout.js';
 import type { JeditSettingAction, JeditSettingRowKind, JeditSettingsRow, JeditSettingsI18nState } from './settings-session.js';
 
 interface FooterSettingsState {
   readonly footerVisible: boolean;
   readonly footerLayout?: FooterLayout;
+  readonly filepathStyle?: FilepathStyle;
   readonly i18n: JeditSettingsI18nState;
 }
 const SECTION = 'settings.sections.appearance';
@@ -29,5 +31,16 @@ export function footerLayoutRow(state: FooterSettingsState, action: JeditSetting
     id: 'footer-layout', section: state.i18n.t(SECTION), label: state.i18n.t('settings.rows.footer_layout.label'),
     description: state.i18n.t('settings.rows.footer_layout.description', { layout: valueLabel }),
     valueLabel, kind, action,
+  };
+}
+
+export function filepathStyleRow(state: FooterSettingsState, action: JeditSettingAction, kind: JeditSettingRowKind): JeditSettingsRow {
+  const valueLabel = state.i18n.t(state.filepathStyle === FILEPATH_STYLE.Absolute
+    ? 'settings.values.paths_absolute' : 'settings.values.paths_git_root');
+  return {
+    id: 'filepaths', section: state.i18n.t(SECTION), label: state.i18n.t('settings.rows.filepaths.label'),
+    description: state.i18n.t('settings.rows.filepaths.description', { style: valueLabel }),
+    valueLabel,
+    kind, action,
   };
 }

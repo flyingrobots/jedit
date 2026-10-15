@@ -1,13 +1,16 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
-import { JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
+import { applyFooterRange, emphasizeFooterPhrases } from './footer-cell-style.js';
+import { renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
 import { FOOTER_LAYOUT, footerLayoutRows, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
 
 export interface FooterSurfaceObservation {
   readonly label: string;
+  readonly emphasis?: string;
+  readonly detailEmphasized?: boolean;
   readonly identity: string;
   readonly detail: string;
   readonly active: boolean;
@@ -22,6 +25,11 @@ export interface FooterPresentation {
   readonly globalSummary: string;
   readonly globalCompact: string;
   readonly activeToken: JeditStyleToken;
+  readonly normalToken: JeditStyleToken;
+  readonly mutedToken: JeditStyleToken;
+  readonly globalEmphasis: readonly string[];
+  readonly filterInput?: FileSearchInputOptions;
+  readonly hidden?: boolean;
 }
 export interface FooterLayoutViewOptions {
   readonly presentation: FooterPresentation;
@@ -35,23 +43,26 @@ const GLOBAL_ROW = 1;
 const GAP = '  ';
 
 export function renderFooterLayout(options: FooterLayoutViewOptions): Surface {
+  options = { ...options, background: options.presentation.mutedToken };
   const { presentation, width, background } = options;
-  const surface = createSurface(width, footerLayoutRows(presentation.layout));
+  const surface = createSurface(width, presentation.hidden ? ONE_ROW : footerLayoutRows(presentation.layout));
   surface.fill({ char: ' ', fg: background.fg, fgRGB: background.fgRGB, bg: background.bg, bgRGB: background.bgRGB });
   if (width <= 0) return surface;
-  const compact = presentation.layout === FOOTER_LAYOUT.Compact;
-  if (options.command != null) paintCommand(surface, options);
+  const compact = presentation.hidden || presentation.layout === FOOTER_LAYOUT.Compact;
+  if (presentation.filterInput != null) paintFilter(surface, options);
+  else if (options.command != null) paintCommand(surface, options);
   else if (presentation.layout === FOOTER_LAYOUT.PerPane) paintPaneStatuses(surface, options);
   else paintLocal(surface, options);
   if (!compact) {
     paintLine(surface, joinFooterSides(presentation.workspace, presentation.globalSummary, width), { row: GLOBAL_ROW, x: 0, width }, background);
   }
+  paintGlobalEmphasis(surface, options);
   return surface;
 }
 
 function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
   const { presentation, width, background } = options;
-  const compact = presentation.layout === FOOTER_LAYOUT.Compact;
+  const compact = presentation.hidden || presentation.layout === FOOTER_LAYOUT.Compact;
   const globalWidth = compact ? Math.min(visibleLineLength(presentation.globalCompact) + GAP.length, Math.floor(width / 2)) : 0;
   const localWidth = width - globalWidth;
   paintLocalObservation(surface, { ...presentation.focused, x: 0 }, localWidth, options);
@@ -69,23 +80,20 @@ function paintPaneStatuses(surface: Surface, options: FooterLayoutViewOptions): 
 
 function paintLocalObservation(surface: Surface, observation: FooterSurfaceObservation, width: number, options: FooterLayoutViewOptions): void {
   const text = localObservationLine(observation, width);
-  const token = observation.active ? {
-    ...options.background, ...options.presentation.activeToken, bg: options.background.bg, bgRGB: options.background.bgRGB,
-  } : options.background;
-  paintLine(surface, text, { row: LOCAL_ROW, x: observation.x, width }, token);
-  if (!observation.active) return;
-  const end = Math.min(width, visibleLineLength(observation.label));
-  for (let x = observation.x; x < observation.x + end; x += 1) {
-    const cell = surface.get(x, LOCAL_ROW);
-    surface.set(x, LOCAL_ROW, { ...cell, modifiers: [...(cell.modifiers ?? []), JEDIT_TEXT_MODIFIER.Bold] });
+  paintLine(surface, text, { row: LOCAL_ROW, x: observation.x, width }, options.background);
+  if (observation.active) {
+    applyFooterRange(surface, { row: LOCAL_ROW, x: observation.x, width: Math.min(width, visibleLineLength(observation.label)) },
+      options.presentation.activeToken);
   }
+  emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: observation.x, width },
+    [observation.emphasis ?? '', observation.detailEmphasized ? observation.detail : ''].filter(Boolean), options.presentation.normalToken);
 }
 
 function paintCommand(surface: Surface, options: FooterLayoutViewOptions): void {
   if (options.command == null) return;
   const compact = options.presentation.layout === FOOTER_LAYOUT.Compact;
   const globalWidth = compact ? Math.min(visibleLineLength(options.presentation.globalCompact) + GAP.length, Math.floor(options.width / 2)) : 0;
-  const command = renderWorkspaceCommandLineFooter(options.command, options.width - globalWidth, options.background);
+  const command = renderWorkspaceCommandLineFooter(options.command, options.width - globalWidth, options.presentation.normalToken);
   for (let x = 0; x < command.width; x += 1) surface.set(x, LOCAL_ROW, command.get(x, LOCAL_ROW));
   if (compact) {
     paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
@@ -113,9 +121,10 @@ export function joinFooterSides(left: string, right: string, width: number): str
 function localObservationLine(observation: FooterSurfaceObservation, width: number): string {
   const detailWidth = Math.min(visibleLineLength(observation.detail), Math.floor(width / 2));
   const gapWidth = detailWidth === 0 ? 0 : GAP.length;
-  const identityWidth = Math.max(0, width - detailWidth - gapWidth - visibleLineLength(observation.label) - 1);
+  const prefix = [observation.label, observation.emphasis].filter(Boolean).join(' ');
+  const identityWidth = Math.max(0, width - detailWidth - gapWidth - visibleLineLength(prefix) - 1);
   const identity = tailIdentity(observation.identity, identityWidth);
-  return joinFooterSides(`${observation.label} ${identity}`.trimEnd(), observation.detail, width);
+  return joinFooterSides(`${prefix} ${identity}`.trimEnd(), observation.detail, width);
 }
 
 function tailIdentity(identity: string, width: number): string {
@@ -124,4 +133,24 @@ function tailIdentity(identity: string, width: number): string {
   const characters = Array.from(identity);
   while (characters.length > 0 && visibleLineLength(characters.join('')) > width - 1) characters.shift();
   return `…${characters.join('')}`;
+}
+
+function paintFilter(surface: Surface, options: FooterLayoutViewOptions): void {
+  const input = options.presentation.filterInput;
+  if (input == null) return;
+  const compact = options.presentation.hidden || options.presentation.layout === FOOTER_LAYOUT.Compact;
+  const globalWidth = compact ? Math.min(visibleLineLength(options.presentation.globalCompact) + GAP.length, Math.floor(options.width / 2)) : 0;
+  const width = options.width - globalWidth;
+  surface.blit(renderFileSearchInput({ ...input, label: '/', width }), 0, LOCAL_ROW);
+  if (globalWidth > 0) paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
+    { row: LOCAL_ROW, x: width, width: globalWidth }, options.background);
+}
+
+function paintGlobalEmphasis(surface: Surface, options: FooterLayoutViewOptions): void {
+  const row = surface.height - 1;
+  emphasizeFooterPhrases(surface, { row, x: 0, width: options.width }, options.presentation.globalEmphasis, options.presentation.normalToken);
+  if (options.presentation.filterInput != null && row !== LOCAL_ROW) {
+    emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: Math.floor(options.width / 2), width: Math.ceil(options.width / 2) },
+      options.presentation.globalEmphasis, options.presentation.normalToken);
+  }
 }

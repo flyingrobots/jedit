@@ -124,7 +124,7 @@ function paintWorkspaceFocusEdge(
 }
 
 function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
-  if (model.footerVisible) {
+  if (workspaceFooterRows(model) > 0) {
     screen.blit(
       renderWorkspaceFooter({
         footerPresentation: workspaceFooterPresentation(model),

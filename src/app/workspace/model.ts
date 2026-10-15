@@ -1,3 +1,4 @@
+import type { FilepathStyle } from '../../ports/filepath-style.js';
 import type { FooterLayout } from '../../ui/footer-layout.js';
 import type { NotificationState } from "@flyingrobots/bijou-tui";
 import type { FileEntry } from "../../ports/file-system.js";
@@ -57,6 +58,8 @@ export interface WorkspaceModel
   readonly quitAfterSaveRequestId?: number;
   readonly footerVisible: boolean;
   readonly footerLayout: FooterLayout;
+  readonly filepathStyle: FilepathStyle;
+  readonly gitRoot?: string;
   readonly lineNumberMode: SourceLineNumberMode;
   readonly gutterDimmed: boolean;
   readonly causalGutterBasis: WorkspaceCausalGutterBasis;

@@ -1,3 +1,4 @@
+import { displayFilepath } from '../../ui/filepath-display.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import { WorkspaceBufferIntentDurabilityKinds } from './workspace-buffer-durability.js';
@@ -18,7 +19,8 @@ export function footerGlobalObservation(model: WorkspaceModel) {
   const modifiedText = model.i18n.t('footer.status.modified_count', { count: modified });
   const pendingText = pending > 0 ? model.i18n.t('footer.status.pending_count', { count: pending }) : '';
   return {
-    workspace: model.workspaceRoot,
+    workspace: displayFilepath(model.workspaceRoot, model),
+    globalEmphasis: [modified > 0 ? modifiedText : '', pendingText].filter(Boolean),
     globalSummary: [modifiedText, pendingText, model.i18n.t('footer.status.buffer_count', { count: bufferCount })].filter(Boolean).join(' · '),
     globalCompact: [modifiedText, pendingText].filter(Boolean).join(' · '),
   };

@@ -43,7 +43,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     selectedIndex: 1,
     theme,
     width: 42,
-    height: 28,
+    height: 30,
   });
   const text = surfaceText(surface);
 
@@ -58,7 +58,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
   assert.ok(text.includes('› ↻ Theme'));
   const selectedMarker = surface.get(2, 8);
   assert.equal(selectedMarker.char, '›');
-  assert.equal(selectedMarker.fg, theme.cursor.normal.fg);
+  assert.equal(selectedMarker.fg, theme.surface.workspace.bg);
   assert.equal(selectedMarker.bg, theme.cursor.normal.bg);
 });
 
@@ -111,5 +111,26 @@ test('settings drawer always returns the requested positive surface size', async
 
     assert.equal(surface.width, width);
     assert.equal(surface.height, height);
+  }
+});
+
+test('Settings paints opaque themed borders and a filled selected row without cursor inversion', async () => {
+  const { drawer, settings, themes } = await loadDrawerModules();
+  for (const theme of [themes.availableJeditThemes()[0], themes.oppositeJeditTheme(themes.availableJeditThemes()[0])]) {
+    const rows = settings.jeditSettingsRows({ i18n: createI18nMock(), jeditTheme: theme, footerVisible: true, viewMode: 'source' });
+    const surface = drawer.renderSettingsDrawer({ rows, selectedIndex: 0, theme, width: 42, height: 28 });
+    for (const [x,y] of [[0,0],[41,0],[0,27],[41,27],[0,12],[41,12]]) {
+      assert.equal(surface.get(x,y).bg, theme.surface.drawer.bg);
+      assert.equal(surface.get(x,y).empty, false);
+    }
+    const selected = Array.from({length:surface.height},(_,y)=>y).find(y=>surface.get(2,y).char==='›');
+    assert.ok(selected !== undefined);
+    for (const x of [2,10,39]) {
+      const cell=surface.get(x,selected);
+      assert.equal(cell.bg, theme.cursor.normal.bg);
+      assert.equal(cell.fg, theme.surface.workspace.bg);
+      assert.ok(cell.modifiers?.includes('bold'));
+      assert.ok(!cell.modifiers?.includes('inverse'));
+    }
   }
 });

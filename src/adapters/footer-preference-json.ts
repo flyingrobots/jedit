@@ -1,20 +1,24 @@
+import { FILEPATH_STYLE, type FilepathStyle } from '../ports/filepath-style.js';
 import { FOOTER_LAYOUT, type FooterLayout } from '../ui/footer-layout.js';
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 interface ValueSpan { readonly start: number; readonly end: number }
 const FOOTER_PROPERTY = 'footerLayout';
+const FILEPATH_PROPERTY = 'filepathStyle';
 const EMPTY_DOCUMENT = '{}\n';
 
 /** Validate JSON, then edit only this preference's raw span. */
 export function footerPreferenceDocument(source: string = EMPTY_DOCUMENT) {
   const parsed: JsonValue = JSON.parse(source);
   if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new SyntaxError('Expected a JSON object');
-  const spans = footerSpans(source);
-  if (spans.length > 1) throw new SyntaxError('Duplicate footerLayout preferences');
-  const span = spans[0];
+  const layoutSpan = preferenceSpan(source, FOOTER_PROPERTY);
+  const filepathSpan = preferenceSpan(source, FILEPATH_PROPERTY);
+  const properties = Object.keys(parsed).length;
   return {
     layout: decodeLayout(parsed[FOOTER_PROPERTY]),
-    withLayout: (layout: FooterLayout) => replaceLayout(source, span, layout, Object.keys(parsed).length),
+    filepathStyle: parsed[FILEPATH_PROPERTY] === FILEPATH_STYLE.Absolute ? FILEPATH_STYLE.Absolute : FILEPATH_STYLE.GitRoot,
+    withLayout: (value: FooterLayout) => replacePreference(source, { span: layoutSpan, property: FOOTER_PROPERTY, value, properties }),
+    withFilepaths: (value: FilepathStyle) => replacePreference(source, { span: filepathSpan, property: FILEPATH_PROPERTY, value, properties }),
   };
 }
 
@@ -23,15 +27,19 @@ function decodeLayout(value: JsonValue | undefined): FooterLayout {
   return value === FOOTER_LAYOUT.PerPane ? FOOTER_LAYOUT.PerPane : FOOTER_LAYOUT.Focused;
 }
 
-function replaceLayout(source: string, span: ValueSpan | undefined, layout: FooterLayout, properties: number): string {
-  const encoded = JSON.stringify(layout);
+interface PreferenceReplacement {
+  readonly span?: ValueSpan; readonly property: string; readonly value: string; readonly properties: number;
+}
+function replacePreference(source: string, replacement: PreferenceReplacement): string {
+  const { span, property, value, properties } = replacement;
+  const encoded = JSON.stringify(value);
   if (span != null) return source.slice(0, span.start) + encoded + source.slice(span.end);
   const end = source.lastIndexOf('}');
   const separator = properties === 0 ? '' : ',';
-  return `${source.slice(0, end)}${separator}\n  "${FOOTER_PROPERTY}": ${encoded}\n${source.slice(end)}`;
+  return `${source.slice(0, end)}${separator}\n  "${property}": ${encoded}\n${source.slice(end)}`;
 }
 
-function footerSpans(source: string): ValueSpan[] {
+function footerSpans(source: string, property: string): ValueSpan[] {
   const spans: ValueSpan[] = [];
   let offset = source.indexOf('{') + 1;
   while (offset < source.length) {
@@ -41,7 +49,7 @@ function footerSpans(source: string): ValueSpan[] {
     const key: string = JSON.parse(source.slice(offset, keyEnd));
     const start = skipSpace(source, source.indexOf(':', keyEnd) + 1);
     const end = valueEnd(source, start);
-    if (key === FOOTER_PROPERTY) spans.push({ start, end });
+    if (key === property) spans.push({ start, end });
     offset = skipSpace(source, end);
     if (source[offset] !== ',') break;
     offset += 1;
@@ -81,4 +89,10 @@ function valueEnd(source: string, start: number): number {
 function trimValueEnd(source: string, start: number, end: number): number {
   while (end > start && /\s/.test(source.charAt(end - 1))) end -= 1;
   return end;
+}
+
+function preferenceSpan(source: string, property: string): ValueSpan | undefined {
+  const spans = footerSpans(source, property);
+  if (spans.length > 1) throw new SyntaxError(`Duplicate ${property} preferences`);
+  return spans[0];
 }

@@ -1,8 +1,9 @@
+import { FILEPATH_STYLE } from '../ports/filepath-style.js';
 import { closeSync, existsSync, fchmodSync, fsyncSync, openSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { FOOTER_LAYOUT, type FooterLayout } from '../ui/footer-layout.js';
+import { FOOTER_LAYOUT } from '../ui/footer-layout.js';
 import type { FooterPreferencesPort } from '../ports/footer-preferences.js';
 import { footerPreferenceDocument } from './footer-preference-json.js';
 
@@ -16,10 +17,12 @@ export function createFooterPreferences(path = join(homedir(), '.jimrc')): Foote
       try { return footerPreferenceDocument(readDocument(path)).layout; }
       catch { return FOOTER_LAYOUT.Focused; }
     },
-    save: (layout) => {
-      try { saveDocument(path, layout); return { ok: true }; }
-      catch { return { ok: false }; }
+    loadFilepaths: () => {
+      try { return footerPreferenceDocument(readDocument(path)).filepathStyle; }
+      catch { return FILEPATH_STYLE.GitRoot; }
     },
+    save: (layout) => savePreference(path, (document) => document.withLayout(layout)),
+    saveFilepaths: (style) => savePreference(path, (document) => document.withFilepaths(style)),
   };
 }
 
@@ -27,10 +30,12 @@ function readDocument(path: string): string {
   return existsSync(path) ? readFileSync(path, 'utf8') : DEFAULT_DOCUMENT;
 }
 
-function saveDocument(path: string, layout: FooterLayout): void {
+type PreferenceEdit = (document: ReturnType<typeof footerPreferenceDocument>) => string;
+
+function saveDocument(path: string, edit: PreferenceEdit): void {
   const target = existsSync(path) ? realpathSync(path) : path;
   const source = readDocument(target);
-  const next = footerPreferenceDocument(source).withLayout(layout);
+  const next = edit(footerPreferenceDocument(source));
   const mode = existsSync(target) ? statSync(target).mode & PERMISSION_MASK : PRIVATE_MODE;
   const temporary = `${target}.${randomUUID()}.tmp`;
   try {
@@ -53,4 +58,9 @@ function writeTemporary(path: string, source: string, mode: number): void {
 
 class PreferencesChangedError extends Error {
   constructor() { super('Preferences changed while saving'); }
+}
+
+function savePreference(path: string, edit: PreferenceEdit) {
+  try { saveDocument(path, edit); return { ok: true } as const; }
+  catch { return { ok: false } as const; }
 }

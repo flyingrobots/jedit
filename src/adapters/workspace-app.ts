@@ -73,6 +73,7 @@ function workspaceRuntimeDependencies(
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory)),
       footerLayout: footerPreferences.load(),
+      filepathStyle: footerPreferences.loadFilepaths?.(),
     },
     nowMs,
     createTimeTickCmd: createWorkspaceTimeTickCmd,

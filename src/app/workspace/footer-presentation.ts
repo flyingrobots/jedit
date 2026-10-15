@@ -1,3 +1,8 @@
+import { filledSelectionToken } from '../../ui/filled-selection-token.js';
+import { JEDIT_SOURCE_TOKEN } from '../../ui/jedit-theme.js';
+import { displayFilepath } from '../../ui/filepath-display.js';
+import { fileSearchInputOptions } from './file-filter-prompt.js';
+import { fileSearchHasFocus } from './file-search.js';
 import type { FooterPresentation, FooterSurfaceObservation } from '../../ui/footer-layout-view.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import { resolveSettingsDrawerWidth } from '../../ui/settings-drawer.js';
@@ -21,13 +26,17 @@ export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresen
     surfaces: overlay == null ? surfaces : overlaySurfaces(surfaces, overlay),
     focused,
     ...footerGlobalObservation(model),
-    activeToken: model.jeditTheme.chrome.activeEdge,
+    activeToken: filledSelectionToken(model.jeditTheme),
+    normalToken: model.jeditTheme.surface.footer,
+    mutedToken: mutedFooterToken(model),
+    filterInput: fileSearchHasFocus(model) ? fileSearchInputOptions(model, model.columns) : undefined,
+    hidden: !model.footerVisible,
   };
 }
 
 function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undefined {
   if (model.startupFileModalOpen) return {
-    label: model.i18n.t('startupFileModal.title').toUpperCase(), identity: model.cwd, detail: '',
+    label: model.i18n.t('startupFileModal.title').toUpperCase(), identity: displayFilepath(model.cwd, model), detail: '',
     active: true, x: 0, width: model.columns,
   };
   if (!model.settingsOpen) return undefined;
@@ -44,4 +53,9 @@ function overlaySurfaces(surfaces: readonly FooterSurfaceObservation[], overlay:
     const width = surface.x + surface.width - x;
     return width > 0 ? [{ ...surface, x, width, active: false }] : [];
   })];
+}
+
+function mutedFooterToken(model: WorkspaceModel) {
+  const comment = model.jeditTheme.source.get(JEDIT_SOURCE_TOKEN.Comment);
+  return { ...model.jeditTheme.surface.footer, fg: comment?.fg, fgRGB: comment?.fgRGB };
 }

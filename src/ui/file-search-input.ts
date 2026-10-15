@@ -43,7 +43,7 @@ export function renderFileSearchInput(options: FileSearchInputOptions): Surface 
 }
 
 function inputWindow(options: FileSearchInputOptions): FileSearchInputWindow {
-  const prefix = clipToWidth(`${options.label}${LABEL_SUFFIX}`, Math.max(0, options.width - MIN_INPUT_WIDTH));
+  const prefix = clipToWidth(options.label === '/' ? '/' : `${options.label}${LABEL_SUFFIX}`, Math.max(0, options.width - MIN_INPUT_WIDTH));
   const prefixWidth = visibleLineLength(prefix);
   const capacity = Math.max(MIN_INPUT_WIDTH, options.width - prefixWidth);
   const characters = Array.from(options.state.input);

@@ -1,3 +1,5 @@
+import { fileSearchCursorAtColumn } from '../../ui/file-search-input.js';
+import { fileSearchInputOptions, fileFilterPromptWidth } from './file-filter-prompt.js';
 import type { Cmd, MouseMsg } from '@flyingrobots/bijou-tui';
 import {
   mouseScrollDeltaRows,
@@ -20,14 +22,12 @@ import {
   FILE_SEARCH_ROW,
   FILE_SEARCH_LIST_TOP,
   fileSearchListHeight,
+  workspaceFooterRows,
 } from './viewport.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
 import { fileSearchEntries, fileSearchState, scrollFileSearchSelection } from './file-search.js';
-import { fileSearchCursorAtColumn } from '../../ui/file-search-input.js';
-import { fileSearchInputOptions } from './file-explorer-view.js';
 
-const DRAWER_PAD_MULTIPLIER = 2;
 const MOUSE_PRESS = 'press';
 const MOUSE_MOVE = 'move';
 const MOUSE_BUTTON_LEFT = 'left';
@@ -39,7 +39,7 @@ export function updateFromMouse(
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const hover = updateFileDrawerHover(msg, model);
   if (hover != null) return [hover, []];
-  const input = updateFileSearchFromClick(msg, model);
+  const input = updateFooterFilterFromClick(msg, model) ?? updateFileSearchFromClick(msg, model);
   if (input != null) return [input, []];
   const clicked = updateFileDrawerFromClick(msg, model);
   if (clicked != null) {
@@ -139,17 +139,10 @@ function fileDrawerPointerEnabled(model: WorkspaceModel): boolean {
 function updateFileSearchFromClick(msg: MouseMsg, model: WorkspaceModel): WorkspaceModel | undefined {
   if (msg.action !== MOUSE_PRESS || msg.button !== MOUSE_BUTTON_LEFT || !fileDrawerPointerEnabled(model)) return undefined;
   if (msg.row !== WORKSPACE_BODY_TOP_OFFSET + FILE_SEARCH_ROW) return undefined;
+  if (fileSearchState(model).input.length === 0) return undefined;
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress).fileDrawer;
-  const innerWidth = layout.width - DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER;
-  const column = msg.col - layout.x - DRAWER_INNER_PAD;
-  if (column < 0 || column >= innerWidth) return undefined;
-  return {
-    ...model, focusPane: FocusPanes.Files, fileSearchEditing: true,
-    fileSearch: {
-      ...fileSearchState(model),
-      cursorIndex: fileSearchCursorAtColumn(fileSearchInputOptions(model, innerWidth), column),
-    },
-  };
+  if (msg.col <= layout.x || msg.col >= layout.x + layout.width - DRAWER_INNER_PAD) return undefined;
+  return { ...model, focusPane: FocusPanes.Files, fileSearchEditing: true };
 }
 
 function updateEditorFromMouse(
@@ -170,4 +163,13 @@ function updateEditorFromMouse(
 
 function graftOutlineLength(model: WorkspaceModel): number {
   return model.graftInfo?.outlineItems.length ?? 0;
+}
+
+function updateFooterFilterFromClick(msg: MouseMsg, model: WorkspaceModel): WorkspaceModel | undefined {
+  if (!model.fileSearchEditing || !fileDrawerPointerEnabled(model)) return undefined;
+  if (msg.action !== MOUSE_PRESS || msg.button !== MOUSE_BUTTON_LEFT || msg.row !== model.rows - workspaceFooterRows(model)) return undefined;
+  const width = fileFilterPromptWidth(model);
+  if (msg.col < 0 || msg.col >= width) return undefined;
+  return { ...model, fileSearch: { ...fileSearchState(model),
+    cursorIndex: fileSearchCursorAtColumn(fileSearchInputOptions(model, width), msg.col) } };
 }

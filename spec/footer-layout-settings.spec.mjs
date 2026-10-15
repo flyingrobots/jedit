@@ -52,7 +52,7 @@ test('Focused follows Files mode and retains observed workspace counts', async (
     entries: [{ kind: 'file', name: 'one.ts', path: '/repo/one.ts' }], selectedIndex: 0,
   });
   const surface = runtime.view(model);
-  assert.match(row(surface, model.rows - 2), /FILES.*FILTER/);
+  assert.match(row(surface, model.rows - 2), /\//);
   assert.match(row(surface, model.rows - 1), /0 modified/);
 });
 
@@ -128,7 +128,7 @@ test('All layouts preserve observations and mode ownership at narrow and RTL siz
   for (const locale of ['en', 'ar', 'me']) for (const footerLayout of ['focused', 'per-pane', 'compact']) {
     const next = { ...model, footerLayout, i18n: model.i18n.withLocale(locale) };
     const facts = workspaceFooterPresentation(next);
-    assert.equal(facts.focused.identity, 'test.ts');
+    assert.equal(facts.focused.identity, '/repo/test.ts');
     assert.doesNotMatch(facts.focused.detail, /81:41/);
     const surface = runtime.view(next);
     assert.equal(surface.width, 60);

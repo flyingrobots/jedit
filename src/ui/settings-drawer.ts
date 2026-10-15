@@ -1,3 +1,4 @@
+import { filledSelectionToken } from './filled-selection-token.js';
 import {
   colorHex,
   createSurface,
@@ -85,10 +86,12 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
     screenWidth: options.width,
     screenHeight: options.height,
     width: options.width,
-    borderToken: tokenValue(options.theme.chrome.activeEdge),
+    borderToken: tokenValue(settingsDrawerTextToken(options.theme, options.theme.chrome.activeEdge)),
     bgToken: tokenValue(options.theme.surface.drawer),
   });
-  return overlay.surface ?? renderSettingsDrawerFallback(options, content);
+  const surface = overlay.surface ?? renderSettingsDrawerFallback(options, content);
+  paintSettingsBorderBackground(surface, options.theme.surface.drawer);
+  return surface;
 }
 
 function renderSettingsDrawerFallback(options: RenderSettingsDrawerOptions, content: Surface): Surface {
@@ -136,7 +139,7 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
   }
   const label = fitLine(settingsRowLabel(options), Math.max(1, surface.width - options.x));
   const labelToken = options.selected
-    ? options.theme.cursor.normal
+    ? filledSelectionToken(options.theme)
     : options.theme.surface.drawer;
   paintText(surface, label, options.x, options.y, labelToken);
 
@@ -291,4 +294,13 @@ function tokenValue(token: JeditStyleToken): TokenValue {
     hex: colorHex(token.fg) ?? token.hex ?? SETTINGS_FALLBACK_FOREGROUND,
     bg: colorHex(token.bg) ?? SETTINGS_FALLBACK_BACKGROUND,
   };
+}
+
+function paintSettingsBorderBackground(surface: Surface, token: JeditStyleToken): void {
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      if (x > 0 && x < surface.width - 1 && y > 0 && y < surface.height - 1) continue;
+      surface.set(x, y, { ...surface.get(x, y), bg: token.bg, bgRGB: token.bgRGB, empty: false });
+    }
+  }
 }
