@@ -250,3 +250,34 @@ CI on implementation `fcb12be2` passed all twelve jobs in
 [run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
 The final published head is checked separately after these evidence updates.
 The branch remains stacked on #342; no dependency is merged here.
+
+
+## Accepted footer feedback refinement
+
+The user accepted the three arrangements and requested a bold mode badge with a
+distinct background, muted ordinary footer text with normal foreground for
+emphasis, and a Filepaths setting offering Git-root-relative or fully qualified
+paths. This extends the same active cycle and PR.
+
+F2 → Appearance → Filepaths chooses Git root (default) or Fully qualified and
+remembers the choice in ~/.jimrc as `filepathStyle`. Git root is discovered once
+at the filesystem/process boundary for the launched workspace. Paths inside it
+use a relative form; outside it, or without a Git root, they remain absolute.
+Only displayed paths change. Native paths used for opening, saving, search and
+Echo identity remain untouched. Root itself displays `.` in relative mode.
+
+The active mode badge uses the theme's normal cursor foreground/background and
+bold weight. Ordinary identities, coordinates, pane dividers and zero-state
+counts use the theme's muted foreground. Modified/read-only flags, pending
+operators and nonzero modified/pending counts use normal foreground. Command
+input remains normal foreground with existing error styling. Inactive pane modes
+stay muted so focus remains clear. Existing light/dark theme tokens own colors.
+
+- [ ] Slice 5: Mode badge and muted footer hierarchy, with cell-style assertions.
+- [ ] Slice 6: Remembered filepath style, Git-root discovery and display-only formatting.
+- [ ] Slice 7: Full checks, native terminal witnesses and final-head CI.
+
+Tests must cover all layouts, active/inactive badges, light/dark themes, muted
+ordinary text versus emphasized counts, preference restart/failure, Git root in
+nested/worktree launches, outside-root paths and no-repository fallback. Native
+terminal witnesses must confirm the resulting hierarchy at wide/narrow sizes.
