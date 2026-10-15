@@ -3,7 +3,7 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
 import { applyFooterRange, emphasizeFooterPhrases } from './footer-cell-style.js';
 import { renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
-import { FOOTER_LAYOUT, footerLayoutRows, type FooterLayout } from './footer-layout.js';
+import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
 
@@ -63,7 +63,7 @@ export function renderFooterLayout(options: FooterLayoutViewOptions): Surface {
 function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
   const { presentation, width, background } = options;
   const compact = presentation.hidden || presentation.layout === FOOTER_LAYOUT.Compact;
-  const globalWidth = compact ? Math.min(visibleLineLength(presentation.globalCompact) + GAP.length, Math.floor(width / 2)) : 0;
+  const globalWidth = footerGlobalWidth({ width, summary: presentation.globalCompact, compact });
   const localWidth = width - globalWidth;
   paintLocalObservation(surface, { ...presentation.focused, x: 0 }, localWidth, options);
   if (compact) paintLine(surface, fitLine(`${GAP}${presentation.globalCompact}`, globalWidth),
@@ -92,7 +92,7 @@ function paintLocalObservation(surface: Surface, observation: FooterSurfaceObser
 function paintCommand(surface: Surface, options: FooterLayoutViewOptions): void {
   if (options.command == null) return;
   const compact = options.presentation.layout === FOOTER_LAYOUT.Compact;
-  const globalWidth = compact ? Math.min(visibleLineLength(options.presentation.globalCompact) + GAP.length, Math.floor(options.width / 2)) : 0;
+  const globalWidth = footerGlobalWidth({ width: options.width, summary: options.presentation.globalCompact, compact });
   const command = renderWorkspaceCommandLineFooter(options.command, options.width - globalWidth, options.presentation.normalToken);
   for (let x = 0; x < command.width; x += 1) surface.set(x, LOCAL_ROW, command.get(x, LOCAL_ROW));
   if (compact) {
@@ -139,7 +139,7 @@ function paintFilter(surface: Surface, options: FooterLayoutViewOptions): void {
   const input = options.presentation.filterInput;
   if (input == null) return;
   const compact = options.presentation.hidden || options.presentation.layout === FOOTER_LAYOUT.Compact;
-  const globalWidth = compact ? Math.min(visibleLineLength(options.presentation.globalCompact) + GAP.length, Math.floor(options.width / 2)) : 0;
+  const globalWidth = footerGlobalWidth({ width: options.width, summary: options.presentation.globalCompact, compact });
   const width = options.width - globalWidth;
   surface.blit(renderFileSearchInput({ ...input, label: '/', width }), 0, LOCAL_ROW);
   if (globalWidth > 0) paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
