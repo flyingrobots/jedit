@@ -281,3 +281,21 @@ Tests must cover all layouts, active/inactive badges, light/dark themes, muted
 ordinary text versus emphasized counts, preference restart/failure, Git root in
 nested/worktree launches, outside-root paths and no-repository fallback. Native
 terminal witnesses must confirm the resulting hierarchy at wide/narrow sizes.
+
+
+### Accepted modal explorer refinement
+
+Remove the permanent search field and separator. The drawer header shows Files
+or Filter: <query>; the list begins immediately below it. `/` activates a
+footer filter prompt that owns typing and cursor movement. Escape/Enter return
+to navigation and keep the query. `/`, Ctrl+U, Escape clears it. Clicking the
+active-filter header re-enters editing; clicking a list item still selects only.
+The footer prompt temporarily appears even when footer visibility is disabled,
+and disappears on exit, so hidden footers cannot produce invisible text input.
+Its row count is shared by rendering, viewports and pointer geometry.
+
+The Settings border must explicitly paint the drawer background. Selected rows
+use a filled theme selection derived from cursor colors without cursor inverse
+modifiers. Tests reproduce both defects with distinct light/dark colors.
+
+- [ ] Slice 8: Footer-owned explorer filtering and compact active-query header.
