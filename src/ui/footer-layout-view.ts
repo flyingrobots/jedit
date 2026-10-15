@@ -55,7 +55,8 @@ function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
   const globalWidth = compact ? Math.min(visibleLineLength(presentation.globalCompact) + GAP.length, Math.floor(width / 2)) : 0;
   const localWidth = width - globalWidth;
   paintLocalObservation(surface, { ...presentation.focused, x: 0 }, localWidth, options);
-  if (compact) paintLine(surface, fitLine(`${GAP}${presentation.globalCompact}`, globalWidth), { row: LOCAL_ROW, x: localWidth, width: globalWidth }, background);
+  if (compact) paintLine(surface, fitLine(`${GAP}${presentation.globalCompact}`, globalWidth),
+    { row: LOCAL_ROW, x: localWidth, width: globalWidth }, background);
 }
 
 function paintPaneStatuses(surface: Surface, options: FooterLayoutViewOptions): void {
@@ -86,7 +87,8 @@ function paintCommand(surface: Surface, options: FooterLayoutViewOptions): void 
   const command = renderWorkspaceCommandLineFooter(options.command, options.width - globalWidth, options.background);
   for (let x = 0; x < command.width; x += 1) surface.set(x, LOCAL_ROW, command.get(x, LOCAL_ROW));
   if (compact) {
-    paintLine(surface, `${GAP}${options.presentation.globalCompact}`, { row: LOCAL_ROW, x: options.width - globalWidth, width: globalWidth }, options.background);
+    paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
+      { row: LOCAL_ROW, x: options.width - globalWidth, width: globalWidth }, options.background);
   }
 }
 
