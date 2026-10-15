@@ -1,3 +1,4 @@
+import type { FileTreeNode } from './file-tree-expansion.js';
 import type { FilepathStyle } from '../../ports/filepath-style.js';
 import type { FooterLayout } from '../../ports/footer-preferences.js';
 import type { NotificationState } from "@flyingrobots/bijou-tui";
@@ -35,6 +36,7 @@ export interface WorkspaceModel
   readonly cwd: string;
   readonly entries: readonly FileEntry[];
   readonly selectedIndex: number;
+  readonly fileTree?: Readonly<Record<string, FileTreeNode>>;
   readonly fileSearch: FileSearchState;
   readonly fileSearchEditing: boolean;
   readonly fileHoveredIndex?: number;

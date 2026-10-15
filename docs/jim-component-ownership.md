@@ -303,6 +303,23 @@ continues through the native Echo text-import path.
 a future workspace or symbol index must remain a rebuildable projection and
 declare its observation basis and staleness policy.
 
+The Files explorer owns ephemeral inline-tree metadata alongside its visible
+entry list. Directory click/Enter toggle immediate children in place through the
+filesystem port, preserving cwd and other branches. Disclosure, indentation,
+selection and hover derive from the same rows used by pointer hit testing.
+Filtering retains ancestors of matching known rows without recursively reading
+closed directories; it selects the first actual match. Collapse drops descendant
+metadata, and refresh/root changes reset expansion. The startup picker retains
+its existing directory-changing behavior.
+
+Preview syntax is a disposable Graft projection through a basis-free preview
+highlighting port, separate from editor-head highlighting. Both parse and render
+use the same sanitized bounded text. Open-buffer text remains preferred, and
+request/entry identity rejects stale text and spans together. Parser failure
+retains plain text. Preview colors do not introduce a buffer, head, Tick or save
+authority. [DX-0164](design/0164-explorer-inline-tree-preview-syntax.md) refines
+[DX-0161](design/0161-file-explorer-search.md) and owns this cycle's evidence.
+
 The footer layout is a Jedit presentation preference, remembered across launches
 through an injected preferences port and the `~/.jimrc` JSON adapter. The
 `filepathStyle` preference shares that adapter and chooses paths relative to

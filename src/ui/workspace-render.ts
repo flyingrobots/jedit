@@ -30,15 +30,25 @@ export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, options: S
   return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
 }
 
-export function formatTreeLine(entry: FileEntry, options: SelectableLineOptions): string {
+export interface TreeLineOptions extends SelectableLineOptions {
+  readonly depth?: number;
+  readonly expanded?: boolean;
+}
+
+export function fileTreeNameColumn(entry: FileEntry, depth = 0): number {
+  return 2 + depth * 2 + (entry.kind === FileEntryKinds.Directory ? 2 : 0);
+}
+
+export function formatTreeLine(entry: FileEntry, options: TreeLineOptions): string {
   const prefix = options.selected ? '› ' : '  ';
   if (entry.kind === FileEntryKinds.Parent) {
     return `${prefix}../`;
   }
   if (entry.kind === FileEntryKinds.Directory) {
-    return `${prefix}${entry.name}/`;
+    const disclosure = options.expanded ? '▾' : '▸';
+    return `${prefix}${'  '.repeat(options.depth ?? 0)}${disclosure} ${entry.name}/`;
   }
-  return `${prefix}${entry.name}`;
+  return `${prefix}${'  '.repeat(options.depth ?? 0)}${entry.name}`;
 }
 
 export function graftOutlineScroll(selectedIndex: number, total: number, visible: number): number {

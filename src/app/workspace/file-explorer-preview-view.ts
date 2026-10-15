@@ -1,3 +1,5 @@
+import { paintPreviewSyntax } from '../../ui/file-preview-syntax.js';
+import { filePreviewSourceLines } from './file-preview-syntax.js';
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { FilePreviewKinds, type FilePreviewResult } from '../../ports/file-preview.js';
 import { fitBlock } from '../../ui/workspace-render.js';
@@ -14,8 +16,6 @@ const PREVIEW_LOADING = 'fileExplorer.preview_loading';
 const PREVIEW_BINARY = 'fileExplorer.preview_binary';
 const PREVIEW_UNAVAILABLE = 'fileExplorer.preview_unavailable';
 const PREVIEW_TRUNCATED = 'fileExplorer.preview_truncated';
-const TAB_SPACES = '    ';
-const UNSAFE_CONTROLS = /[\p{Cc}\p{Cf}]/gu;
 
 export function renderFileExplorerPreview(model: WorkspaceModel, width: number, height: number): Surface | undefined {
   if (!fileExplorerHasFocus(model)) return undefined;
@@ -34,6 +34,12 @@ export function renderFileExplorerPreview(model: WorkspaceModel, width: number, 
   const body = stringToSurface(fitBlock(lines.join('\n'), innerWidth, bodyHeight), innerWidth, bodyHeight);
   applyBackground(body, model.jeditTheme.surface.workspace);
   surface.blit(body, PREVIEW_PAD, PREVIEW_BODY_TOP);
+  if (result?.kind === FilePreviewKinds.Loaded) {
+    const offset = result.truncated ? 1 : 0;
+    paintPreviewSyntax(surface, filePreviewSourceLines(result.lines), model.fileExplorerPreview?.highlight, {
+      x: PREVIEW_PAD, y: PREVIEW_BODY_TOP + offset, width: innerWidth, height: Math.max(0, bodyHeight - offset), theme: model.jeditTheme,
+    });
+  }
   return surface;
 }
 
@@ -41,6 +47,6 @@ function previewLines(model: WorkspaceModel, result: FilePreviewResult | undefin
   if (result == null) return [model.i18n.t(PREVIEW_LOADING)];
   if (result.kind === FilePreviewKinds.Binary) return [model.i18n.t(PREVIEW_BINARY)];
   if (result.kind === FilePreviewKinds.Unavailable) return [model.i18n.t(PREVIEW_UNAVAILABLE)];
-  const lines = result.lines.map((line) => line.replaceAll('\t', TAB_SPACES).replace(UNSAFE_CONTROLS, ''));
+  const lines = filePreviewSourceLines(result.lines);
   return result.truncated ? [model.i18n.t(PREVIEW_TRUNCATED), ...lines] : lines;
 }
