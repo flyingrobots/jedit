@@ -82,7 +82,8 @@ Typing, paste, Tab and ordinary editor commands are consumed while Dojo Feed own
 
 ### Wide UI Mockup
 
-100x32, current dark theme; right drawer approximately 42 columns:
+100x32, current dark theme; right drawer approximately 42 columns.
+[Native capture](0163-dojo-feed-witness/wide-dark-100x32.png):
 
 ```text
  editor remains visible     | Dojo Feed                 F4/Esc close |
@@ -97,7 +98,7 @@ Typing, paste, Tab and ordinary editor commands are consumed while Dojo Feed own
 
 ### Narrow UI Mockup
 
-60x12, right drawer 32 columns; status and close hint stay visible, explanatory
+60x12, [native capture](0163-dojo-feed-witness/narrow-dark-60x12.png), right drawer 32 columns; status and close hint stay visible, explanatory
 content scrolls inside the body. Below Jim's minimum terminal size, the existing
 resize notice owns the screen; Esc/F4 can still dismiss Dojo Feed.
 
@@ -161,15 +162,15 @@ behavior when the screened public feed contract and actual content are available
 
 ## Implementation Slices
 
-- [ ] Slice 1: Implement disconnected drawer entry, focus, rendering and localization.
-- [ ] Slice 2: Verify native interaction and record evidence; publish for review.
+- [x] Slice 1: Implement disconnected drawer entry, focus, rendering and localization.
+- [x] Slice 2: Verify native interaction and record evidence; publish for review.
 
 ## Tests To Write First
 
-- [ ] F4 opens, Esc/F4 closes; modal priority and editor state survive.
-- [ ] All layouts show Dojo Feed; hidden footer stays hidden; waiting state has no effects.
-- [ ] Mouse close and scrolling cannot change underlying editor or Files selection.
-- [ ] Narrow and RTL rendering remains bounded; all locale strings resolve.
+- [x] F4 opens, Esc/F4 closes; modal priority and editor state survive.
+- [x] All layouts show Dojo Feed; hidden footer stays hidden; waiting state has no effects.
+- [x] Mouse close and scrolling cannot change underlying editor or Files selection.
+- [x] Narrow and RTL rendering remains bounded; all locale strings resolve.
 
 ## Acceptance Criteria
 
@@ -195,8 +196,25 @@ terminals; keep controls pinned and scroll only prose.
 
 ## Follow-On Debt
 
-A separate issue owns transport after the screened public contract is ready.
+https://github.com/flyingrobots/jedit/issues/346 owns transport after the screened public contract is ready.
 
 ## Retrospective
 
-Pending implementation and runtime validation.
+The implementation follows the disconnected overlay design. The header uses a
+filled theme badge, translated waiting/disconnected labels, a pinned close hint,
+and a scroll hint when prose exceeds the available height. The local source
+appears before the explanation so it remains visible at 60x12.
+
+The first full check caught the key dispatcher's import budget. Existing overlay
+routing moved into its own module without weakening the structural test. The
+corrected full check passed 902 tests: 890 passed, 12 existing skips, zero failures.
+The final scroll hint passed seven focused runtime/structural tests and the
+quality gate again. All 139 specs map to a CI shard.
+
+[Native witnesses](0163-dojo-feed-witness/README.md) cover wide and minimum-size
+terminals, pointer scrolling/close, an unsaved Insert-mode editor and Arabic in
+a light theme. The rasterized Arabic witness validates cell alignment, not
+terminal-specific glyph shaping. No board frames were consumed.
+
+Transport remains gated by [#346](https://github.com/flyingrobots/jedit/issues/346).
+PR: https://github.com/flyingrobots/jedit/pull/347.

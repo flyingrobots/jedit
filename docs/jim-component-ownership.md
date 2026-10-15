@@ -315,6 +315,11 @@ They reserve two, two, or one rows; hidden footer reserves none. This setting
 does not advance a Jim worldline, submit an Echo Tick, or change buffer history.
 Saving edits only the owned `footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes
 and existing file permissions, and refuses malformed or ambiguous documents.
+Cooperative writers serialize through an exclusive target lock; dangling links
+are refused without replacing the link. Application footer facts contain no
+layout geometry or theme tokens. UI composition owns geometry, RTL alignment,
+path display and grapheme clipping. Layout changes reconcile the source viewport
+and refresh bounded highlighting.
 The model changes after a successful save. A failed save reports an error and
 retains the previous layout. Other Appearance settings keep their current
 session lifetime. Active modes use a filled theme badge; ordinary status text
@@ -323,6 +328,14 @@ borders and filled selections independent of terminal cursor inversion.
 This refines projection and I/O ownership without changing
 the target causal model or claiming general settings replay support.
 [DX-0162](design/0162-selectable-footer-layouts.md) owns the implementation evidence.
+
+Dojo Feed is a Jedit UI overlay. Its session-only open/scroll state owns input
+while visible and leaves buffer authority, editor geometry and selection intact.
+The current posture is explicitly disconnected pending the upstream public
+content screen. It has no transport adapter, content model or feed persistence.
+The UI owns wrapping, theme colors, close hit testing and footer identity;
+[DX-0163](design/0163-dojo-feed-drawer.md) owns the interaction evidence.
+This extends product UI ownership without changing Echo or the causal model.
 
 > **Intuition to carry forward:** semantic ownership and storage authority are
 > different powers. Jim decides what command to perform, the text capability

@@ -63,6 +63,7 @@ export interface WorkspaceModel
   readonly lineNumberMode: SourceLineNumberMode;
   readonly gutterDimmed: boolean;
   readonly causalGutterBasis: WorkspaceCausalGutterBasis;
+  readonly dojoFeedDrawer?: { readonly scrollRow: number };
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
   readonly settingsDiagnosticsOpen: boolean;

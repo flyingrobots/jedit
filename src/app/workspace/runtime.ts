@@ -12,7 +12,7 @@ import {
 } from "../source-highlight-session.js";
 import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
-import { updateFromMouse } from "./mouse.js";
+import { updateWorkspacePointerInput } from "./workspace-pointer-input.js";
 import { createWorkspaceRenderer } from "./viewer.js";
 import { applyWorkspaceCommandLineFilePreviewResult } from "./command-completion-preview.js";
 import {
@@ -398,7 +398,7 @@ function updateWorkspaceInputMessage(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   if (msg.type === WorkspaceInputMessageTypes.Mouse) {
-    return updateFromMouse(
+    return updateWorkspacePointerInput(
       msg,
       model,
       deps.sourceHighlighter,

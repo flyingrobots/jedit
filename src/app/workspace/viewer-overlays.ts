@@ -1,3 +1,4 @@
+import { paintDojoFeedDrawer } from '../../ui/dojo-feed-drawer.js';
 import type { Surface } from '@flyingrobots/bijou';
 import { renderShellQuitOverlay, type Overlay } from '@flyingrobots/bijou-tui';
 import {
@@ -33,6 +34,7 @@ export function paintWorkspaceOverlays(
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
   paintWorkspaceInlinePanelOverlay(screen, model, bodyTop, bodyHeight);
   paintWorkspaceCommandCompletionOverlay(screen, model);
+  paintDojoFeedDrawer(screen, model);
 }
 
 function paintSettingsOverlay(

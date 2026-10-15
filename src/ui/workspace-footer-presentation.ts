@@ -1,3 +1,4 @@
+import { dojoFeedLayout, DOJO_FEED_TITLE } from './dojo-feed-drawer.js';
 import { filledSelectionToken } from './filled-selection-token.js';
 import { JEDIT_SOURCE_TOKEN } from './jedit-theme.js';
 import { displayFilepath } from './filepath-display.js';
@@ -37,6 +38,10 @@ export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresen
 }
 
 function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undefined {
+  if (model.dojoFeedDrawer != null) return {
+    label: DOJO_FEED_TITLE.toUpperCase(), identity: model.i18n.t('dojoFeed.waiting'), detail: '',
+    active: true, ...dojoFeedLayout(model),
+  };
   if (model.startupFileModalOpen) return {
     label: model.i18n.t('startupFileModal.title').toUpperCase(), identity: displayFilepath(model.cwd, model), detail: '',
     active: true, x: 0, width: model.columns,
@@ -51,9 +56,13 @@ function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undef
 
 function overlaySurfaces(surfaces: readonly FooterSurfaceObservation[], overlay: FooterSurfaceObservation): readonly FooterSurfaceObservation[] {
   return [overlay, ...surfaces.flatMap((surface) => {
-    const x = Math.max(surface.x, overlay.x + overlay.width);
-    const width = surface.x + surface.width - x;
-    return width > 0 ? [{ ...surface, x, width, active: false }] : [];
+    const leftWidth = Math.max(0, Math.min(surface.x + surface.width, overlay.x) - surface.x);
+    const rightX = Math.max(surface.x, overlay.x + overlay.width);
+    const rightWidth = Math.max(0, surface.x + surface.width - rightX);
+    return [
+      ...(leftWidth > 0 ? [{ ...surface, width: leftWidth, active: false }] : []),
+      ...(rightWidth > 0 ? [{ ...surface, x: rightX, width: rightWidth, active: false }] : []),
+    ];
   })];
 }
 
