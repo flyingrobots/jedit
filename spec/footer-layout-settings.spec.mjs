@@ -148,3 +148,18 @@ test('Compact separates cursor and global counts and keeps the filename when its
   assert.match(line, /main\.ts/);
   assert.match(line, /1:1  0 modified/);
 });
+
+test('Command completion moves down with Compact and stays above the input row', async () => {
+  const { runtime, model } = await setup({ columns: 60, rows: 16,
+    entries: [{ kind: 'file', name: 'alpha.ts', path: '/repo/alpha.ts' }],
+    commandLine: { active: true, input: 'edit ', cursorIndex: 5, selectedCompletionIndex: 0 } });
+  const markerRow = (surface) => Array.from({ length: surface.height }, (_, y) => y)
+    .find((y) => row(surface, y).includes('› alpha.ts'));
+  const focused = markerRow(runtime.view({ ...model, footerLayout: 'focused' }));
+  const pane = markerRow(runtime.view({ ...model, footerLayout: 'per-pane' }));
+  const compact = markerRow(runtime.view({ ...model, footerLayout: 'compact' }));
+  assert.ok(focused !== undefined);
+  assert.equal(pane, focused);
+  assert.equal(compact, focused + 1);
+  assert.ok(compact < 15);
+});

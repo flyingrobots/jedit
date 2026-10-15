@@ -180,28 +180,28 @@ unrelated settings and large numeric values without reserializing them.
 - [x] Slice 1: Layout runtime choice and Appearance setting.
 - [x] Slice 2: Shared focus/global facts and three rendered arrangements.
 - [x] Slice 3: Dynamic viewport, pointer and command-completion geometry.
-- [ ] Slice 4: Full checks, real terminal verification and documentation.
+- [x] Slice 4: Full checks, real terminal verification and documentation.
 
 ## Tests To Write First
 
 Preferences tests first demonstrated missing-adapter failures, then cover restart,
 raw JSON preservation, malformed/duplicate refusal, file mode and symlinks.
 
-- [ ] Settings cycles A/B/C both ways and preserves the selected control.
-- [ ] A/B reserve two rows, C one, and hidden footer zero.
-- [ ] B segments follow actual pane boundaries and active focus.
-- [ ] Files filter/nav facts never reuse editor coordinates.
-- [ ] Compact preserves global counts during command input.
-- [ ] Pointer clicks and completion anchors agree with changed body height.
-- [ ] Narrow/RTL render and layout switching preserve state.
+- [x] Settings cycles A/B/C both ways and preserves the selected control.
+- [x] A/B reserve two rows, C one, and hidden footer zero.
+- [x] B segments follow actual pane boundaries and active focus.
+- [x] Files filter/nav facts never reuse editor coordinates.
+- [x] Compact preserves global counts during command input.
+- [x] Pointer clicks and completion anchors agree with changed body height.
+- [x] Narrow/RTL render and layout switching preserve state.
 
 ## Acceptance Criteria
 
-- [ ] All three choices have distinct correct rendering in the actual workspace.
-- [ ] Immediate choice feedback and footer visibility work through Settings.
-- [ ] Global counts come from current model observations only.
-- [ ] Geometry and input ownership remain correct in all layouts.
-- [ ] Localization, local checks, native witnesses and CI pass.
+- [x] All three choices have distinct correct rendering in the actual workspace.
+- [x] Immediate choice feedback and footer visibility work through Settings.
+- [x] Global counts come from current model observations only.
+- [x] Geometry and input ownership remain correct in all layouts.
+- [x] Localization, local checks, native witnesses and CI pass.
 
 ## Validation Plan
 
@@ -226,4 +226,27 @@ widgets require actual observation providers before they can be displayed.
 
 ## Retrospective
 
-Pending implementation and verification.
+The setting and all three arrangements are implemented over shared surface and
+global observations. The default is Focused + workspace. The user chose durable
+preferences; `~/.jimrc` saves only `footerLayout` and leaves unrelated bytes,
+permissions and symlink targets intact. Failed writes retain the old model and
+produce an error toast. No text/history authority moved into the preferences file.
+
+The final full local check passed 882 tests with 12 existing skips and no quality
+regressions. A further focused acceptance test confirms the real completion popup
+moves down one row with Compact and stays above input. The final CI run includes
+that test. Shard coverage passes for 136 specification files. Native production
+Echo terminal witnesses cover all layouts at 100×32 and 60×16, filtered selection,
+preview, mouse events, opening/editing, command completion and mirrored locale.
+See the [witness gallery and receipt](0162-footer-witness/README.md).
+
+Native observation prompted explicit spacing between cursor and global counts,
+filename-preserving identity clipping, and pane separators. Modified and pending
+counts precede the buffer total when global status must clip. Existing tests that
+asserted the old fixed footer arrangement were updated to the new observed layout;
+separate durability posture helpers retain their own coverage.
+
+CI on implementation `fcb12be2` passed all twelve jobs in
+[run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
+The final published head is checked separately after these evidence updates.
+The branch remains stacked on #342; no dependency is merged here.
