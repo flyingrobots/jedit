@@ -4,6 +4,7 @@ import {
   createSurface,
   stringToSurface,
   type Surface,
+  type Cell,
   type TokenValue,
 } from '@flyingrobots/bijou';
 import { drawer } from '@flyingrobots/bijou-tui';
@@ -90,7 +91,7 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
     bgToken: tokenValue(options.theme.surface.drawer),
   });
   const surface = overlay.surface ?? renderSettingsDrawerFallback(options, content);
-  paintSettingsBorderBackground(surface, options.theme.surface.drawer);
+  paintSettingsChrome(surface, options.theme);
   return surface;
 }
 
@@ -296,11 +297,24 @@ function tokenValue(token: JeditStyleToken): TokenValue {
   };
 }
 
-function paintSettingsBorderBackground(surface: Surface, token: JeditStyleToken): void {
+function paintSettingsChrome(surface: Surface, theme: JeditTheme): void {
+  const border = settingsDrawerTextToken(theme, theme.chrome.activeEdge);
   for (let y = 0; y < surface.height; y += 1) {
     for (let x = 0; x < surface.width; x += 1) {
-      if (x > 0 && x < surface.width - 1 && y > 0 && y < surface.height - 1) continue;
-      surface.set(x, y, { ...surface.get(x, y), bg: token.bg, bgRGB: token.bgRGB, empty: false });
+      const cell = surface.get(x, y);
+      const painted = isSettingsBorder(x, y, surface)
+        ? { ...cell, fg: border.fg, fgRGB: border.fgRGB, bg: border.bg, bgRGB: border.bgRGB, empty: false }
+        : fillMissingSettingsStyle(cell, theme.surface.drawer);
+      surface.set(x, y, painted);
     }
   }
+}
+
+function isSettingsBorder(x: number, y: number, surface: Surface): boolean {
+  return x === 0 || y === 0 || x === surface.width - 1 || y === surface.height - 1;
+}
+
+function fillMissingSettingsStyle(cell: Cell, token: JeditStyleToken): Cell {
+  return { ...cell, fg: cell.fg ?? token.fg, fgRGB: cell.fgRGB ?? token.fgRGB,
+    bg: cell.bg ?? token.bg, bgRGB: cell.bgRGB ?? token.bgRGB, empty: false };
 }
