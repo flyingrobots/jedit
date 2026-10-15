@@ -9,13 +9,14 @@ import {
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
+import { directoryChangeFailure } from './directory-change-failure.js';
+import { updateInlineDirectoryKey } from './file-tree-expansion.js';
 import { withFocusPane } from './focus.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import { createWorkspaceTextOpenCmd, defaultWorkspaceTextAperture } from './workspace-text-commands.js';
 import { pendingWorkspaceTextOpen } from './workspace-text-authority.js';
@@ -60,6 +61,8 @@ export function updateTreeFromKey(
     return [navigation, []];
   }
 
+  const inline = updateInlineDirectoryKey(msg, model, { fileSystem: deps.fileSystem, nowMs });
+  if (inline != null) return inline;
   if (isWorkspaceRefreshKey(msg)) {
     return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, deps.fileSystem);
   }
@@ -172,6 +175,8 @@ function openDirectory(
     ...model,
     cwd,
     entries: fileSystem.loadEntries(cwd),
+    fileTree: undefined,
+    fileHoveredIndex: undefined,
     selectedIndex: 0,
   }, cwd === model.cwd ? fileSearchState(model) : EMPTY_FILE_SEARCH);
 }
@@ -186,17 +191,7 @@ function changeDirectory(
   try {
     return [openDirectory(model, cwd, fileSystem), []];
   } catch (cause) {
-    const issue = fileSystem.describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
-    return pushErrorToast(
-      model,
-      issue.title,
-      issue.message,
-      nowMs(),
-      () => createNotificationTickCmd((atMs: number): WorkspaceMsg => ({
-        type: WorkspaceMessageTypes.NotificationTick,
-        atMs,
-      })),
-    );
+    return directoryChangeFailure(model, cwd, action, cause instanceof Error ? cause : String(cause), { fileSystem, nowMs });
   }
 }
 

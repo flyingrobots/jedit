@@ -175,17 +175,17 @@ startup-picker and explicit file-opening behaviors.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Inline directory state, rendering, keyboard and pointer behavior.
-- [ ] Slice 2: Basis-free Graft preview highlighting and stale/failure protection.
+- [x] Slice 1: Inline directory state, rendering, keyboard and pointer behavior.
+- [x] Slice 2: Basis-free Graft preview highlighting and stale/failure protection.
 - [ ] Slice 3: Native witnesses, full checks and review handoff.
 
 ## Tests To Write First
 
-- [ ] Enter/click expand and collapse nested directories without changing root.
-- [ ] Sibling branches, selection, indentation and filter ancestors stay coherent.
-- [ ] Empty/unreadable directories and root refresh preserve safe navigation.
-- [ ] Real Graft syntax colors reach the preview, including unsaved buffer text.
-- [ ] Stale results, parser failure, tabs, Unicode and truncation remain safe.
+- [x] Enter/click expand and collapse nested directories without changing root.
+- [x] Sibling branches, selection, indentation and filter ancestors stay coherent.
+- [x] Empty/unreadable directories and root refresh preserve safe navigation.
+- [x] Real Graft syntax colors reach the preview, including unsaved buffer text.
+- [x] Stale results, parser failure, tabs, Unicode and truncation remain safe.
 
 ## Acceptance Criteria
 

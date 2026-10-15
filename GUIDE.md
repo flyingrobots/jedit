@@ -36,6 +36,23 @@ npm run build
 runtime assets. The generated Rust contract bindings are checked in so normal
 builds do not require a sibling Echo checkout or generator invocation.
 
+## Files explorer
+
+Ctrl+B opens Files in navigation mode. Click a folder or press Enter to expand
+or collapse it inline. Right/l expands a folder or selects its first visible
+child; Left/h collapses it or selects its parent. Backspace and Alt+Up move the
+explorer root upward. Refresh with r or Ctrl+R reloads the root and collapses
+expanded branches.
+
+Click a file to select it and preview its contents in the main viewer. Enter
+opens that file for editing. Previews use Graft syntax colors, prefer unsaved
+open-buffer text, and remain read-only. Unsupported syntax or a parser failure
+leaves a readable plain-text preview.
+
+Press / to filter known visible paths; matching children retain their folder
+ancestors, and the matching file stays selected. Esc/Enter exits filter editing
+and keeps the query. Closed directories are loaded only when expanded.
+
 ## Validate The Workspace
 
 Use the normal local gate:

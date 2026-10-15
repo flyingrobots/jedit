@@ -36,8 +36,8 @@ function paintFileSearchResults(surface: Surface, model: WorkspaceModel, width: 
   const offset = listScrollOffset(selected, entries.length, height);
   const lines = entries.length === 0
     ? [model.i18n.t(SEARCH_EMPTY_KEY)]
-    : entries.slice(offset, offset + height).map(({ entry, index }) => formatTreeLine(entry, {
-      selected: index === model.selectedIndex,
+    : entries.slice(offset, offset + height).map(({ entry, index, depth, expanded }) => formatTreeLine(entry, {
+      selected: index === model.selectedIndex, depth, expanded,
     }));
   const content = stringToSurface(fitBlock(lines.join('\n'), width, height), width, height);
   applyBackground(content, model.jeditTheme.surface.drawer);

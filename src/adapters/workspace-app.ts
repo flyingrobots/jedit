@@ -68,6 +68,7 @@ function workspaceRuntimeDependencies(
     productionTextSession: productionText.productionTextSession,
     graftSession,
     sourceHighlighter,
+    previewHighlighter: sourceHighlighter,
     profiler: createRaytracerProfilerPort(nowMs),
     profileOnStartup: options.profileEnabled ?? false,
     initialModel: {

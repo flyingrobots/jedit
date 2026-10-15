@@ -87,7 +87,7 @@ function updateWorkspaceRuntime(
 ): WorkspaceRuntimeResult {
   return synchronizeFileExplorerPreview(syncWorkspaceRuntimeResult(
     rebaseFrameClock(deps, model, updateWorkspaceRuntimeState(deps, msg, model)),
-  ), deps.filePreviewSource);
+  ), deps.filePreviewSource, deps.previewHighlighter);
 }
 
 // While the workspace is idle the tick handler returns the model untouched, so
@@ -402,6 +402,7 @@ function updateWorkspaceInputMessage(
       msg,
       model,
       deps.sourceHighlighter,
+      { fileSystem: deps.fileSystem, nowMs: deps.nowMs },
     );
   }
   return msg.type === WorkspaceInputMessageTypes.Key
