@@ -19,7 +19,7 @@ export function footerGlobalObservation(model: WorkspaceModel) {
   const pendingText = pending > 0 ? model.i18n.t('footer.status.pending_count', { count: pending }) : '';
   return {
     workspace: model.workspaceRoot,
-    globalSummary: [model.i18n.t('footer.status.buffer_count', { count: bufferCount }), modifiedText, pendingText].filter(Boolean).join(' · '),
+    globalSummary: [modifiedText, pendingText, model.i18n.t('footer.status.buffer_count', { count: bufferCount })].filter(Boolean).join(' · '),
     globalCompact: [modifiedText, pendingText].filter(Boolean).join(' · '),
   };
 }

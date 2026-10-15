@@ -447,7 +447,7 @@ test('footer renders focused coordinates separately from observed workspace coun
 
   assert.match(footerMode, /^NORMAL \/repo\/notes.md\s+1:1$/);
   assert.equal(footerContext.startsWith('/repo'), true);
-  assert.match(footerContext, /1 buffers.*0 modified/);
+  assert.match(footerContext, /0 modified.*1 buffers/);
   assert.doesNotMatch(footerContext, /git:unknown|remote:unknown|intent:idle/);
 });
 

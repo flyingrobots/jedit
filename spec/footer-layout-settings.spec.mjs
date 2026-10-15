@@ -139,3 +139,12 @@ test('All layouts preserve observations and mode ownership at narrow and RTL siz
     assert.doesNotMatch(row(surface, 15), /footer\.status|settings\.values/);
   }
 });
+
+test('Compact separates cursor and global counts and keeps the filename when its parent path clips', async () => {
+  const { runtime, model } = await setup({ footerLayout: 'compact', columns: 60, rows: 16,
+    editor: { path: '/repo/a-very-long-parent-directory/another-directory/main.ts', lines: ['text'],
+      cursorRow: 0, cursorCol: 0, scrollRow: 0, scrollCol: 0, mode: 'normal', dirty: false, readOnly: false } });
+  const line = row(runtime.view(model), 15);
+  assert.match(line, /main\.ts/);
+  assert.match(line, /1:1  0 modified/);
+});

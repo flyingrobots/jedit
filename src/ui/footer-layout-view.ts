@@ -61,13 +61,14 @@ function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
 
 function paintPaneStatuses(surface: Surface, options: FooterLayoutViewOptions): void {
   for (const observation of options.presentation.surfaces) {
-    paintLocalObservation(surface, observation, observation.width, options);
+    const inset = observation.x > 0 ? 1 : 0;
+    if (inset > 0) paintLine(surface, '│', { row: LOCAL_ROW, x: observation.x, width: inset }, options.background);
+    paintLocalObservation(surface, { ...observation, x: observation.x + inset }, observation.width - inset, options);
   }
 }
 
 function paintLocalObservation(surface: Surface, observation: FooterSurfaceObservation, width: number, options: FooterLayoutViewOptions): void {
-  const label = `${observation.label} ${observation.identity}`.trimEnd();
-  const text = joinFooterSides(label, observation.detail, width);
+  const text = localObservationLine(observation, width);
   const token = observation.active ? {
     ...options.background, ...options.presentation.activeToken, bg: options.background.bg, bgRGB: options.background.bgRGB,
   } : options.background;
@@ -107,4 +108,20 @@ export function joinFooterSides(left: string, right: string, width: number): str
   const rightWidth = Math.min(visibleLineLength(right), Math.floor(width / 2));
   const leftWidth = Math.max(0, width - rightWidth - GAP.length);
   return `${fitLine(left, leftWidth)}${GAP}${clipToWidth(right, rightWidth)}`;
+}
+
+function localObservationLine(observation: FooterSurfaceObservation, width: number): string {
+  const detailWidth = Math.min(visibleLineLength(observation.detail), Math.floor(width / 2));
+  const gapWidth = detailWidth === 0 ? 0 : GAP.length;
+  const identityWidth = Math.max(0, width - detailWidth - gapWidth - visibleLineLength(observation.label) - 1);
+  const identity = tailIdentity(observation.identity, identityWidth);
+  return joinFooterSides(`${observation.label} ${identity}`.trimEnd(), observation.detail, width);
+}
+
+function tailIdentity(identity: string, width: number): string {
+  if (width <= 0) return '';
+  if (visibleLineLength(identity) <= width) return identity;
+  const characters = Array.from(identity);
+  while (characters.length > 0 && visibleLineLength(characters.join('')) > width - 1) characters.shift();
+  return `…${characters.join('')}`;
 }
