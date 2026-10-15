@@ -1,6 +1,7 @@
 import { DuplicateKeyBindingError } from '../domain/errors.js';
 
 export const JEDIT_KEY_ACTION = {
+  ToggleDojoFeed: Symbol('jedit.key.action.toggle-dojo-feed'),
   OpenSettings: Symbol('jedit.key.action.open-settings'),
   ToggleMarkdownPreview: Symbol('jedit.key.action.toggle-markdown-preview'),
   ToggleTheme: Symbol('jedit.key.action.toggle-theme'),
@@ -21,6 +22,7 @@ type JeditKeyChord = Pick<JeditKeyBinding, 'key' | 'ctrl' | 'alt' | 'shift'>;
 
 const KEY_F2 = 'f2';
 const KEY_F3 = 'f3';
+export const JEDIT_DOJO_FEED_TOGGLE_KEY = 'f4';
 const KEY_Q = 'q';
 const KEY_T = 't';
 const MODIFIER_CTRL = 'ctrl';
@@ -42,6 +44,7 @@ export const JEDIT_THEME_TOGGLE_LABEL = formatJeditKeyLabel({
 });
 
 export const JEDIT_KEY_BINDINGS = ensureUniqueJeditKeyBindings([
+  { action: JEDIT_KEY_ACTION.ToggleDojoFeed, key: JEDIT_DOJO_FEED_TOGGLE_KEY, label: JEDIT_DOJO_FEED_TOGGLE_KEY },
   {
     action: JEDIT_KEY_ACTION.OpenSettings,
     key: JEDIT_SETTINGS_TOGGLE_KEY,

@@ -36,6 +36,18 @@ npm run build
 runtime assets. The generated Rust contract bindings are checked in so normal
 builds do not require a sibling Echo checkout or generator invocation.
 
+## Dojo Feed
+
+Press **F4** from the title screen or workspace to open Dojo Feed. Press F4 or
+Esc again, or click its close hint, to return to the same editor position.
+The drawer owns keyboard and mouse input while open. Use j/k, arrow keys,
+Page Up/Down, Home/End or the mouse wheel to scroll its explanation.
+
+Dojo Feed currently displays **Waiting for public feed** and **Disconnected**.
+Public content screening is pending upstream. This version makes no connection,
+receives no updates, and stores no feed content. Existing Settings, command input,
+startup picker and quit dialogs keep their input priority.
+
 ## Validate The Workspace
 
 Use the normal local gate:

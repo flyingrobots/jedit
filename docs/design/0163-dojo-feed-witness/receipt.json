@@ -1,0 +1,35 @@
+{
+  "method": "Native Echo/Bijou PTY cells rendered with Menlo, Apple Symbols and Geeza Pro. Glyph shaping depends on the terminal.",
+  "captures": [
+    {
+      "image": "editor-dark-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellsSha256": "a008c7ada49ef897a1163d1467dd3e2d32e10d7cb8330fe322d647d04b177f14"
+    },
+    {
+      "image": "narrow-dark-60x12.png",
+      "columns": 60,
+      "rows": 12,
+      "cellsSha256": "8e67d4b43db12d6e313d4153ea48436d0798f0918211e15280a00d6692a59921"
+    },
+    {
+      "image": "narrow-scrolled-60x12.png",
+      "columns": 60,
+      "rows": 12,
+      "cellsSha256": "0431e331aa7bc3dbfdfbde780420625573a0a1fb70b35010a7ce6f927d832bd2"
+    },
+    {
+      "image": "rtl-light-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "7c3be7194e33f5825881c3b44f0f872d5cf7e00e90df741b759da9d8d43c178c"
+    },
+    {
+      "image": "wide-dark-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellsSha256": "09e3da984a1aa5ef5fbffed12bc4e4194531317f70498049b5c8da552becf425"
+    }
+  ]
+}

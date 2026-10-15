@@ -7,7 +7,7 @@ import { ViewModes } from './view-mode.js';
 
 export function footerSurfaceObservation(model: WorkspaceModel, pane: FocusPane): FooterSurfaceFacts {
   const facts = pane === FocusPanes.Files ? filesFacts(model) : pane === FocusPanes.Graft ? graftFacts(model) : viewerFacts(model);
-  return { ...facts, active: !model.settingsOpen && !model.startupFileModalOpen && model.focusPane === pane };
+  return { ...facts, active: model.dojoFeedDrawer == null && !model.settingsOpen && !model.startupFileModalOpen && model.focusPane === pane };
 }
 
 function filesFacts(model: WorkspaceModel) {
@@ -37,7 +37,9 @@ function viewerFacts(model: WorkspaceModel) {
     detail: model.i18n.t('footer.status.read_only'), detailEmphasized: true,
   };
   const editor = model.editor;
-  if (editor == null) return { label: model.i18n.t('footer.mode.browse').toUpperCase(), identity: model.cwd, identityIsPath: true, detail: '' };
+  if (editor == null) return {
+    label: model.i18n.t('footer.mode.browse').toUpperCase(), identity: model.cwd, identityIsPath: true, detail: model.i18n.t('dojoFeed.open'),
+  };
   const mode = model.viewMode === ViewModes.Preview ? model.i18n.t('footer.mode.preview') : model.i18n.t(`footer.mode.${editor.mode}`);
   const flags = [editor.dirty ? model.i18n.t('footer.status.modified') : '', editor.readOnly ? model.i18n.t('footer.status.read_only') : ''].filter(Boolean);
   return {

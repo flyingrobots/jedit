@@ -209,6 +209,15 @@
           "preview_binary": "Binary file — preview unavailable",
           "preview_unavailable": "Preview unavailable",
           "preview_truncated": "Preview truncated"
+        },
+        "dojoFeed": {
+          "waiting": "Waiting for public feed",
+          "disconnected": "Disconnected",
+          "explanation": "Public content screening is pending. Jim will stay disconnected until the screened feed is ready.",
+          "source": "Local source",
+          "noUpdates": "No updates received. Your editor stays where you left it.",
+          "close": "F4 / Esc close",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -421,6 +430,15 @@
           "preview_binary": "Fichier binaire — aperçu indisponible",
           "preview_unavailable": "Aperçu indisponible",
           "preview_truncated": "Aperçu tronqué"
+        },
+        "dojoFeed": {
+          "waiting": "Flux public en attente",
+          "disconnected": "Déconnecté",
+          "explanation": "Le contrôle du contenu public est en cours. Jim restera déconnecté jusqu’à ce que le flux vérifié soit prêt.",
+          "source": "Source locale",
+          "noUpdates": "Aucune mise à jour reçue. Votre éditeur conserve sa position.",
+          "close": "F4 / Esc fermer",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -633,6 +651,15 @@
           "preview_binary": "File binario — anteprima non disponibile",
           "preview_unavailable": "Anteprima non disponibile",
           "preview_truncated": "Anteprima troncata"
+        },
+        "dojoFeed": {
+          "waiting": "In attesa del flusso pubblico",
+          "disconnected": "Disconnesso",
+          "explanation": "Il controllo dei contenuti pubblici è in corso. Jim resterà disconnesso finché il flusso verificato non sarà pronto.",
+          "source": "Sorgente locale",
+          "noUpdates": "Nessun aggiornamento ricevuto. La posizione nell’editor è conservata.",
+          "close": "F4 / Esc chiudi",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -845,6 +872,15 @@
           "preview_binary": "Binärdatei — keine Vorschau",
           "preview_unavailable": "Vorschau nicht verfügbar",
           "preview_truncated": "Vorschau gekürzt"
+        },
+        "dojoFeed": {
+          "waiting": "Warten auf öffentlichen Feed",
+          "disconnected": "Nicht verbunden",
+          "explanation": "Die Prüfung öffentlicher Inhalte steht noch aus. Jim bleibt getrennt, bis der geprüfte Feed bereit ist.",
+          "source": "Lokale Quelle",
+          "noUpdates": "Keine Updates empfangen. Die Position im Editor bleibt erhalten.",
+          "close": "F4 / Esc schließen",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -1057,6 +1093,15 @@
           "preview_binary": "Archivo binario — sin vista previa",
           "preview_unavailable": "Vista previa no disponible",
           "preview_truncated": "Vista previa truncada"
+        },
+        "dojoFeed": {
+          "waiting": "Esperando el canal público",
+          "disconnected": "Desconectado",
+          "explanation": "La revisión del contenido público está pendiente. Jim seguirá desconectado hasta que el canal revisado esté listo.",
+          "source": "Origen local",
+          "noUpdates": "No se han recibido novedades. Tu editor conserva su posición.",
+          "close": "F4 / Esc cerrar",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -1269,6 +1314,15 @@
           "preview_binary": "바이너리 파일 — 미리 보기 불가",
           "preview_unavailable": "미리 보기 불가",
           "preview_truncated": "미리 보기 생략됨"
+        },
+        "dojoFeed": {
+          "waiting": "공개 피드 대기 중",
+          "disconnected": "연결 안 됨",
+          "explanation": "공개 콘텐츠 검토가 진행 중입니다. 검토된 피드가 준비될 때까지 Jim은 연결하지 않습니다.",
+          "source": "로컬 소스",
+          "noUpdates": "받은 업데이트가 없습니다. 편집기 위치는 유지됩니다.",
+          "close": "F4 / Esc 닫기",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -1481,6 +1535,15 @@
           "preview_binary": "バイナリファイル — プレビュー不可",
           "preview_unavailable": "プレビュー不可",
           "preview_truncated": "プレビューを省略"
+        },
+        "dojoFeed": {
+          "waiting": "公開フィードを待機中",
+          "disconnected": "未接続",
+          "explanation": "公開コンテンツの審査待ちです。審査済みフィードが準備されるまで、Jim は接続しません。",
+          "source": "ローカルソース",
+          "noUpdates": "更新は受信していません。エディターの位置は維持されます。",
+          "close": "F4 / Esc 閉じる",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -1693,6 +1756,15 @@
           "preview_binary": "二进制文件 — 无法预览",
           "preview_unavailable": "无法预览",
           "preview_truncated": "预览已截断"
+        },
+        "dojoFeed": {
+          "waiting": "等待公开信息流",
+          "disconnected": "未连接",
+          "explanation": "公开内容正在等待审核。经过审核的信息流准备就绪之前，Jim 将保持断开连接。",
+          "source": "本地来源",
+          "noUpdates": "尚未收到更新。编辑器位置保持不变。",
+          "close": "F4 / Esc 关闭",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -1905,6 +1977,15 @@
           "preview_binary": "Arquivo binário — sem prévia",
           "preview_unavailable": "Prévia indisponível",
           "preview_truncated": "Prévia truncada"
+        },
+        "dojoFeed": {
+          "waiting": "Aguardando o feed público",
+          "disconnected": "Desconectado",
+          "explanation": "A revisão do conteúdo público está pendente. Jim ficará desconectado até que o feed revisado esteja pronto.",
+          "source": "Fonte local",
+          "noUpdates": "Nenhuma atualização recebida. Seu editor mantém a posição.",
+          "close": "F4 / Esc fechar",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -2117,6 +2198,15 @@
           "preview_binary": "Двоичный файл — просмотр недоступен",
           "preview_unavailable": "Просмотр недоступен",
           "preview_truncated": "Просмотр сокращён"
+        },
+        "dojoFeed": {
+          "waiting": "Ожидание публичной ленты",
+          "disconnected": "Нет подключения",
+          "explanation": "Проверка публичного содержимого ещё не завершена. Jim не подключится, пока проверенная лента не будет готова.",
+          "source": "Локальный источник",
+          "noUpdates": "Обновлений пока нет. Позиция в редакторе сохранена.",
+          "close": "F4 / Esc закрыть",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -2329,6 +2419,15 @@
           "preview_binary": "ملف ثنائي — المعاينة غير متاحة",
           "preview_unavailable": "المعاينة غير متاحة",
           "preview_truncated": "المعاينة مختصرة"
+        },
+        "dojoFeed": {
+          "waiting": "بانتظار الموجز العام",
+          "disconnected": "غير متصل",
+          "explanation": "فحص المحتوى العام لم يكتمل بعد. سيبقى Jim غير متصل حتى يصبح الموجز المفحوص جاهزًا.",
+          "source": "المصدر المحلي",
+          "noUpdates": "لم تصل تحديثات. موضعك في المحرر محفوظ.",
+          "close": "F4 / Esc إغلاق",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -2541,6 +2640,15 @@
           "preview_binary": "Berkas biner — pratinjau tidak tersedia",
           "preview_unavailable": "Pratinjau tidak tersedia",
           "preview_truncated": "Pratinjau dipotong"
+        },
+        "dojoFeed": {
+          "waiting": "Menunggu umpan publik",
+          "disconnected": "Terputus",
+          "explanation": "Pemeriksaan konten publik masih berlangsung. Jim tetap terputus hingga umpan yang diperiksa siap.",
+          "source": "Sumber lokal",
+          "noUpdates": "Belum ada pembaruan. Posisi editor Anda tetap tersimpan.",
+          "close": "F4 / Esc tutup",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -2753,6 +2861,15 @@
           "preview_binary": "İkili dosya — önizleme yok",
           "preview_unavailable": "Önizleme kullanılamıyor",
           "preview_truncated": "Önizleme kısaltıldı"
+        },
+        "dojoFeed": {
+          "waiting": "Herkese açık akış bekleniyor",
+          "disconnected": "Bağlı değil",
+          "explanation": "Herkese açık içerik denetimi bekleniyor. Denetlenmiş akış hazır olana kadar Jim bağlanmayacak.",
+          "source": "Yerel kaynak",
+          "noUpdates": "Henüz güncelleme alınmadı. Düzenleyicideki konumunuz korunur.",
+          "close": "F4 / Esc kapat",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -2965,6 +3082,15 @@
           "preview_binary": "बाइनरी फ़ाइल — पूर्वावलोकन उपलब्ध नहीं",
           "preview_unavailable": "पूर्वावलोकन उपलब्ध नहीं",
           "preview_truncated": "पूर्वावलोकन संक्षिप्त है"
+        },
+        "dojoFeed": {
+          "waiting": "सार्वजनिक फ़ीड की प्रतीक्षा",
+          "disconnected": "कनेक्ट नहीं है",
+          "explanation": "सार्वजनिक सामग्री की जाँच लंबित है। जाँची हुई फ़ीड तैयार होने तक Jim कनेक्ट नहीं होगा।",
+          "source": "स्थानीय स्रोत",
+          "noUpdates": "कोई अपडेट नहीं मिला। संपादक में आपकी स्थिति सुरक्षित है।",
+          "close": "F4 / Esc बंद करें",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -3177,6 +3303,15 @@
           "preview_binary": "Binair bestand — geen voorbeeld",
           "preview_unavailable": "Voorbeeld niet beschikbaar",
           "preview_truncated": "Voorbeeld ingekort"
+        },
+        "dojoFeed": {
+          "waiting": "Wachten op openbare feed",
+          "disconnected": "Niet verbonden",
+          "explanation": "De controle van openbare inhoud is nog niet afgerond. Jim blijft offline tot de gecontroleerde feed klaar is.",
+          "source": "Lokale bron",
+          "noUpdates": "Nog geen updates ontvangen. Je positie in de editor blijft behouden.",
+          "close": "F4 / Esc sluiten",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -3389,6 +3524,15 @@
           "preview_binary": "Plik binarny — brak podglądu",
           "preview_unavailable": "Podgląd niedostępny",
           "preview_truncated": "Podgląd skrócony"
+        },
+        "dojoFeed": {
+          "waiting": "Oczekiwanie na publiczny kanał",
+          "disconnected": "Brak połączenia",
+          "explanation": "Kontrola treści publicznych jeszcze trwa. Jim pozostanie rozłączony, aż sprawdzony kanał będzie gotowy.",
+          "source": "Źródło lokalne",
+          "noUpdates": "Nie odebrano aktualizacji. Pozycja w edytorze jest zachowana.",
+          "close": "F4 / Esc zamknij",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -3601,6 +3745,15 @@
           "preview_binary": "Tệp nhị phân — không thể xem trước",
           "preview_unavailable": "Không thể xem trước",
           "preview_truncated": "Bản xem trước bị cắt"
+        },
+        "dojoFeed": {
+          "waiting": "Đang chờ bảng tin công khai",
+          "disconnected": "Chưa kết nối",
+          "explanation": "Nội dung công khai đang chờ kiểm tra. Jim sẽ không kết nối cho đến khi bảng tin đã kiểm tra sẵn sàng.",
+          "source": "Nguồn cục bộ",
+          "noUpdates": "Chưa nhận bản cập nhật nào. Vị trí trong trình soạn thảo được giữ nguyên.",
+          "close": "F4 / Esc đóng",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -3813,6 +3966,15 @@
           "preview_binary": "ไฟล์ไบนารี — ไม่สามารถแสดงตัวอย่าง",
           "preview_unavailable": "ไม่สามารถแสดงตัวอย่าง",
           "preview_truncated": "ตัวอย่างถูกตัด"
+        },
+        "dojoFeed": {
+          "waiting": "กำลังรอฟีดสาธารณะ",
+          "disconnected": "ไม่ได้เชื่อมต่อ",
+          "explanation": "การตรวจสอบเนื้อหาสาธารณะยังไม่เสร็จสิ้น Jim จะไม่เชื่อมต่อจนกว่าฟีดที่ตรวจสอบแล้วจะพร้อม",
+          "source": "แหล่งข้อมูลในเครื่อง",
+          "noUpdates": "ยังไม่ได้รับข้อมูลอัปเดต ตำแหน่งในตัวแก้ไขยังคงเดิม",
+          "close": "F4 / Esc ปิด",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -4025,6 +4187,15 @@
           "preview_binary": "فایل دودویی — پیش‌نمایش در دسترس نیست",
           "preview_unavailable": "پیش‌نمایش در دسترس نیست",
           "preview_truncated": "پیش‌نمایش کوتاه شده"
+        },
+        "dojoFeed": {
+          "waiting": "در انتظار خوراک عمومی",
+          "disconnected": "قطع اتصال",
+          "explanation": "بررسی محتوای عمومی هنوز تمام نشده است. Jim تا آماده شدن خوراک بررسی‌شده متصل نمی‌شود.",
+          "source": "منبع محلی",
+          "noUpdates": "هنوز به‌روزرسانی دریافت نشده است. موقعیت ویرایشگر شما حفظ می‌شود.",
+          "close": "F4 / Esc بستن",
+          "open": "F4 Dojo Feed"
         }
       }
     },
@@ -4237,6 +4408,15 @@
           "preview_binary": "קובץ בינארי — אין תצוגה מקדימה",
           "preview_unavailable": "תצוגה מקדימה אינה זמינה",
           "preview_truncated": "תצוגה מקדימה מקוצרת"
+        },
+        "dojoFeed": {
+          "waiting": "ממתין לעדכונים ציבוריים",
+          "disconnected": "מנותק",
+          "explanation": "בדיקת התוכן הציבורי טרם הושלמה. Jim יישאר מנותק עד שערוץ העדכונים שנבדק יהיה מוכן.",
+          "source": "מקור מקומי",
+          "noUpdates": "טרם התקבלו עדכונים. המיקום בעורך נשמר.",
+          "close": "F4 / Esc סגירה",
+          "open": "F4 Dojo Feed"
         }
       }
     }

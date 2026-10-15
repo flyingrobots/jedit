@@ -25,7 +25,7 @@ export function fileSearchState(model: Pick<WorkspaceModel, 'fileSearch'>): File
 }
 
 export function fileExplorerHasFocus(model: WorkspaceModel): boolean {
-  return model.fileDrawerOpen && model.focusPane === FocusPanes.Files &&
+  return model.dojoFeedDrawer == null && model.fileDrawerOpen && model.focusPane === FocusPanes.Files &&
     !model.settingsOpen && !model.quitConfirmOpen && !model.startupFileModalOpen && !model.commandLine?.active;
 }
 
