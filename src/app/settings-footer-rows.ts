@@ -1,5 +1,5 @@
 import { FILEPATH_STYLE, type FilepathStyle } from '../ports/filepath-style.js';
-import { FOOTER_LAYOUT, type FooterLayout } from '../ui/footer-layout.js';
+import { FOOTER_LAYOUT, type FooterLayout } from '../ports/footer-preferences.js';
 import type { JeditSettingAction, JeditSettingRowKind, JeditSettingsRow, JeditSettingsI18nState } from './settings-session.js';
 
 interface FooterSettingsState {

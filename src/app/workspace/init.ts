@@ -1,5 +1,5 @@
 import { FILEPATH_STYLE } from '../../ports/filepath-style.js';
-import { FOOTER_LAYOUT } from '../../ui/footer-layout.js';
+import { FOOTER_LAYOUT } from '../../ports/footer-preferences.js';
 import { createFeedbackState } from "../../ui/feedback.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
 import type { WorkspaceModel } from "./model.js";

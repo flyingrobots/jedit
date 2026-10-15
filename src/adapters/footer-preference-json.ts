@@ -1,5 +1,5 @@
 import { FILEPATH_STYLE, type FilepathStyle } from '../ports/filepath-style.js';
-import { FOOTER_LAYOUT, type FooterLayout } from '../ui/footer-layout.js';
+import { FOOTER_LAYOUT, type FooterLayout } from '../ports/footer-preferences.js';
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 interface ValueSpan { readonly start: number; readonly end: number }

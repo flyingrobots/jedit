@@ -1,6 +1,7 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { compositeFeedback } from '../../ui/feedback.js';
 import {
+  workspaceFooterPresentation,
   renderWorkspaceFooter,
   activeWorkspaceTitle,
   centerLine,
@@ -24,7 +25,6 @@ import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
 import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import {
-  workspaceFooterPresentation,
   workspaceFooterCommandSummary,
   workspaceFooterTextPosture,
 } from './workspace-footer-posture.js';

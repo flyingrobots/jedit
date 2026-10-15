@@ -1,6 +1,6 @@
 import type { FilepathStyle } from '../ports/filepath-style.js';
 import { footerLayoutRow, footerVisibilityRow, filepathStyleRow } from './settings-footer-rows.js';
-import type { FooterLayout } from '../ui/footer-layout.js';
+import type { FooterLayout } from '../ports/footer-preferences.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { I18nDirection } from '../ports/i18n.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';

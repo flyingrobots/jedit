@@ -13,7 +13,7 @@ const PAD_MULTIPLIER = 2;
 const MIN_WIDTH = 1;
 const SEARCH_EMPTY_KEY = 'fileExplorer.empty';
 
-export { fileSearchInputOptions } from './file-filter-prompt.js';
+export { fileSearchInputOptions } from '../../ui/workspace-file-filter-prompt.js';
 
 export function renderFileExplorer(model: WorkspaceModel, width: number, height: number): Surface {
   const surface = createSurface(width, height);

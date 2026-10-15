@@ -1,5 +1,8 @@
 # Selectable footer terminal witnesses
 
+These are the initial layout captures. The [current feedback gallery](../0162-footer-feedback/README.md)
+covers the later mode styling, filepath setting, Settings fixes and footer filtering.
+
 The question is whether three real arrangements can show focused-surface facts
 and workspace counts while respecting modal input ownership and available rows.
 

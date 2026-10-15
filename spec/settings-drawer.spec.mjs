@@ -127,7 +127,7 @@ test('Settings paints opaque themed borders and a filled selected row without cu
       assert.ok(surface.get(x,y).bg !== undefined, `unstyled background at ${x},${y}`);
     }
     assert.equal(surface.get(0,0).fg,theme.chrome.activeEdge.fg);
-    assert.equal(surface.get(0,0).fgRGB,theme.chrome.activeEdge.fgRGB);
+    assert.deepEqual(surface.get(0,0).fgRGB,theme.chrome.activeEdge.fgRGB);
     const selected = Array.from({length:surface.height},(_,y)=>y).find(y=>surface.get(2,y).char==='›');
     assert.ok(selected !== undefined);
     for (const x of [2,10,39]) {

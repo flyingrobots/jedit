@@ -109,5 +109,3 @@ function footerCoverageLabel(
       : WHY_FOOTER_I18N_KEYS.Unavailable,
   );
 }
-
-export { workspaceFooterPresentation } from './footer-presentation.js';

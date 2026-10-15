@@ -1,10 +1,5 @@
-export const FocusPanes = Object.freeze({
-  Editor: 'editor',
-  Files: 'files',
-  Graft: 'graft',
-} as const);
-
-export type FocusPane = typeof FocusPanes[keyof typeof FocusPanes];
+import { FocusPanes, type FocusPane } from '../ports/workspace-focus.js';
+export { FocusPanes, type FocusPane } from '../ports/workspace-focus.js';
 
 export interface FocusCycleState {
   readonly fileDrawerOpen: boolean;

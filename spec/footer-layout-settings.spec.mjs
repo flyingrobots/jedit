@@ -119,7 +119,7 @@ test('The extra Compact body row uses the same list mapping for pointer selectio
 });
 
 test('All layouts preserve observations and mode ownership at narrow and RTL sizes', async () => {
-  const { workspaceFooterPresentation } = await importDist('app', 'workspace', 'footer-presentation.js');
+  const { workspaceFooterPresentation } = await importDist('ui', 'workspace-footer-presentation.js');
   const { model, runtime } = await setup({ columns: 60, rows: 16,
     fileDrawerOpen: true, fileDrawerProgress: 1, graftDrawerOpen: true, graftDrawerProgress: 1, focusPane: 'files',
     editor: { path: '/repo/very-long-name-that-can-clip.ts', lines: ['test'], cursorRow: 80, cursorCol: 40, mode: 'normal', dirty: true, readOnly: true },

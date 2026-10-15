@@ -1,5 +1,5 @@
 import { fileSearchCursorAtColumn } from '../../ui/file-search-input.js';
-import { fileSearchInputOptions, fileFilterPromptWidth } from './file-filter-prompt.js';
+import { fileSearchInputOptions, fileFilterPromptWidth, fileFilterPromptX } from '../../ui/workspace-file-filter-prompt.js';
 import type { Cmd, MouseMsg } from '@flyingrobots/bijou-tui';
 import {
   mouseScrollDeltaRows,
@@ -169,7 +169,8 @@ function updateFooterFilterFromClick(msg: MouseMsg, model: WorkspaceModel): Work
   if (!model.fileSearchEditing || !fileDrawerPointerEnabled(model)) return undefined;
   if (msg.action !== MOUSE_PRESS || msg.button !== MOUSE_BUTTON_LEFT || msg.row !== model.rows - workspaceFooterRows(model)) return undefined;
   const width = fileFilterPromptWidth(model);
-  if (msg.col < 0 || msg.col >= width) return undefined;
+  const column = msg.col - fileFilterPromptX(model);
+  if (column < 0 || column >= width) return undefined;
   return { ...model, fileSearch: { ...fileSearchState(model),
-    cursorIndex: fileSearchCursorAtColumn(fileSearchInputOptions(model, width), msg.col) } };
+    cursorIndex: fileSearchCursorAtColumn(fileSearchInputOptions(model, width), column) } };
 }

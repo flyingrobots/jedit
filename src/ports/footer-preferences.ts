@@ -13,3 +13,9 @@ export interface FooterPreferencesPort {
   load(): FooterLayout;
   save(layout: FooterLayout): FooterPreferenceSave;
 }
+
+const LAYOUTS: readonly FooterLayout[] = Object.values(FOOTER_LAYOUT);
+export function nextFooterLayout(layout: FooterLayout | undefined, delta: number): FooterLayout {
+  const index = Math.max(0, LAYOUTS.indexOf(layout ?? FOOTER_LAYOUT.Focused));
+  return LAYOUTS[((index + delta) % LAYOUTS.length + LAYOUTS.length) % LAYOUTS.length] ?? FOOTER_LAYOUT.Focused;
+}

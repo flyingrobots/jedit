@@ -25,7 +25,7 @@ test('All layouts use bold filled mode, muted ordinary footer text and normal em
 });
 test('Filepaths setting changes displayed paths, persists and preserves native identities',async()=>{
  const {settingsRows}=await importDist('app','workspace','settings.js');
- const {workspaceFooterPresentation}=await importDist('app','workspace','footer-presentation.js');
+ const {workspaceFooterPresentation}=await importDist('ui','workspace-footer-presentation.js');
  const {model,runtime}=await setup({gitRoot:'/repo',filepathStyle:'git-root',cwd:'/repo/src'});
  assert.equal(workspaceFooterPresentation(model).focused.identity,'src');
  const index=settingsRows(model).findIndex(row=>row.id==='filepaths');assert.ok(index>=0);

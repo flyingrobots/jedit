@@ -1,4 +1,4 @@
-import { renderFooterLayout, type FooterPresentation } from './footer-layout-view.js';
+import { renderFooterLayout, type FooterPresentation } from './workspace-footer-presentation.js';
 import { createSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
@@ -446,3 +446,5 @@ function footerHints(parts: ReadonlyArray<string | undefined>): string {
 function chordFooterHints(chord: string, suggestions: readonly string[]): string {
   return `${chord} [${suggestions.join(' · ')}]`;
 }
+
+export { workspaceFooterPresentation } from './workspace-footer-presentation.js';
