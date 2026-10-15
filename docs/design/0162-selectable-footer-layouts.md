@@ -112,7 +112,8 @@ setting works by keyboard. Existing minimum terminal dimensions remain valid.
 
 A FooterLayout runtime value names the three choices and one shared row-count
 function supplies rendering, viewport, pointer and completion geometry.
-WorkspaceModel.footerLayout is session presentation state. The new choice row
+WorkspaceModel.footerLayout is presentation state, initially loaded through an
+injected preferences port from ~/.jimrc. The new choice row
 uses the existing settings activation/delta and feedback route. Footer
 observations separately describe focused and visible surfaces plus global counts.
 Layouts format these observations without collecting new authority.
@@ -130,9 +131,9 @@ translated text remain usable without custom fonts, graphics or animation.
 | Source of truth | Existing workspace model and selected presentation layout. |
 | Derived state | Surface identity/mode/rank, observed buffer counts, rows and paint geometry. |
 | Invalid states | Unrecognized layout value; editor position assigned to an unrelated drawer. |
-| Reset behavior | Existing Appearance lifecycle; default Focused + workspace. |
-| Persistence | Follow current session-only Appearance behavior unless the user chooses durable settings. |
-| Causal boundary | Presentation only; no new Echo Tick, buffer, index or filesystem mutation. |
+| Reset behavior | Reload the remembered layout; missing or invalid preferences use Focused + workspace. |
+| Persistence | User accepted remember-across-launches. Save footerLayout in ~/.jimrc as JSON; preserve unrelated fields and refuse malformed documents. |
+| Causal boundary | Presentation only; preferences file write through a Jedit adapter, without new Echo Tick, buffer, or index. |
 
 ## Accessibility Posture
 
@@ -168,15 +169,23 @@ Three separate status implementations would allow facts and behavior to diverge.
 
 Provide one setting with three real arrangements over shared observations.
 Reuse existing theme and settings interactions. Add no new unobserved data.
+The user explicitly chose persistence across launches. Update the layout only
+after a successful save; otherwise show an error and retain the prior choice.
+Write a same-directory temporary file and rename, preserve permissions and
+symlink targets, and edit only the owned JSON value span. This preserves
+unrelated settings and large numeric values without reserializing them.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Layout runtime choice and Appearance setting.
-- [ ] Slice 2: Shared focus/global facts and three rendered arrangements.
-- [ ] Slice 3: Dynamic viewport, pointer and command-completion geometry.
+- [x] Slice 1: Layout runtime choice and Appearance setting.
+- [x] Slice 2: Shared focus/global facts and three rendered arrangements.
+- [x] Slice 3: Dynamic viewport, pointer and command-completion geometry.
 - [ ] Slice 4: Full checks, real terminal verification and documentation.
 
 ## Tests To Write First
+
+Preferences tests first demonstrated missing-adapter failures, then cover restart,
+raw JSON preservation, malformed/duplicate refusal, file mode and symlinks.
 
 - [ ] Settings cycles A/B/C both ways and preserves the selected control.
 - [ ] A/B reserve two rows, C one, and hidden footer zero.
@@ -212,7 +221,7 @@ helpers have size caps; extension must preserve the quality ratchet.
 
 ## Follow-On Debt
 
-Broader settings persistence is an independent ownership decision. Git/service
+Other settings retain their existing lifetimes. Git/service
 widgets require actual observation providers before they can be displayed.
 
 ## Retrospective

@@ -1,3 +1,4 @@
+import { FOOTER_LAYOUT } from '../../ui/footer-layout.js';
 import { createFeedbackState } from "../../ui/feedback.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
 import type { WorkspaceModel } from "./model.js";
@@ -28,6 +29,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly entries: readonly FileEntry[];
   readonly nowMs: number;
   readonly searchRoot?: string;
+  readonly footerLayout?: WorkspaceModel["footerLayout"];
 }
 
 export function createInitialModel(
@@ -60,6 +62,7 @@ export function createInitialModel(
     commandLine: initialWorkspaceCommandLineState(),
     ...createFeedbackState<WorkspaceMsg>(),
     ...initialShellState(),
+    footerLayout: snapshot.footerLayout ?? FOOTER_LAYOUT.Focused,
     ...initialSettingsState(),
     jeditTheme,
     ...initialGraftState(),

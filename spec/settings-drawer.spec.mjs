@@ -43,7 +43,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     selectedIndex: 1,
     theme,
     width: 42,
-    height: 26,
+    height: 28,
   });
   const text = surfaceText(surface);
 

@@ -1,3 +1,4 @@
+import { cycleWorkspaceFooterLayout, type FooterLayoutSettingsContext } from './settings-footer-layout.js';
 import {
   jeditSettingsRows,
   type JeditSettingsActivationDelta,
@@ -32,6 +33,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
     i18n: model.i18n,
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
+    footerLayout: model.footerLayout,
     lineNumberMode: model.lineNumberMode,
     gutterDimmed: model.gutterDimmed,
     causalGutterBasis: model.causalGutterBasis,
@@ -41,7 +43,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
   });
 }
 
-export interface WorkspaceSettingsHandlerContext {
+export interface WorkspaceSettingsHandlerContext extends FooterLayoutSettingsContext {
   readonly graftDiagnostics?: GraftDiagnosticsPort;
   readonly productionTextSession?: ProductionTextSession;
 }
@@ -58,6 +60,7 @@ export function workspaceSettingsHandlers(
       ...model,
       jeditTheme: oppositeJeditTheme(model.jeditTheme),
     }, []]),
+    cycleFooterLayout: (model, delta) => cycleWorkspaceFooterLayout(model, delta, context),
     toggleFooter: (model) => ([{
       ...model,
       footerVisible: !model.footerVisible,

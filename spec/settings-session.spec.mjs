@@ -55,6 +55,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
+      ['Footer layout', 'Focused + workspace', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Line numbers', 'Absolute', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Dim gutter', 'Off', settings.JEDIT_SETTING_ROW_KIND.Toggle, false],
       ['Causal markers', 'Last save', settings.JEDIT_SETTING_ROW_KIND.Choice, false],

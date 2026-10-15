@@ -54,6 +54,9 @@ export function updateSettingsKey(
         model,
         rows,
         workspaceSettingsHandlers({
+          footerPreferences: context.deps.footerPreferences,
+          nowMs: context.nowMs,
+          createNotificationTickCmd: context.createNotificationTickCmd,
           graftDiagnostics: context.deps.graftDiagnostics,
           productionTextSession: context.deps.productionTextSession,
         }),

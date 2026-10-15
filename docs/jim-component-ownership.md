@@ -299,6 +299,19 @@ continues through the native Echo text-import path.
 a future workspace or symbol index must remain a rebuildable projection and
 declare its observation basis and staleness policy.
 
+The footer layout is a Jedit presentation preference, remembered across launches
+through an injected preferences port and the `~/.jimrc` JSON adapter. Its three
+layouts derive the same focused-surface observations and known-buffer counts.
+They reserve two, two, or one rows; hidden footer reserves none. This setting
+does not advance a Jim worldline, submit an Echo Tick, or change buffer history.
+Saving edits only the owned `footerLayout` JSON value, preserves unrelated bytes
+and existing file permissions, and refuses malformed or ambiguous documents.
+The model changes after a successful save. A failed save reports an error and
+retains the previous layout. Other Appearance settings keep their current
+session lifetime. This refines projection and I/O ownership without changing
+the target causal model or claiming general settings replay support.
+[DX-0162](design/0162-selectable-footer-layouts.md) owns the implementation evidence.
+
 > **Intuition to carry forward:** semantic ownership and storage authority are
 > different powers. Jim decides what command to perform, the text capability
 > defines what the text operation means, and Echo decides whether their

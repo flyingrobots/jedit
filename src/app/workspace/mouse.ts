@@ -92,10 +92,7 @@ function fileDrawerEntryIndexAt(
     return undefined;
   }
   const row = msg.row - WORKSPACE_BODY_TOP_OFFSET - FILE_SEARCH_LIST_TOP;
-  const listHeight = fileSearchListHeight(workspaceBodyHeight({
-    rows: model.rows,
-    footerVisible: model.footerVisible,
-  }));
+  const listHeight = fileSearchListHeight(workspaceBodyHeight(model));
   if (row < 0 || row >= listHeight) {
     return undefined;
   }

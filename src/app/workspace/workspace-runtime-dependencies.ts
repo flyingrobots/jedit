@@ -1,3 +1,4 @@
+import type { FooterPreferencesPort } from '../../ports/footer-preferences.js';
 import type { FilePreviewSource } from '../../ports/file-preview.js';
 import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
@@ -19,6 +20,7 @@ export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 export type WorkspaceResizeMsg = ResizeMsg;
 
 export interface WorkspaceRuntimeDependencies {
+  readonly footerPreferences?: FooterPreferencesPort;
   readonly filePreviewSource?: FilePreviewSource;
   readonly initialColumns: number;
   readonly initialRows: number;
