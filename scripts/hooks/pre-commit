@@ -3,6 +3,9 @@
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
+# Git exports GIT_DIR and friends into hooks; tools that ask git about the
+# repository must see a normal environment.
+unset $(git rev-parse --local-env-vars)
 
 echo "pre-commit: quality gate"
 npm run --silent quality
