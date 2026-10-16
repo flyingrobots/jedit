@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -26,12 +27,19 @@ import { cleanGitEnv, git } from './git-fixture-helpers.mjs';
 const HOOKS = path.join(REPO_ROOT, 'scripts', 'hooks');
 const NATIVE = path.join('native', 'jedit-echo-host');
 const NPM_CI = 'run npm ci --prefer-offline --no-audit --no-fund';
+const NPM_SYNC = 'run npm ci --dry-run --ignore-scripts --no-audit --no-fund';
 
 const STUB = `#!/usr/bin/env bash
 {
   printf 'run %s' "$(basename "$0")"
   printf ' %s' "$@"
   printf '\\n'
+} >> "$HOOK_LOG"
+if [[ "$(basename "$0") $1 $2" == "npm ci --dry-run" ]]; then
+  [[ "$(basename "$0") $1" != "$STUB_FAIL" ]]
+  exit
+fi
+{
   printf 'cwd %s\\n' "$PWD"
   printf 'head %s\\n' "$(git rev-parse --verify --quiet HEAD 2>/dev/null || echo none)"
   printf 'tree %s\\n' "$(git rev-parse --verify --quiet 'HEAD^{tree}' 2>/dev/null || echo none)"
@@ -78,6 +86,7 @@ function makeRepository(t) {
   writeFileSync(path.join(bin, 'npm'), STUB, { mode: 0o755 });
   writeFileSync(path.join(bin, 'npx'), STUB, { mode: 0o755 });
   writeFileSync(path.join(repo, '.gitignore'), 'node_modules/\nnative/**/target/\n');
+  writeFileSync(path.join(repo, 'package.json'), '{}\n');
   writeFileSync(path.join(repo, 'package-lock.json'), '{}\n');
   writeFileSync(path.join(repo, NATIVE, 'Cargo.toml'), '[package]\n');
   writeFileSync(path.join(repo, 'a.txt'), 'a\n');
@@ -91,7 +100,7 @@ function makeRepository(t) {
   return { root, repo, bin, log: path.join(root, 'hook.log') };
 }
 
-function run(fixture, cwd, args, stubFail = '') {
+function run(fixture, cwd, args, stubFail = '', env = {}) {
   const result = spawnSync('git', args, {
     cwd,
     encoding: 'utf8',
@@ -99,6 +108,7 @@ function run(fixture, cwd, args, stubFail = '') {
       PATH: `${fixture.bin}${path.delimiter}${process.env.PATH}`,
       HOOK_LOG: fixture.log,
       STUB_FAIL: stubFail,
+      ...env,
     }),
   });
   const log = existsSync(fixture.log) ? readFileSync(fixture.log, 'utf8') : '';
@@ -116,6 +126,12 @@ function push(fixture, cwd, refspecs, stubFail = '') {
 
 function lines(result, prefix) {
   return result.log.filter((line) => line.startsWith(prefix));
+}
+
+// The commands a hook ran, without the manifest/lockfile check that precedes
+// every checkout.
+function runs(result) {
+  return lines(result, 'run ').filter((line) => line !== NPM_SYNC);
 }
 
 function distinct(result, prefix) {
@@ -169,7 +185,8 @@ test('pre-commit runs the quality gate then the typecheck in a checkout of the r
   git(fixture.repo, 'add', 'a.txt');
   const result = commit(fixture, path.join(fixture.repo, 'sub'));
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(lines(result, 'run '), [
+  assert.equal(lines(result, 'run ')[0], NPM_SYNC, 'the manifest and lockfile are checked first');
+  assert.deepEqual(runs(result), [
     'run npm run --silent quality',
     'run npx --no-install tsc -p tsconfig.json --noEmit',
   ]);
@@ -199,7 +216,7 @@ test('pre-commit stops at a failing quality gate without running the typecheck',
   git(fixture.repo, 'add', 'a.txt');
   const result = run(fixture, fixture.repo, ['commit', '-q', '-m', 'change'], 'npm run');
   assert.notEqual(result.status, 0);
-  assert.deepEqual(lines(result, 'run '), ['run npm run --silent quality']);
+  assert.deepEqual(runs(result), ['run npm run --silent quality']);
   assertRemovedCheckout(fixture, result);
   assert.equal(commitCount(fixture), '1');
 });
@@ -325,7 +342,7 @@ test('pre-commit installs dependencies when the staged lockfile differs', (t) =>
   edit(fixture, 'package-lock.json', '{}');
   const result = commit(fixture, fixture.repo);
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(lines(result, 'run ')[0], NPM_CI);
+  assert.equal(runs(result)[0], NPM_CI);
   assert.deepEqual(distinct(result, 'deps '), ['deps none'], 'the checkout installs its own tree');
 });
 
@@ -335,7 +352,8 @@ test('pre-push runs the suite in a removed checkout of the pushed commit', (t) =
   const head = git(fixture.repo, 'rev-parse', 'HEAD');
   const result = push(fixture, path.join(fixture.repo, 'sub'), ['main']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(lines(result, 'run '), ['run npm run --silent test:all']);
+  assert.equal(lines(result, 'run ')[0], NPM_SYNC, 'the manifest and lockfile are checked first');
+  assert.deepEqual(runs(result), ['run npm run --silent test:all']);
   assertRemovedCheckout(fixture, result);
   assert.deepEqual(lines(result, 'head '), [`head ${head}`]);
   assert.deepEqual(lines(result, 'deps '), [`deps ${path.join(fixture.repo, 'node_modules')}`]);
@@ -389,7 +407,7 @@ test('pre-push installs the pushed commit\'s dependencies when its lockfile diff
   git(fixture.repo, 'switch', '-q', 'main');
   const result = push(fixture, fixture.repo, ['other']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(lines(result, 'run '), [NPM_CI, 'run npm run --silent test:all']);
+  assert.deepEqual(runs(result), [NPM_CI, 'run npm run --silent test:all']);
   assert.equal(lines(result, 'deps ')[1], 'deps none');
 });
 
@@ -399,7 +417,7 @@ test('pre-push tests the commit each pushed ref will point to, once per commit',
   git(fixture.repo, 'branch', 'same');
   const result = push(fixture, fixture.repo, ['main', 'same']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(lines(result, 'run '), ['run npm run --silent test:all']);
+  assert.deepEqual(runs(result), ['run npm run --silent test:all']);
 });
 
 test('pre-push lets a branch deletion through without running the suite', (t) => {
@@ -410,4 +428,44 @@ test('pre-push lets a branch deletion through without running the suite', (t) =>
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(result.log, []);
   assert.doesNotMatch(remoteRefs(remote), /gone/);
+});
+
+test('both hooks check out every path even from a sparse checkout', (t) => {
+  const fixture = makeRepository(t);
+  addRemote(fixture);
+  git(fixture.repo, 'sparse-checkout', 'set', '--no-cone', '/a.txt', '/package*.json', '/.gitignore');
+  assert.equal(existsSync(path.join(fixture.repo, 'b.txt')), false, 'b.txt is outside the sparse checkout');
+  edit(fixture, 'a.txt', 'staged');
+  git(fixture.repo, 'add', 'a.txt');
+  const committed = commit(fixture, fixture.repo);
+  assert.equal(committed.status, 0, committed.stderr);
+  assert.ok(seen(committed).includes('saw b.txt b'));
+  const pushed = push(fixture, fixture.repo, ['main']);
+  assert.equal(pushed.status, 0, pushed.stderr);
+  assert.ok(seen(pushed).includes('saw b.txt b'));
+});
+
+test('a manifest that disagrees with its lockfile blocks the commit before any check', (t) => {
+  const fixture = makeRepository(t);
+  edit(fixture, 'package.json', '{"dependencies":{"zod":"^4"}}');
+  git(fixture.repo, 'add', 'package.json');
+  const result = run(fixture, fixture.repo, ['commit', '-q', '-m', 'change'], 'npm ci');
+  assert.notEqual(result.status, 0);
+  assert.deepEqual(lines(result, 'run '), [NPM_SYNC], 'npm ci --dry-run refused the pair');
+  assert.match(result.stderr, /disagree/);
+  assert.equal(commitCount(fixture), '1');
+});
+
+test('a relative TMPDIR still leaves no temporary checkout behind', (t) => {
+  const fixture = makeRepository(t);
+  addRemote(fixture);
+  mkdirSync(path.join(fixture.repo, '.tmp'));
+  edit(fixture, 'a.txt', 'staged');
+  git(fixture.repo, 'add', 'a.txt');
+  const committed = run(fixture, fixture.repo, ['commit', '-q', '-m', 'change'], '', { TMPDIR: '.tmp' });
+  assert.equal(committed.status, 0, committed.stderr);
+  const pushed = run(fixture, fixture.repo, ['push', '-q', 'origin', 'main'], '', { TMPDIR: '.tmp' });
+  assert.equal(pushed.status, 0, pushed.stderr);
+  assert.equal(worktreeCount(fixture), 1);
+  assert.equal(readdirSync(path.join(fixture.repo, '.tmp')).length, 0);
 });

@@ -122,7 +122,7 @@ Contributions are welcome, but this is not a “throw code at it until destiny r
 
 Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
 
-Git hooks are plain shell scripts in `scripts/hooks/`. `core.hooksPath` is local Git configuration, so merging the hooks does not install them. Enable them once per clone; linked worktrees share the setting:
+Git hooks are plain shell scripts in `scripts/hooks/`. `core.hooksPath` is local Git configuration, so merging the hooks does not install them. Enable them once per clone; linked worktrees share the setting. The installer points `core.hooksPath` at small launchers in the shared Git directory, each of which runs the current worktree's tracked hook, refuses when a sparse checkout has left that hook out, and steps aside on a branch that predates the hooks:
 
 ```bash
 scripts/install-hooks.sh

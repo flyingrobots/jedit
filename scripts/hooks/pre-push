@@ -16,7 +16,7 @@ trap 'if [[ -n "$checkout" ]]; then remove_temporary_checkout "$repository" "$ch
 
 commits="$(pushed_commits)"
 for commit in $commits; do
-  checkout="$(mktemp -d "${TMPDIR:-/tmp}/jedit-pre-push.XXXXXX")"
+  checkout="$(make_checkout_directory pre-push)"
   add_temporary_checkout "$checkout" "$commit"
   provide_checkout_dependencies "$checkout"
   echo "pre-push: full test suite at ${commit:0:12}"
