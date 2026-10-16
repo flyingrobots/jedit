@@ -20,33 +20,28 @@ make_checkout_directory() {
 # `git worktree add` copies the invoking worktree's sparse-checkout settings,
 # which would leave tracked paths out of the checkout. Create the worktree
 # without a checkout, then populate every path with sparse checkout disabled
-# for that one command, so no configuration is written.
+# for that one command, so no configuration is written. Replacement objects
+# (refs/replace) are ignored: a push sends the original objects, so the
+# checkout must hold the original tree.
 add_temporary_checkout() {
   local checkout="$1" commit="$2"
-  git worktree add --quiet --no-checkout --detach "$checkout" "$commit"
-  git -C "$checkout" -c core.sparseCheckout=false -c core.sparseCheckoutCone=false \
+  git --no-replace-objects worktree add --quiet --no-checkout --detach "$checkout" "$commit"
+  git --no-replace-objects -C "$checkout" \
+    -c core.sparseCheckout=false -c core.sparseCheckoutCone=false \
     reset --quiet --hard "$commit"
 }
 
-# Untracked dependencies. First the checkout's package.json and
-# package-lock.json must agree, as `npm ci` in CI requires; `npm ci --dry-run`
-# checks that without installing anything. node_modules is then borrowed only
-# when the checkout's lockfile is byte-identical to the developer checkout's,
-# since the lockfile names the installed tree; otherwise the checkout installs
-# its own. The Rust build cache is always shared: cargo keys it by the
-# checkout's own Cargo.lock and sources.
+# Untracked dependencies. Every checkout installs its own node_modules with
+# `npm ci`, from the commit's own package.json and package-lock.json: it
+# refuses a manifest that disagrees with its lockfile, as CI does, and it
+# never trusts a developer's existing tree, whose provenance is unknown. From
+# the npm cache this takes a few seconds. The Rust build cache is shared:
+# cargo keys it by the checkout's own Cargo.lock and sources.
 provide_checkout_dependencies() {
   local checkout="$1"
-  if ! (cd "$checkout" && npm ci --dry-run --ignore-scripts --no-audit --no-fund >/dev/null); then
-    echo "hooks: package.json and package-lock.json disagree in the commit being checked" >&2
+  if ! (cd "$checkout" && npm ci --prefer-offline --no-audit --no-fund >/dev/null); then
+    echo "hooks: npm ci failed in the commit being checked (package.json and package-lock.json must agree)" >&2
     return 1
-  fi
-  if [[ -f "$checkout/package-lock.json" && -f package-lock.json ]] \
-    && cmp -s "$checkout/package-lock.json" package-lock.json; then
-    ln -s "$PWD/node_modules" "$checkout/node_modules"
-  else
-    echo "hooks: package-lock.json differs from this checkout's; installing dependencies"
-    (cd "$checkout" && npm ci --prefer-offline --no-audit --no-fund)
   fi
   if [[ -d "$checkout/native/jedit-echo-host" ]]; then
     mkdir -p native/jedit-echo-host/target

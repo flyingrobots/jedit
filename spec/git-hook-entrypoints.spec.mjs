@@ -27,7 +27,6 @@ import { cleanGitEnv, git } from './git-fixture-helpers.mjs';
 const HOOKS = path.join(REPO_ROOT, 'scripts', 'hooks');
 const NATIVE = path.join('native', 'jedit-echo-host');
 const NPM_CI = 'run npm ci --prefer-offline --no-audit --no-fund';
-const NPM_SYNC = 'run npm ci --dry-run --ignore-scripts --no-audit --no-fund';
 
 const STUB = `#!/usr/bin/env bash
 {
@@ -35,8 +34,9 @@ const STUB = `#!/usr/bin/env bash
   printf ' %s' "$@"
   printf '\\n'
 } >> "$HOOK_LOG"
-if [[ "$(basename "$0") $1 $2" == "npm ci --dry-run" ]]; then
-  [[ "$(basename "$0") $1" != "$STUB_FAIL" ]]
+if [[ "$(basename "$0") $1" == "npm ci" ]]; then
+  printf 'install-cwd %s\\n' "$PWD" >> "$HOOK_LOG"
+  [[ "npm ci" != "$STUB_FAIL" ]]
   exit
 fi
 {
@@ -128,10 +128,10 @@ function lines(result, prefix) {
   return result.log.filter((line) => line.startsWith(prefix));
 }
 
-// The commands a hook ran, without the manifest/lockfile check that precedes
-// every checkout.
+// The commands a hook ran, without the dependency install that precedes the
+// checks in every checkout.
 function runs(result) {
-  return lines(result, 'run ').filter((line) => line !== NPM_SYNC);
+  return lines(result, 'run ').filter((line) => line !== NPM_CI);
 }
 
 function distinct(result, prefix) {
@@ -185,14 +185,15 @@ test('pre-commit runs the quality gate then the typecheck in a checkout of the r
   git(fixture.repo, 'add', 'a.txt');
   const result = commit(fixture, path.join(fixture.repo, 'sub'));
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(lines(result, 'run ')[0], NPM_SYNC, 'the manifest and lockfile are checked first');
+  assert.equal(lines(result, 'run ')[0], NPM_CI, 'dependencies are installed first');
   assert.deepEqual(runs(result), [
     'run npm run --silent quality',
     'run npx --no-install tsc -p tsconfig.json --noEmit',
   ]);
   assertRemovedCheckout(fixture, result);
+  assert.deepEqual(lines(result, 'install-cwd '), [`install-cwd ${onlyDirectory(result)}`], 'in the checkout');
   assert.deepEqual(distinct(result, 'tree '), [`tree ${git(fixture.repo, 'rev-parse', 'HEAD^{tree}')}`]);
-  assert.deepEqual(distinct(result, 'deps '), [`deps ${path.join(fixture.repo, 'node_modules')}`]);
+  assert.deepEqual(distinct(result, 'deps '), ['deps none'], 'the checkout never borrows node_modules');
   assert.deepEqual(lines(result, 'leak '), []);
 });
 
@@ -200,13 +201,11 @@ test('pre-commit clears git repository variables in a linked worktree', (t) => {
   const fixture = makeRepository(t);
   const worktree = path.join(fixture.root, 'linked');
   git(fixture.repo, 'worktree', 'add', '-q', worktree);
-  mkdirSync(path.join(worktree, 'node_modules'));
   writeFileSync(path.join(worktree, 'a.txt'), 'linked\n');
   git(worktree, 'add', 'a.txt');
   const result = commit(fixture, worktree);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(lines(result, 'leak '), []);
-  assert.deepEqual(distinct(result, 'deps '), [`deps ${path.join(worktree, 'node_modules')}`]);
   assert.ok(seen(result).includes('saw a.txt linked'));
 });
 
@@ -335,28 +334,18 @@ test('pre-commit checkouts keep staged modes, symlink targets, and attributes', 
   assert.ok(seen(result).includes('saw a.txt a'), 'sources are copies, not links into the checkout');
 });
 
-test('pre-commit installs dependencies when the staged lockfile differs', (t) => {
-  const fixture = makeRepository(t);
-  edit(fixture, 'package-lock.json', '{"changed":true}');
-  git(fixture.repo, 'add', 'package-lock.json');
-  edit(fixture, 'package-lock.json', '{}');
-  const result = commit(fixture, fixture.repo);
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(runs(result)[0], NPM_CI);
-  assert.deepEqual(distinct(result, 'deps '), ['deps none'], 'the checkout installs its own tree');
-});
-
 test('pre-push runs the suite in a removed checkout of the pushed commit', (t) => {
   const fixture = makeRepository(t);
   const remote = addRemote(fixture);
   const head = git(fixture.repo, 'rev-parse', 'HEAD');
   const result = push(fixture, path.join(fixture.repo, 'sub'), ['main']);
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(lines(result, 'run ')[0], NPM_SYNC, 'the manifest and lockfile are checked first');
+  assert.equal(lines(result, 'run ')[0], NPM_CI, 'dependencies are installed first');
   assert.deepEqual(runs(result), ['run npm run --silent test:all']);
   assertRemovedCheckout(fixture, result);
+  assert.deepEqual(lines(result, 'install-cwd '), [`install-cwd ${onlyDirectory(result)}`], 'in the checkout');
   assert.deepEqual(lines(result, 'head '), [`head ${head}`]);
-  assert.deepEqual(lines(result, 'deps '), [`deps ${path.join(fixture.repo, 'node_modules')}`]);
+  assert.deepEqual(lines(result, 'deps '), ['deps none'], 'the checkout never borrows node_modules');
   assert.deepEqual(lines(result, 'target '), [`target ${path.join(fixture.repo, NATIVE, 'target')}`]);
   assert.deepEqual(lines(result, 'leak '), []);
   assert.notEqual(remoteRefs(remote), '');
@@ -398,17 +387,20 @@ test('pre-push tests a pushed branch that is not checked out', (t) => {
   assert.ok(seen(result).includes('saw a.txt other'));
 });
 
-test('pre-push installs the pushed commit\'s dependencies when its lockfile differs', (t) => {
+test('pre-push tests the original commit, not a local replacement', (t) => {
   const fixture = makeRepository(t);
   addRemote(fixture);
-  git(fixture.repo, 'switch', '-q', '-c', 'other');
-  edit(fixture, 'package-lock.json', '{"changed":true}');
-  git(fixture.repo, 'commit', '-q', '--no-verify', '-am', 'lockfile');
+  const original = git(fixture.repo, 'rev-parse', 'HEAD');
+  git(fixture.repo, 'switch', '-q', '-c', 'substitute');
+  edit(fixture, 'a.txt', 'replacement');
+  git(fixture.repo, 'commit', '-q', '--no-verify', '-am', 'substitute');
+  const substitute = git(fixture.repo, 'rev-parse', 'HEAD');
   git(fixture.repo, 'switch', '-q', 'main');
-  const result = push(fixture, fixture.repo, ['other']);
+  git(fixture.repo, 'replace', original, substitute);
+  const result = push(fixture, fixture.repo, ['main']);
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(runs(result), [NPM_CI, 'run npm run --silent test:all']);
-  assert.equal(lines(result, 'deps ')[1], 'deps none');
+  assert.ok(seen(result).includes('saw a.txt a'), 'the tree the push sends');
+  assert.ok(!seen(result).includes('saw a.txt replacement'));
 });
 
 test('pre-push tests the commit each pushed ref will point to, once per commit', (t) => {
@@ -445,14 +437,16 @@ test('both hooks check out every path even from a sparse checkout', (t) => {
   assert.ok(seen(pushed).includes('saw b.txt b'));
 });
 
-test('a manifest that disagrees with its lockfile blocks the commit before any check', (t) => {
+test('a failed dependency install blocks the commit before any check', (t) => {
   const fixture = makeRepository(t);
   edit(fixture, 'package.json', '{"dependencies":{"zod":"^4"}}');
   git(fixture.repo, 'add', 'package.json');
   const result = run(fixture, fixture.repo, ['commit', '-q', '-m', 'change'], 'npm ci');
   assert.notEqual(result.status, 0);
-  assert.deepEqual(lines(result, 'run '), [NPM_SYNC], 'npm ci --dry-run refused the pair');
-  assert.match(result.stderr, /disagree/);
+  assert.deepEqual(lines(result, 'run '), [NPM_CI], 'npm ci refused, as it does for a manifest its lockfile disagrees with');
+  assert.match(result.stderr, /npm ci failed/);
+  assert.equal(existsSync(lines(result, 'install-cwd ')[0].slice('install-cwd '.length)), false);
+  assert.equal(worktreeCount(fixture), 1);
   assert.equal(commitCount(fixture), '1');
 });
 

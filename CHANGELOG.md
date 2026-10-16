@@ -13,14 +13,14 @@
   skip-worktree files present, and attributes staged), and pre-push tests the
   commit each pushed ref will point to, whatever the checkout contains; it
   does not test intermediate commits, so it says nothing about bisectability.
-  The temporary worktree ignores the caller's sparse checkout. Both hooks
-  first require the commit's `package.json` and `package-lock.json` to agree
-  (`npm ci --dry-run`), borrow `node_modules` only when the lockfile is
-  identical, and otherwise run `npm ci`. Specs run the real hook entrypoints
-  with `npm` and `npx` stubbed, isolated from global Git configuration.
-  Enable them with `scripts/install-hooks.sh`, which installs launchers in
-  the shared Git directory so a sparse worktree that omits its hooks refuses
-  instead of silently skipping them.
+  The temporary worktree ignores the caller's sparse checkout and local
+  replacement objects, and installs its own dependencies with `npm ci`,
+  which refuses a manifest its lockfile disagrees with. Specs run the real
+  hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
+  configuration. Enable them with `scripts/install-hooks.sh`, which writes
+  launchers into the repository's own hooks directory (so they move with the
+  clone), refuses any `core.hooksPath` override, and makes a missing hook
+  refuse unless the history at stake never had it.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

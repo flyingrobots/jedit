@@ -8,7 +8,7 @@ pushed_commits() {
   local local_ref local_oid remote_ref remote_oid
   while read -r local_ref local_oid remote_ref remote_oid; do
     if [[ ! "$local_oid" =~ ^0+$ ]]; then
-      git rev-parse --verify "$local_oid^{commit}"
+      git --no-replace-objects rev-parse --verify "$local_oid^{commit}"
     fi
   done | awk '!seen[$0]++'
 }
