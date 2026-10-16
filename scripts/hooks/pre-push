@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Test gate: the full suite (about 85 seconds on an M-series laptop).
+# Test gate: the full suite (about 85 seconds on an M-series laptop), run
+# only when the checkout is exactly the commit being pushed.
 set -euo pipefail
 
-source "$(dirname "${BASH_SOURCE[0]}")/lib/enter-repository.sh"
+hooks="$(dirname "${BASH_SOURCE[0]}")"
+source "$hooks/lib/enter-repository.sh"
+source "$hooks/lib/pushed-checkout.sh"
 enter_repository
+
+tested="$(require_pushed_checkout)"
+if ((tested == 0)); then
+  exit 0
+fi
 
 echo "pre-push: full test suite"
 npm run --silent test:all

@@ -5,24 +5,20 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { REPO_ROOT } from './dist-helpers.mjs';
+import { cleanGitEnv, git } from './git-fixture-helpers.mjs';
 
 const HELPER = path.join(REPO_ROOT, 'scripts', 'hooks', 'lib', 'enter-repository.sh');
 
 // A probe hook: enter the repository, then report what a git-aware tool
-// sees from a subdirectory, the way the specs ask for REPO_ROOT.
+// sees from a subdirectory, the way the specs ask for REPO_ROOT. The helper
+// path arrives as data in PROBE_HELPER, never as generated Bash syntax.
 const PROBE_HOOK = `#!/usr/bin/env bash
 set -euo pipefail
-source "${HELPER}"
+source "$PROBE_HELPER"
 enter_repository
 cd sub
 git rev-parse --show-toplevel > "$PROBE_OUT"
 `;
-
-function git(cwd, ...args) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-}
 
 function makeRepository() {
   const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'jedit-hooks-')));
@@ -45,7 +41,7 @@ function commitAndProbe(checkout, label) {
   const result = spawnSync('git', ['commit', '-q', '-m', label], {
     cwd: checkout,
     encoding: 'utf8',
-    env: { ...process.env, PROBE_OUT: probeOut },
+    env: cleanGitEnv({ PROBE_OUT: probeOut, PROBE_HELPER: HELPER }),
   });
   assert.equal(result.status, 0, result.stderr);
   return readFileSync(probeOut, 'utf8').trim();
@@ -66,8 +62,12 @@ test('a hook in a linked worktree sees the worktree root from a subdirectory', (
 
 test('entering the repository succeeds with no git variables exported', () => {
   const { repo } = makeRepository();
-  const script = `set -euo pipefail; source "${HELPER}"; enter_repository; pwd`;
-  const result = spawnSync('bash', ['-c', script], { cwd: path.join(repo, 'sub'), encoding: 'utf8' });
+  const script = 'set -euo pipefail; source "$PROBE_HELPER"; enter_repository; pwd';
+  const result = spawnSync('bash', ['-c', script], {
+    cwd: path.join(repo, 'sub'),
+    encoding: 'utf8',
+    env: cleanGitEnv({ PROBE_HELPER: HELPER }),
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout.trim(), repo);
 });

@@ -7,10 +7,12 @@
   typecheck, and pre-push runs the full test suite. Both share
   `scripts/hooks/lib/enter-repository.sh`, which clears git's
   repository-local variables before running tools, with specs covering a
-  normal clone and a linked worktree. Pre-commit refuses a tracked file with
-  both staged and unstaged changes, so the checks never pass on a working copy
-  the commit does not record. Specs run the real hook entrypoints with `npm`
-  and `npx` stubbed. Enable them with `scripts/install-hooks.sh`.
+  normal clone and a linked worktree. Pre-commit runs its checks on a snapshot
+  of the index the commit records, including for `commit -a` and
+  `commit <paths>`. Pre-push refuses unless every pushed ref is the clean
+  checked-out commit, so the suite tests what is pushed. Specs run the real
+  hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
+  configuration. Enable them with `scripts/install-hooks.sh`.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

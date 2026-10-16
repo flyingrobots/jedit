@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
-# Lint gate: the same checks CI's quality job and TypeScript build enforce.
+# Lint gate: the same checks CI's quality job and TypeScript build enforce,
+# run on a snapshot of exactly what this commit records.
 set -euo pipefail
 
 hooks="$(dirname "${BASH_SOURCE[0]}")"
-source "$hooks/lib/staged-content.sh"
 source "$hooks/lib/enter-repository.sh"
-refuse_partial_staging
-enter_repository
+source "$hooks/lib/staged-snapshot.sh"
 
-echo "pre-commit: quality gate"
+snapshot="$(mktemp -d "${TMPDIR:-/tmp}/jedit-pre-commit.XXXXXX")"
+trap 'rm -rf "$snapshot"' EXIT
+write_staged_snapshot "$snapshot"
+enter_repository
+link_snapshot_dependencies "$snapshot"
+cd "$snapshot"
+
+echo "pre-commit: quality gate (staged snapshot)"
 npm run --silent quality
 
-echo "pre-commit: typecheck"
+echo "pre-commit: typecheck (staged snapshot)"
 npx --no-install tsc -p tsconfig.json --noEmit
