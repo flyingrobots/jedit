@@ -232,52 +232,91 @@ Head-to-file identity (anchored refinement). Three facts are kept apart:
 - The `Export` node and `lastExport` edge are part of schema 2; the save
   operation itself is designed separately.
 
-Third-party file changes. Another process (an editor, `git checkout`, a
-formatter, a sync client) can write the file while Jim holds a buffer for it.
-Jim's view of the file is always a past observation, so this is an ordinary
-case, not an error:
+### External file reconciliation
 
-- **Synchronization basis.** A buffer's synchronization basis is the host
-  digest of its last export, or of its import if it was never exported. It
-  says what the file held the last time Jim and the file agreed.
-- **Detection.** Jim learns of a change only by observing the file: a watcher
-  event (best effort; missed or coalesced events are reported as gaps), focus
-  or explicit refresh, reopen (#350), or the save protocol's step 1 and
-  step 3. Each observation enters Echo as witnessed ingress. A file whose host
-  digest differs from the synchronization basis has changed outside Jim; an
-  unobserved file is `Unknown`, never assumed unchanged.
-- **External change record.** An observed change is admitted as a new
-  `Import` for the same file coordinate with the observed host digest. It is
-  provenance for the external bytes, not yet a decision about the buffer.
-- **Clean buffer** (the current logical digest equals the synchronization
-  basis's content). Jim may adopt the external bytes as a new head anchored to
-  the new `Import`, by an admitted operation, either automatically under a
-  declared policy or on request. Adoption is a forward edit; the old head stays
-  in causal history.
-- **Dirty buffer** (unsaved edits since the synchronization basis). The buffer
-  and the file have diverged from a common base. Jim never resolves this
-  silently. The decision is explicit and witnessed, and the choices are:
-  1. **Keep mine.** Save anyway: an export whose expected prior digest is the
-     *observed external* digest, recorded as overwriting a known third-party
-     change.
-  2. **Take theirs.** Adopt the external bytes as a new head. The unsaved head
-     remains in causal history, and retention decides how long its bytes stay
-     reconstructible; Jim may offer it as a recoverable alternative.
-  3. **Merge.** A three-way merge with base = the synchronization basis's
-     bytes, ours = the current head, theirs = the external bytes. A clean merge
-     is a new head with both `Import`s in its provenance. An overlapping merge
-     is a `Plural` outcome the user resolves, never a guess.
-  4. **Defer.** Keep editing; the divergence stays recorded, and save is
-     obstructed until one of the above is chosen.
-- **Merge base availability.** A merge needs the base bytes. Without an
-  `Export → Head` edge they live only in causal history, so whether they are
-  still reconstructible is Echo's retention decision. If they are not, merge is
-  refused with a typed `MergeBaseUnavailable` and only keep-mine and
-  take-theirs remain. A retention lease on the last synchronized head would
-  guarantee the base; that is an open decision below.
-- **Save during divergence.** The save protocol's expected prior digest makes
-  an unresolved divergence a conflict at step 1, and a change that lands
-  between check and write a conflict at step 3. Neither overwrites silently.
+The filesystem is another authority, not an extension of Jim's memory. Another
+process (an editor, `git checkout`, a formatter, a sync client) can write the
+file while Jim holds a buffer for it. That is an ordinary case of two states
+evolving independently, so it is part of the file model, not an edge case of
+save. This contract is Jim-owned; Echo supplies generic observation, admission,
+history, and effect mechanisms, never merge semantics.
+
+Three logical versions, compared by digest:
+
+| Version | Meaning |
+| --- | --- |
+| Base B | the file contents Jim last imported or exported successfully (the synchronization basis) |
+| Local L | the current rope, including unsaved edits |
+| Host H | the file contents in the latest validated observation |
+
+| Condition | Jim's behavior |
+| --- | --- |
+| H = B, L = B | nothing changed |
+| H = B, L ≠ B | local edits only; ordinary save |
+| H ≠ B, L = B | external change only; Jim may adopt H as a forward transition |
+| H = L, H ≠ B | the same bytes on both sides; mark synchronized after validating the observation |
+| H ≠ B, L ≠ B, H ≠ L | divergence; preserve both and require an explicit decision |
+
+Requirements:
+
+1. **Watchers are hints.** A watcher event, focus, refresh, reopen (#350), or
+   save only prompts an observation. Every decision uses a validated host
+   observation: the file re-read with a stable result. A file read that
+   changes during the read is an unstable observation and decides nothing. An
+   unobserved file is `Unknown`, never assumed unchanged.
+2. **Observing is not adopting.** `ObserveExternalFileChange` is its own
+   admitted operation. It records the file coordinate, B's digest, the newly
+   observed digest, and the evidence of the read, and admits the observed
+   bytes as a new `Import`. It changes no head.
+3. **External-only change.** When L = B, Jim may adopt H by a separate
+   admitted operation that creates a head anchored to the new `Import`. It is a
+   forward transition; the old head stays in causal history. Automatic adoption
+   is allowed only under a declared policy, and is still witnessed.
+4. **Divergence preserves both sides.** When H ≠ B and L ≠ B and H ≠ L, Jim
+   never resolves silently. The explicit choices are:
+   - **Reload from disk:** adopt H; keep L recoverable as a branch or
+     checkpoint while its material is retained.
+   - **Keep local:** keep editing L. This does not grant permission to
+     overwrite H; save stays obstructed by the divergence.
+   - **Overwrite:** a separate, explicit save whose expected prior digest is
+     H's, recorded as overwriting a known third-party change.
+   - **Reconcile:** build a new version from B, L, and H and submit it as a
+     forward edit.
+5. **Reconciliation is a forward intent.** It never rewrites existing ticks.
+   Jim witnesses H as observed bytes; it does not invent the external editor's
+   edit sequence or causal history.
+6. **Base material is required to promise a three-way merge.** A digest of B is
+   not enough. Jim offers Reconcile only when B's bytes are retained: a
+   retention lease on the last synchronized head while the buffer is open, or
+   Echo's retention otherwise. Without them, Reconcile is refused with a typed
+   `MergeBaseUnavailable`, and Reload, Keep local, and Overwrite remain.
+7. **Distinguish what happened to the path.** A validated observation
+   classifies the change before any decision:
+
+   | Observed | Classification | Initial support |
+   | --- | --- | --- |
+   | same file, new bytes | modification | supported |
+   | file replaced through a temporary file and rename (atomic save) | modification, if the result is an ordinary file | supported |
+   | path absent | deletion | divergence-style decision; no implicit save recreates it |
+   | different file identity at the path | replacement | refused as ambiguous; explicit decision required |
+   | path became a symlink, directory, or special file | not an ordinary file | refused |
+   | permissions forbid reading or writing | permission change | obstruction naming the permission |
+   | bytes changed during the read | unstable read | no decision; observe again |
+
+   The first version supports ordinary files only and refuses ambiguous
+   crossings rather than pretending the filesystem offers compare-and-swap.
+8. **Save revalidates.** Save observes H first and is obstructed unless H = B,
+   or the user chose Overwrite against exactly this H. A change between that
+   check and the write is caught by the save protocol's read-back (step 3) and
+   reported as a conflict, never as a successful export. The guarantee is
+   detection; prevention needs the host-side concurrency protocol (open
+   decision), and Jim reports when it cannot establish the guarantee.
+
+Scope of the first version: detect divergence, preserve both sides, and require
+explicit resolution. Automatic three-way reconciliation proposals come later,
+once the observation evidence and base retention contracts hold. Then Jim can
+materialize B, L, and H, compute a deterministic three-way proposal, present
+overlaps as a `Plural` outcome, and submit the accepted result through Echo.
 
 ## Runtime / API Contract
 
@@ -372,13 +411,14 @@ and the Echo evaluation-to-effect design.
 - Reconstruction: a past state is rebuilt from Echo's checkpoints and replay,
   and the test states which retention guarantee it relies on.
 - Anchor: reopen with a changed host digest obstructs (#350).
-- Third-party change, clean buffer: adoption produces a head anchored to the
-  new `Import` with exactly the external bytes.
-- Third-party change, dirty buffer: save is obstructed until keep-mine,
-  take-theirs, or merge is chosen; each choice leaves the expected head and
-  provenance; overlapping merges are `Plural`.
-- Merge base gone: with the base bytes unretained, merge refuses with
+- Each row of the B/L/H decision table, including H = L with H ≠ B.
+- Observation without adoption: `ObserveExternalFileChange` changes no head.
+- Divergence: save is obstructed under Keep local; Reload keeps L recoverable;
+  Overwrite records the overwritten H; Reconcile is a forward edit.
+- Base gone: with B's bytes unretained, Reconcile refuses with
   `MergeBaseUnavailable` and the other choices still work.
+- Each path classification: atomic-save rename, deletion, replacement,
+  symlink, permission change, and an unstable read that decides nothing.
 - Race: a file changed between the save's check and its write is reported as a
   conflict at observation, never recorded as a successful export.
 - Recovery: a crash between export intent and outcome resolves to written,
@@ -420,9 +460,9 @@ None yet. This is a representation decision.
   surfaces Jim commits to (language server, external protocols), not from
   today's consumers.
 - Open: which hash Edict source exposes for identities.
-- Open: whether the last synchronized head gets a retention lease so a
-  three-way merge always has its base (see Third-party file changes), and that
-  lease's lifetime and release.
+- Open: the retention lease on the last synchronized head that Reconcile
+  requires (External file reconciliation, requirement 6): its owner,
+  lifetime, and release.
 - Open: the host-side concurrency protocol for the export write.
 - Settled by the anchor split: a reopen check compares host digests only, so
   it never materializes the rope; the logical digest is computed at save.
