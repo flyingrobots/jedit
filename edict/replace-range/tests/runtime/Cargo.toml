@@ -8,8 +8,8 @@ publish = false
 [workspace]
 
 [dev-dependencies]
-echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "8c725d699241a7e3adee482029031ff6bade25fa" }
-warp-core = { git = "https://github.com/flyingrobots/echo", rev = "8c725d699241a7e3adee482029031ff6bade25fa", features = ["trusted_runtime"] }
+echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a" }
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a", features = ["trusted_runtime"] }
 
 [[test]]
 name = "compiled_boundary"

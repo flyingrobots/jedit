@@ -25,24 +25,30 @@ not claim to traverse or rewrite a rope yet.
 
 With the merged Edict #201, the public application build lowers those Core `let`
 nodes into generic, source-ordered Target IR and independently verifies the compiler-owned
-result projection. The pinned Echo #724 candidate emits a distinct
+result projection. The pinned Echo provider emits a distinct
 `compiler-produced-bounded-pure/v1` executable package containing the exact
 Core, lawpack exports, Target IR, and result projection. Echo's structurally
 separate verifier independently reconstructs that package relation and emits an
 accepted report bound to retained canonical `echo.executable-subject/v1` bytes.
 
-The compiler pin is Edict main `3f81f759e921a69b04fe8cf8e62e62f8f3dc7b7e`.
+The compiler pin is Edict main `e60411fc6eb93c55468cc8c728f7fa9166207a6d`,
+which includes merged source functions (#228), proven unsigned subtraction
+(#211, #214), and bounded byte length, slice, and concatenation (#217, #221,
+#223).
 Core retains the imported nominal definitions and their shared exact-length
 `NodeId` representation; record fields refer to those named definitions.
 The nominal identity test follows that reference chain, and repeated public
 builds must reproduce identical Core, Target, package, and verifier-report bytes.
-The Echo provider remains pinned to the open #724 candidate
-`49e9efb68001dfd78563d18bac9359a87671e431`; this evidence does not claim that
-provider or this Jedit application has landed on its repository's main branch.
+The Echo provider is pinned to Echo main
+`9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a`; this evidence does not claim that
+this Jedit application has landed on Jedit's main branch. Repinning from the
+earlier #724 provider and #726 evaluator candidates left the executable-subject
+lock byte-identical; only the build closure changed.
 
 The application gate passes that accepted package unchanged to Echo's generic
-pure evaluator at `8c725d699241a7e3adee482029031ff6bade25fa`, the open #726
-candidate. A separate test-only Rust host consumes the fresh public-build
+pure evaluator at Echo main `9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a`, which
+includes the merged pure and bounded-read source-function evaluator (#753).
+A separate test-only Rust host consumes the fresh public-build
 output, not the fixture retained in Echo. It checks both conditional branches,
 the imported helper result, exact projected bytes, deterministic repetition,
 the reversed-range constraint, malformed identity bytes, and package-pin
@@ -107,8 +113,8 @@ and Echo file; any content, identity, or timestamp mutation fails the run. Only
 disposable Cargo cache; otherwise runtime build output stays under `.build/`.
 The runtime witness runs with `--locked` and must emit its completion marker
 after all assertions pass, so a zero-test Cargo invocation cannot satisfy the
-gate. The provider stays pinned to #724; the runtime is independently pinned
-to #726. Neither is described as a released or installed product dependency.
+gate. The provider and the runtime are both pinned to the same Echo main
+commit. Neither is described as a released or installed product dependency.
 Distinct nominal `BufferId` and `HeadId`
 contracts retain the same exact 32-byte representation, while a negative
 compiler witness proves that neither can cross the imported lawpack boundary as

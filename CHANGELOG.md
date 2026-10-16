@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Repinned the ReplaceRange Edict application to Edict main `e60411fc` and
+  Echo main `9b3b9396` (provider and pure evaluator), with Rust 1.96.0 as Edict
+  now requires. The verified executable subject is byte-identical to the
+  earlier candidate pins; only the build closure changed. The leaf-slice and
+  range-assembly probe sources now build against Edict main; the Buffer decoder
+  still refuses at lexing.
 - Fixed the Edict package-chain harness to use Cargo's reported executable path
   when CI redirects build output with `CARGO_TARGET_DIR`. The regression compiles
   and executes the real pinned package without a default-path compiler binary;

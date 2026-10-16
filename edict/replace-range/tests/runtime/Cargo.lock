@@ -49,6 +49,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bunny-num"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d5c3288a3b7dcf4517c717a864c648777af349a15c86e25db48f86ec099f864"
+
+[[package]]
 name = "bytemuck"
 version = "1.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -212,7 +218,7 @@ dependencies = [
 [[package]]
 name = "echo-edict-canonical"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 dependencies = [
  "hex",
  "sha2",
@@ -221,17 +227,17 @@ dependencies = [
 [[package]]
 name = "echo-registry-api"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 
 [[package]]
 name = "echo-runtime-schema"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 
 [[package]]
 name = "echo-wasm-abi"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 dependencies = [
  "blake3",
  "ciborium",
@@ -567,7 +573,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "warp-core"
 version = "0.1.1"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 dependencies = [
  "blake3",
  "bytemuck",
@@ -588,8 +594,9 @@ dependencies = [
 [[package]]
 name = "warp-math"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=8c725d699241a7e3adee482029031ff6bade25fa#8c725d699241a7e3adee482029031ff6bade25fa"
+source = "git+https://github.com/flyingrobots/echo?rev=9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a#9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a"
 dependencies = [
+ "bunny-num",
  "libm",
 ]
 
