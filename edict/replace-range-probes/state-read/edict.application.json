@@ -1,0 +1,20 @@
+{
+  "schema": "edict.application/v1",
+  "coordinate": "jedit.text.replace_range@1",
+  "sources": [
+    "src/ReplaceRange.edict"
+  ],
+  "lawpacks": [
+    {
+      "manifest": "vendor/state-probe/manifest.cbor",
+      "exports": "vendor/state-probe/exports.cbor",
+      "adapter": "vendor/state-probe/adapter.cbor",
+      "targetConfiguration": "vendor/state-probe/echo-operation-configuration.cbor"
+    }
+  ],
+  "target": {
+    "profile": "echo.dpo@1",
+    "providerPackage": ".build/echo-provider"
+  },
+  "outputDirectory": ".build/application"
+}

@@ -1,0 +1,16 @@
+[package]
+name = "jedit-edict-runtime-conformance"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# This standalone, test-only trusted host is never a product dependency.
+[workspace]
+
+[dev-dependencies]
+echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a" }
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a", features = ["trusted_runtime"] }
+
+[[test]]
+name = "compiled_boundary"
+path = "compiled_boundary.rs"

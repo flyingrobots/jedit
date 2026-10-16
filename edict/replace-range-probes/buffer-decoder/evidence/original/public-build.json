@@ -1,0 +1,101 @@
+{
+  "compiler": {
+    "commit": "17397e2aad18a83ffc617d1afd628764501f49cd",
+    "tree": "bcfd3112cd8b3d4630738a88761860679b45714b",
+    "fileCount": 449,
+    "manifestSha256": "625592ab9dd715349255bece0133378c64b3d4539fb50e437d116c2a4296f016",
+    "binarySha256": "e2700698829b03f437c66425ed9878b002ef7a34ac183a39bac4eaf6a758cc6d"
+  },
+  "providerManifestSha256": "5b38ae704a071b88aa0cc2f85020de41cb69e76d037afe3592a4d319e22587c8",
+  "providerFiles": {
+    "components/lowerer.echo-dpo.component.wasm": "4b594a8165079f0a973741b9e27b468cf041f4ad53108fccae641dc35355bd2a",
+    "components/verifier.echo-dpo.component.wasm": "d0be4d283399aefc45d75b395b3568f9983521ca5543c9dfd23b9495758050ed",
+    "generated/evidence/provenance.provider-generation.json": "11a8ef81063f769ccfe431047be3473523fadd49582d6c935b7f7f8d7ccd81d5",
+    "generated/evidence/review.provider-generation.json": "24836f4170809f343a64dcce095a66765cdb922d652458a658d2f896d7547b78",
+    "generated/primary/authority-facts.echo-dpo.cbor": "e2a6a539a7156296c18ff1bc02f80dcabf62b42bb4314d0737527869e43986d6",
+    "generated/primary/authority-facts.echo-lawpack.cbor": "ce1af559551f8b8242c4b290b620c5a28323b9e43f8bc6bb161a191001b6f4b9",
+    "generated/primary/generated-artifact-profile.echo-dpo-registration.cbor": "4ef3aaad0d2131ba7129a3e2ae178d10c44f7e9b062af2c1fe211de781462f34",
+    "generated/primary/lawpack.echo-dpo.cbor": "8c570362671a0b1cd1a992d8210e4a90ffd153ad06dcdf1e0cb36033cc971e2c",
+    "generated/primary/schema.echo-provider-artifacts.cddl": "e8b2f078445f1e970bf8e92a33c69bded54a025469791dc3f4a7a418892a3252",
+    "generated/primary/target-profile.echo-dpo.cbor": "1b105d1b1f6cdf5fecdef98b7adeb238525047d43581fe9fd8c44fd213e1788e",
+    "generated/resources/resource.conformance-corpus.cbor": "f1f29d990f83c5af33952a69b16e9c9bbb7c2feb1d3989860b74c9e6c2c19b08",
+    "generated/resources/resource.lawpack-compatibility.cbor": "642945761cb7d60e133008620dc2a6b48fd0f77901b985e02b1d3398fb1411af",
+    "generated/resources/resource.lawpack-exports.cbor": "e80f3597830f30079bae7428cc6fe1ca27e9f2626614284338c5f5c7bfd9f8b8",
+    "generated/resources/resource.lawpack-target-adapter.cbor": "d0cf6a5310c7aa3d5bf291e40221a50a9be676d0e7f9947b71de0c52f03f9a41",
+    "generated/resources/resource.lawpack-verifier.cbor": "a0ca53486f2e1181027cab255792150735a68fc01a93669ab90b58e7c32bd36e",
+    "generated/resources/resource.target-bundle-profile.cbor": "95cc3aab106f0d6d77ec76e88591ee24acac58f4345c031b77cfd1ecf2aa0db8",
+    "generated/resources/resource.target-cost-algebra.cbor": "29cc941cc96ffdb420a24a377146f0e9d5409a89f84cdbb2ad597e78dfde3503",
+    "generated/resources/resource.target-footprint-algebra.cbor": "c08b853b22fa1920cb8971b60a6622e4d8f400c68b8027a9c4f246c5cb4a222c",
+    "generated/resources/resource.target-intrinsics.cbor": "d4080b044ad95d88763f605d25d678dad0d44bbfdc32c212334a962eaf456588",
+    "generated/resources/resource.target-ir.cbor": "f0ead7a5dcb41532d5df9067a9735d7078456b59cc267b3a9f6bb6437431000c",
+    "generated/resources/resource.target-lowerer-contract.cbor": "c4d788a8ae876cfe8c9e9875144014d551d38ff13b4d90bb9dfc46bc562bf280",
+    "generated/resources/resource.target-obstruction-taxonomy.cbor": "5eb85dc3fbb53890f4f5accf6a7a3c03889bd25bf00e7c2a23c43e497652328e",
+    "generated/resources/resource.target-operation-profiles.cbor": "3d560e8df1bfb38e8ba9b70b0a4bc843c848a7900e3af76d8f798db51b6b1077",
+    "generated/resources/resource.target-verifier-contract.cbor": "9cef12fac8190156e152e7c8ab5adeed077bf2bdadf3add2225ce90ab4be8710",
+    "provider-manifest.echo.json": "5b38ae704a071b88aa0cc2f85020de41cb69e76d037afe3592a4d319e22587c8"
+  },
+  "authoredSourceSha256": "9fc1b006c298866463ab83a28fcb1e54769b970970c571f11d0868d79edc6d87",
+  "literalCasesStatus": "not executed",
+  "compositionStatus": "helpers are not connected to a retained-byte scanner",
+  "results": {
+    "read-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "4ec3cbf32fd5d98987cbeeaff95d7c9c5ab734dac555e443aac52e8ab02bfbc5",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "afd931700018312d6c0d1e249871313d2c21c0ece1ae41d1f17f2be7af9e5284",
+        "verification-report.cbor": "9114fdd983d456eb83f69969475f558b6e608be23520212a5db5f26bb095d04b"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "fn-control": {
+      "exitCode": 2,
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-results/fn-control/src/ReplaceRange.edict` did not parse: ParseError { kind: ExpectedToken, message: \"expected `type`, `enum`, or `intent` declaration, found Ident(\\\"fn\\\")\", span: Span { start: 151, end: 153 } }",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ],
+      "artifacts": [],
+      "sourceSha256": "97475b0e6aaf24d3268736efa3312df377b9153b89c8e59f0e2ceb25ce691218",
+      "artifactSha256": {},
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "001929f74b4648fdd8c7946bdb80b1ccea0fae03e5f208012bb454d0ab94a831"
+    },
+    "decimal": {
+      "exitCode": 2,
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-results/decimal/src/ReplaceRange.edict` did not parse: ParseError { kind: Lex, message: \"invalid string escape\", span: Span { start: 861, end: 862 } }",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ],
+      "artifacts": [],
+      "sourceSha256": "860712eaae8fad67499967e2475d9a2bef9d072762b3eab1004a3ddf4dba2b94",
+      "artifactSha256": {},
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "04838a07257a87554d0c8d0f397c0a661adf68719f0e7f604c642217190bae8b"
+    }
+  }
+}

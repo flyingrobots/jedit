@@ -1,0 +1,54 @@
+{
+  "compiler": {
+    "commit": "2405a550e93e1e97fff640caa44bbd0f65ffff3c",
+    "tree": "257d3e6aa10c2248fdbddaa8e9b3638866396169",
+    "fileCount": 440,
+    "manifestSha256": "9cc2cb4f711ef4038091559587099bbe65d6c54c8316c3e373752d0783b25173",
+    "binarySha256": "3b082d61c8cd23b0f917efb55c4eebd54e75c0df5d31c72f90ad856853678bf5"
+  },
+  "results": {
+    "baseline": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "51797e77062585a9f59083ee8a1da3faaf486ef7691e1b62203369a9d9356ee0",
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guard-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "066f7f3858f31bfd2ddc8490470942ae56da2f9a461399a872f7f158b1bc9774",
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "slice": {
+      "exitCode": 2,
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core: [CompilerError { stage: TypeCheck, kind: UnresolvedFunction, message: \"pure helper `slice` has no compiler context fact\", span: Span { start: 521, end: 575 } }, CompilerError { stage: TypeCheck, kind: UnresolvedType, message: \"record shorthand `bytes` has no typed binding\", span: Span { start: 588, end: 593 } }, CompilerError { stage: TypeCheck, kind: TypeMismatch, message: \"return value does not match declared output type\", span: Span { start: 291, end: 598 } }, CompilerError { stage: TypeCheck, kind: TypeMismatch, message: \"intent body must return a value\", span: Span { start: 291, end: 598 } }]",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ],
+      "artifacts": [],
+      "sourceSha256": "81ffc0dae8c5d8900badf66b1ca4b8cac92378935702374785f2b20781e6934c",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "6181544d23ab4e8bf02f3719bfbe9a86a9f851490995eb23983d55af61525e64"
+    }
+  }
+}

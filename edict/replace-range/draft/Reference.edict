@@ -1,0 +1,95 @@
+// Draft: semantic reference ReplaceRange (acceptance target 1).
+//
+// Deliberately inefficient. A head owns one flat Text node holding the whole
+// buffer, so every edit rewrites the whole text. It exists to prove the
+// language and the Echo effect bridge on a small surface, and to serve as a
+// differential oracle for the persistent rope in Rope.edict and
+// ReplaceRange.edict. The two agree on logical text and outcomes, not on
+// physical roots. It does not complete the rope.
+package jedit.text.reference@1;
+
+use lawpack jedit.text@2 as text;
+use target echo.dpo@1 as echo;
+use module jedit.text.v2@1 as v2;                           // PROPOSED: source-module import
+
+type TextFact = {
+  bytes: Bytes<max=1048576>,
+  lineBreaks: U64,
+};
+
+type Input = {
+  bufferId: text.BufferId,
+  basisHeadId: text.HeadId,
+  startByte: U64,
+  endByte: U64,
+  replacement: Bytes<max=1048576>,
+};
+
+type Result = {
+  headId: text.HeadId,
+  byteLength: U64,
+  lineCount: U64,
+  sequence: U64,
+};
+
+intent replaceRange(input: Input) returns Result
+  profile text.replaceRange
+  basis input.basisHeadId
+  footprint <= text.referenceReplaceRangeFootprint
+  budget <= text.referenceReplaceRangeBudget
+  where input.startByte <= input.endByte
+{
+  let bufferRef = echo.ref<v2.BufferFact>(input.bufferId);
+  let buffer = bufferRef.read() else text.FactMissing;
+  let canonical = echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
+    .target() else text.FactMissing;                        // PROPOSED: read an edge by type
+  require canonical == input.basisHeadId else text.BasisNotCanonical;
+
+  let headRef = echo.ref<v2.HeadFact>(input.basisHeadId);
+  let head = headRef.read() else text.FactMissing;
+  let textId = echo.edge<v2.HeadFact, TextFact, v2.Root>(headRef)
+    .target() else text.FactMissing;
+  let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
+    .target() else text.FactMissing;
+  let old = echo.ref<TextFact>(textId).read() else text.FactMissing;
+  require len(old.bytes) == head.byteLength else text.MalformedRope;
+
+  require input.endByte <= len(old.bytes) else text.RangeOutOfBounds;
+  require v2.isCharBoundary(old.bytes, input.startByte) else text.Utf8BoundaryInvalid;
+  require v2.isCharBoundary(old.bytes, input.endByte) else text.Utf8BoundaryInvalid;
+  require core.bytes.isUtf8(input.replacement) else text.Utf8BoundaryInvalid;  // PROPOSED
+  require slice(old.bytes, input.startByte, input.endByte) != input.replacement
+    else text.NoOp;
+
+  let bytes = slice(old.bytes, 0u64, input.startByte)
+    + input.replacement
+    + slice(old.bytes, input.endByte, len(old.bytes));
+  require len(bytes) <= 1048576u64 else text.RangeOutOfBounds;   // needs a bound proof
+  let fact = { bytes, lineBreaks: v2.lineBreaks(bytes) };
+  let newTextId = v2.nodeId("text", core.cbor.encode(fact), []);   // PROPOSED encode
+  echo.ref<TextFact>(newTextId).ensure(fact) else text.ContentIdentityMismatch;
+
+  let newHead = {
+    byteLength: len(bytes),
+    lineCount: fact.lineBreaks + 1u64,                       // needs checked +
+    sequence: head.sequence + 1u64,
+  };
+  let newHeadId = v2.nodeId("head", core.cbor.encode(newHead), [newTextId, importId]);
+  let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
+  newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
+  echo.edge<v2.HeadFact, TextFact, v2.Root>(newHeadRef)
+    .ensure(newTextId) else text.ContentIdentityMismatch;   // PROPOSED: edge ensure
+  echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(newHeadRef)
+    .ensure(importId) else text.ContentIdentityMismatch;
+
+  echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
+    .replace(input.basisHeadId, newHeadId) else text.BasisNotCanonical;  // PROPOSED: compare-and-retarget
+  bufferRef.replace({ ...buffer, version: buffer.version + 1u64 }) else text.BasisNotCanonical;
+
+  return {
+    headId: newHeadId,
+    byteLength: newHead.byteLength,
+    lineCount: newHead.lineCount,
+    sequence: newHead.sequence,
+  };
+}

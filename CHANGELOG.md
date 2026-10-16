@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+- Added DL-0159, a draft representation for the Edict-authored rope: schema 2
+  with typed Echo edges for every structural relation, canonical CBOR facts,
+  content-addressed immutable nodes, and an import anchor tying every head to
+  its file. The graph holds only the current rope; Echo's ticks and receipts
+  own history, and retention of superseded nodes is Echo's policy.
+- Added complete, not-yet-compiling drafts of `ReplaceRange` in Edict source
+  under `edict/replace-range/draft/`: a flat-text semantic reference and the
+  persistent AVL rope. Their README classifies every blocker by owner and
+  states the evidence plan. They are not part of the application gate.
+- Repinned the ReplaceRange Edict application to Edict main `e60411fc` and
+  Echo main `9b3b9396` (provider and pure evaluator), with Rust 1.96.0 as Edict
+  now requires. The verified executable subject is byte-identical to the
+  earlier candidate pins; only the build closure changed. The leaf-slice and
+  range-assembly probe sources now build against Edict main; the Buffer decoder
+  still refuses at lexing.
+- Fixed the Edict package-chain harness to use Cargo's reported executable path
+  when CI redirects build output with `CARGO_TARGET_DIR`. The regression compiles
+  and executes the real pinned package without a default-path compiler binary;
+  compiler, provider, evaluator, and application artifact identities are unchanged.
+- Added a separate Docker-only state-read ordering probe for ReplaceRange. It
+  reproduces Edict's refusal of an effect-dependent basis guard and confirms
+  that removing the guard reaches an unsupported-provider refusal. This is
+  development evidence, not stateful execution; existing producer pins remain
+  unchanged. Ordered Target IR is tracked in flyingrobots/edict#218.
+- Added the Jedit-owned `ReplaceRange.edict` application root and canonical
+  `jedit.text@1` lawpack publication. With Edict #201, its executable integration
+  gate now proves that real source lowers into generic pure Target IR and reaches
+  Echo's checked lowerer through the exact generic pure target configuration.
+  Echo's generic pure-program lowerer now emits the exact compiler-produced
+  package, and its structurally separate verifier independently accepts the
+  package relation. The integration gate pins clean Edict and Echo revisions,
+  verifies the committed lawpack closure without repairing it, and rejects
+  authoritative-input mutation outside its disposable build root. Runtime
+  evaluation and rope mutation remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

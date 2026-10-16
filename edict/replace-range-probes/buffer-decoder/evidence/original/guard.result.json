@@ -1,0 +1,10 @@
+{
+  "measurements": {
+    "build": 6451069687,
+    "data": 2959639287,
+    "logs": 9646863,
+    "host_free": 715316690944,
+    "vm_free": 679804174336
+  },
+  "exit_code": 1
+}
