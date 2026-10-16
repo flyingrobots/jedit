@@ -236,10 +236,33 @@ Head-to-file identity (anchored refinement). Three facts are kept apart:
 
 The filesystem is another authority, not an extension of Jim's memory. Another
 process (an editor, `git checkout`, a formatter, a sync client) can write the
-file while Jim holds a buffer for it. That is an ordinary case of two states
-evolving independently, so it is part of the file model, not an edge case of
-save. This contract is Jim-owned; Echo supplies generic observation, admission,
-history, and effect mechanisms, never merge semantics.
+file while Jim holds a buffer for it. That is an ordinary case of two
+authorities evolving independently, so it is part of the file model, not an
+edge case of save.
+
+This is causal transport, not a new mechanism. The filesystem testifies; it
+does not edit Jim's history:
+
+- A filesystem adapter turns a validated observation into ingress, following
+  Echo's [Continuum Transport](https://github.com/flyingrobots/echo/blob/main/docs/architecture/continuum-transport.md)
+  import law: the adapter forms an import proposal, and only an admitted import
+  Intent affects history.
+- What arrives is held, judged, and applied as
+  [Participant History as a Braid](https://github.com/flyingrobots/echo/blob/main/docs/architecture/participant-history-as-a-braid.md)
+  describes. **Hold:** the observation is retained as evidence and staged;
+  no reading of the buffer changes. **Judge:** Jim, as the receiving
+  authority, compares B, L, and H under its own Edict-authored law, with
+  outcome Derived, Plural, Conflict, or Obstruction. **Apply:** only a
+  witnessed forward commit on an explicit basis changes the buffer.
+- The evidence is the observation, not the external editor's history. Unless
+  the other writer takes part in the protocol, Jim knows only the bytes and
+  metadata seen at one crossing, and never fabricates the writer's edit
+  sequence.
+
+The filesystem-specific work stays at the adapter boundary: stable reads, path
+identity, rename and replacement detection, permissions, and safe export. The
+judging law is Jim-owned Edict; Echo supplies observation, admission, history,
+and effects, never merge semantics.
 
 Three logical versions, compared by digest:
 
@@ -264,16 +287,28 @@ Requirements:
    observation: the file re-read with a stable result. A file read that
    changes during the read is an unstable observation and decides nothing. An
    unobserved file is `Unknown`, never assumed unchanged.
-2. **Observing is not adopting.** `ObserveExternalFileChange` is its own
-   admitted operation. It records the file coordinate, B's digest, the newly
-   observed digest, and the evidence of the read, and admits the observed
-   bytes as a new `Import`. It changes no head.
-3. **External-only change.** When L = B, Jim may adopt H by a separate
+2. **Observing is not adopting.** `ObserveExternalFileChange` is the admitted
+   import Intent for one observation. It records the file coordinate, B's
+   digest, the newly observed digest, and the evidence of the read, and admits
+   the observed bytes as a new `Import`. It changes no head; it is the Hold
+   step.
+3. **Occurrence identity is the adapter's, and honest.** Each observation gets
+   a stable occurrence identity (Echo's Continuum occurrence identity at
+   ingress) and an explicit receiving context: buffer, file coordinate, and B.
+   Re-delivering the same occurrence is idempotent and returns the retained
+   outcome. Distinct observations stay distinct evidence, never collapsed. A
+   digest identifies observed content, not the event that produced it: two
+   external writes can leave identical bytes. Where the adapter can tell writes
+   apart (file identity, change tokens), it records that; where it cannot, it
+   records only distinct observations and does not invent distinct writes.
+4. **External-only change.** When L = B, Jim may adopt H by a separate
    admitted operation that creates a head anchored to the new `Import`. It is a
    forward transition; the old head stays in causal history. Automatic adoption
    is allowed only under a declared policy, and is still witnessed.
-4. **Divergence preserves both sides.** When H ≠ B and L ≠ B and H ≠ L, Jim
-   never resolves silently. The explicit choices are:
+5. **Divergence preserves both sides.** When H ≠ B and L ≠ B and H ≠ L, Jim's
+   judgment is Conflict at the buffer, and nothing that depends on the file is
+   admitted until it is settled. Jim never resolves silently. The explicit
+   settlements are:
    - **Reload from disk:** adopt H; keep L recoverable as a branch or
      checkpoint while its material is retained.
    - **Keep local:** keep editing L. This does not grant permission to
@@ -282,15 +317,15 @@ Requirements:
      H's, recorded as overwriting a known third-party change.
    - **Reconcile:** build a new version from B, L, and H and submit it as a
      forward edit.
-5. **Reconciliation is a forward intent.** It never rewrites existing ticks.
+6. **Reconciliation is a forward intent.** It never rewrites existing ticks.
    Jim witnesses H as observed bytes; it does not invent the external editor's
    edit sequence or causal history.
-6. **Base material is required to promise a three-way merge.** A digest of B is
+7. **Base material is required to promise a three-way merge.** A digest of B is
    not enough. Jim offers Reconcile only when B's bytes are retained: a
    retention lease on the last synchronized head while the buffer is open, or
    Echo's retention otherwise. Without them, Reconcile is refused with a typed
    `MergeBaseUnavailable`, and Reload, Keep local, and Overwrite remain.
-7. **Distinguish what happened to the path.** A validated observation
+8. **Distinguish what happened to the path.** A validated observation
    classifies the change before any decision:
 
    | Observed | Classification | Initial support |
@@ -305,7 +340,7 @@ Requirements:
 
    The first version supports ordinary files only and refuses ambiguous
    crossings rather than pretending the filesystem offers compare-and-swap.
-8. **Save revalidates.** Save observes H first and is obstructed unless H = B,
+9. **Save revalidates.** Save observes H first and is obstructed unless H = B,
    or the user chose Overwrite against exactly this H. A change between that
    check and the write is caught by the save protocol's read-back (step 3) and
    reported as a conflict, never as a successful export. The guarantee is
@@ -413,6 +448,11 @@ and the Echo evaluation-to-effect design.
 - Anchor: reopen with a changed host digest obstructs (#350).
 - Each row of the B/L/H decision table, including H = L with H ≠ B.
 - Observation without adoption: `ObserveExternalFileChange` changes no head.
+- Occurrence idempotence: re-delivering one observation returns the retained
+  outcome; two observations of identical bytes stay two pieces of evidence and
+  are not reported as two distinct external writes.
+- Barrier: while the buffer's divergence is an unsettled Conflict, an
+  operation that depends on the file is not admitted; unrelated work is.
 - Divergence: save is obstructed under Keep local; Reload keeps L recoverable;
   Overwrite records the overwritten H; Reconcile is a forward edit.
 - Base gone: with B's bytes unretained, Reconcile refuses with
@@ -461,7 +501,7 @@ None yet. This is a representation decision.
   today's consumers.
 - Open: which hash Edict source exposes for identities.
 - Open: the retention lease on the last synchronized head that Reconcile
-  requires (External file reconciliation, requirement 6): its owner,
+  requires (External file reconciliation, requirement 7): its owner,
   lifetime, and release.
 - Open: the host-side concurrency protocol for the export write.
 - Settled by the anchor split: a reopen check compares host digests only, so
