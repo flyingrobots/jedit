@@ -30,8 +30,17 @@ type LeafFact = {
   lineBreaks: U64,
 };
 
+// Provenance only: the bytes a head's lineage was imported from. Copying the
+// anchor forward never claims the rope still matches the file.
 type ImportFact = {
   fileCoordinate: String<max=4096>,
+  hostDigest: Bytes<exact=32>,
+};
+
+// Synchronization: one witnessed write of a buffer's bytes to its file.
+type ExportFact = {
+  fileCoordinate: String<max=4096>,
+  logicalDigest: Bytes<exact=32>,
   hostDigest: Bytes<exact=32>,
 };
 
@@ -40,6 +49,8 @@ type ImportFact = {
 type CanonicalHead = Unit;   // Buffer -> Head
 type Root = Unit;            // Head -> Branch | Leaf
 type Anchor = Unit;          // Head -> Import, copied to every new head
+type LastExport = Unit;      // Buffer -> Export, retargeted by each save
+type ExportedHead = Unit;    // Export -> Head written by that save
 // No head-to-predecessor edge: Echo's ticks and receipts own history (DL-0159).
 type Left = Unit;            // Branch -> Branch | Leaf
 type Right = Unit;           // Branch -> Branch | Leaf

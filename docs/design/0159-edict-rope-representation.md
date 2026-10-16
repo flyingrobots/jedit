@@ -115,6 +115,7 @@ Facts (alpha atoms, canonical CBOR v1 via `echo-edict-canonical`):
 | `Branch` | `byteLength: U64`, `lineBreaks: U64`, `height: U8` | no |
 | `Leaf` | `bytes: Bytes<max=4096>`, `lineBreaks: U64` | no |
 | `Import` | `fileCoordinate`, `hostDigest: Bytes<exact=32>` | no |
+| `Export` | `fileCoordinate`, `logicalDigest: Bytes<exact=32>`, `hostDigest: Bytes<exact=32>` | no |
 
 Edges (no payload; one edge per source node and type):
 
@@ -122,7 +123,9 @@ Edges (no payload; one edge per source node and type):
 | --- | --- | --- |
 | `jedit.text.canonicalHead` | Buffer → Head | current head; retargeted by each edit |
 | `jedit.text.root` | Head → Branch or Leaf | the head's tree; absent for empty text |
-| `jedit.text.anchor` | Head → Import | the imported bytes this head's lineage descends from |
+| `jedit.text.anchor` | Head → Import | the imported bytes this head's lineage descends from (provenance only) |
+| `jedit.text.lastExport` | Buffer → Export | the last witnessed write of this buffer to its file; retargeted by each save |
+| `jedit.text.exportedHead` | Export → Head | the head whose bytes that save wrote |
 | `jedit.text.left`, `jedit.text.right` | Branch → Branch or Leaf | ordered children |
 
 Identity law:
@@ -174,16 +177,31 @@ Undo and redo are forward operations: Jim proposes a new edit whose target
 state derives from a past witnessed state, subject to the evidence Echo still
 retains and to admission. Nothing moves history backward.
 
-Head-to-file identity (anchored refinement):
+Head-to-file identity (anchored refinement). Three facts are kept apart:
 
-- Importing a file creates an `Import` node for its coordinate and the host
-  digest of the imported bytes, and anchors the import head to it.
-- Every edit copies the `anchor` edge from the basis head to the new head, so
-  the current head always names its `Import` directly.
-- Reopening compares the current host digest with the anchored digest. A
-  mismatch is a typed obstruction or an explicit, witnessed external-edit
-  transition, never silent reuse (#350).
-- Export to the file is a separate witnessed crossing, designed later.
+| Fact | Where | Claims | Never claims |
+| --- | --- | --- | --- |
+| Import provenance | `Import` node, `anchor` edge | these contents descend from the bytes imported from this file, with this host digest | that the rope still matches the file |
+| Current logical content | computed from the current rope | the bytes Jim represents now | anything about the file |
+| Host synchronization | `Export` node, Buffer `lastExport` edge | these exact bytes were written to this file, with this resulting host digest | that the file is unchanged since |
+
+- Importing a file creates an `Import` node and anchors the import head to it.
+  Every edit copies the `anchor` edge to the new head. The anchor is
+  provenance only; after an unsaved edit it says nothing about the file.
+- The current logical digest is computed over the rope's bytes when a crossing
+  needs it (save, reopen, reconciliation), not on every edit, so edits stay
+  path-copies. The root node id is not that digest: it depends on tree shape.
+- Save is a witnessed crossing. It requires the file's current host digest to
+  equal the last exported digest (or the import digest, if never exported),
+  writes the bytes, and records an `Export` with the head, the logical digest,
+  and the resulting host digest. A mismatch is a typed conflict that needs an
+  explicit reconciliation decision; save never overwrites silently.
+- Reopening compares the file's current host digest with the last exported
+  digest, or the import digest if the buffer was never exported. A mismatch
+  means the file changed outside Jim: a typed obstruction or an explicit,
+  witnessed external-edit transition, never silent reuse (#350).
+- The `Export` node and `lastExport` edge are part of schema 2; the save
+  operation itself is designed separately.
 
 ## Runtime / API Contract
 
@@ -315,8 +333,11 @@ None yet. This is a representation decision.
   surfaces Jim commits to (language server, external protocols), not from
   today's consumers.
 - Open: which hash Edict source exposes for identities.
-- Open: whether Head should carry a content digest of its full text, so a
-  reopen check need not materialize the rope.
+- Open: `Export → Head` keeps the last exported head reachable, which is one
+  deliberately retained snapshot (the saved state). Confirm that is wanted, or
+  record only the logical digest and leave the bytes to Echo's retention.
+- Settled by the anchor split: a reopen check compares host digests only, so
+  it never materializes the rope; the logical digest is computed at save.
 - Open: Rewrite and Diff facts in schema 2.
 
 ## Retrospective
