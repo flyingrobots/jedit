@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -9,10 +9,11 @@ import { cleanGitEnv, git } from './git-fixture-helpers.mjs';
 
 // These specs run the real hook entrypoints in scripts/hooks/ against a
 // scratch repository. Only the expensive tools are stubbed: `npm` and `npx`
-// on PATH record how they were invoked, from which directory, which file
-// contents they could see, where dependencies resolve, and which of git's
-// repository variables were still set.
+// on PATH record how they were invoked, from which directory and commit,
+// what the tree they ran in contained, where dependencies resolve, and which
+// of git's repository variables were still set.
 const HOOKS = path.join(REPO_ROOT, 'scripts', 'hooks');
+const NATIVE = path.join('native', 'jedit-echo-host');
 
 const STUB = `#!/usr/bin/env bash
 {
@@ -20,14 +21,27 @@ const STUB = `#!/usr/bin/env bash
   printf ' %s' "$@"
   printf '\\n'
   printf 'cwd %s\\n' "$PWD"
+  printf 'head %s\\n' "$(git rev-parse --verify --quiet HEAD 2>/dev/null || echo none)"
   printf 'deps %s\\n' "$(readlink node_modules || echo none)"
+  printf 'target %s\\n' "$(readlink ${NATIVE}/target || echo none)"
   for file in a.txt b.txt untracked.txt; do
-    if [[ -e "$file" ]]; then
+    if [[ -L "$file" ]]; then
+      printf 'saw %s symlink\\n' "$file"
+    elif [[ -e "$file" ]]; then
       printf 'saw %s %s\\n' "$file" "$(cat "$file")"
     else
       printf 'saw %s absent\\n' "$file"
     fi
   done
+  if [[ -e tool.sh ]]; then
+    printf 'exec %s\\n' "$([[ -x tool.sh ]] && echo yes || echo no)"
+  fi
+  if [[ -L link.txt ]]; then
+    printf 'link %s %s\\n' "$(readlink link.txt)" "$(cat link.txt)"
+  fi
+  if [[ -e crlf.txt ]]; then
+    printf 'crlf %s\\n' "$(tr -cd '\\r' < crlf.txt | wc -c | tr -d ' ')"
+  fi
   while IFS= read -r var; do
     if [[ -n "$var" && -n "\${!var+set}" ]]; then
       printf 'leak %s\\n' "$var"
@@ -45,10 +59,12 @@ function makeRepository() {
   const bin = path.join(root, 'bin');
   mkdirSync(path.join(repo, 'sub'), { recursive: true });
   mkdirSync(path.join(repo, 'node_modules'));
+  mkdirSync(path.join(repo, NATIVE, 'target'), { recursive: true });
   mkdirSync(bin);
   writeFileSync(path.join(bin, 'npm'), STUB, { mode: 0o755 });
   writeFileSync(path.join(bin, 'npx'), STUB, { mode: 0o755 });
-  writeFileSync(path.join(repo, '.gitignore'), 'node_modules/\n');
+  writeFileSync(path.join(repo, '.gitignore'), 'node_modules/\nnative/**/target/\n');
+  writeFileSync(path.join(repo, NATIVE, 'Cargo.toml'), '[package]\n');
   writeFileSync(path.join(repo, 'a.txt'), 'a\n');
   writeFileSync(path.join(repo, 'b.txt'), 'b\n');
   git(repo, 'init', '-q', '-b', 'main');
@@ -79,12 +95,26 @@ function commit(fixture, cwd, ...extra) {
   return run(fixture, cwd, ['commit', '-q', '-m', 'change', ...extra]);
 }
 
+function push(fixture, cwd, refspecs, stubFail = '') {
+  return run(fixture, cwd, ['push', '-q', 'origin', ...refspecs], stubFail);
+}
+
 function lines(result, prefix) {
   return result.log.filter((line) => line.startsWith(prefix));
 }
 
+function distinct(result, prefix) {
+  return [...new Set(lines(result, prefix))];
+}
+
 function seen(result) {
-  return [...new Set(lines(result, 'saw '))];
+  return distinct(result, 'saw ');
+}
+
+function onlyDirectory(result) {
+  const directories = distinct(result, 'cwd ');
+  assert.equal(directories.length, 1, directories.join(', '));
+  return directories[0].slice('cwd '.length);
 }
 
 function edit(fixture, file, content) {
@@ -107,6 +137,10 @@ function remoteRefs(remote) {
     .stdout.trim();
 }
 
+function worktreeCount(fixture) {
+  return git(fixture.repo, 'worktree', 'list', '--porcelain').split('\n').filter((line) => line.startsWith('worktree ')).length;
+}
+
 test('pre-commit runs the quality gate then the typecheck in a removed staged snapshot', () => {
   const fixture = makeRepository();
   edit(fixture, 'a.txt', 'a2');
@@ -117,11 +151,11 @@ test('pre-commit runs the quality gate then the typecheck in a removed staged sn
     'run npm run --silent quality',
     'run npx --no-install tsc -p tsconfig.json --noEmit',
   ]);
-  const [snapshot, ...rest] = new Set(lines(result, 'cwd '));
-  assert.deepEqual(rest, []);
-  assert.notEqual(snapshot, `cwd ${fixture.repo}`);
-  assert.equal(existsSync(snapshot.slice('cwd '.length)), false, 'the snapshot is removed');
-  assert.deepEqual([...new Set(lines(result, 'deps '))], [`deps ${path.join(fixture.repo, 'node_modules')}`]);
+  const snapshot = onlyDirectory(result);
+  assert.notEqual(snapshot, fixture.repo);
+  assert.equal(existsSync(snapshot), false, 'the snapshot is removed');
+  assert.deepEqual(distinct(result, 'head '), ['head none'], 'the snapshot is not a repository');
+  assert.deepEqual(distinct(result, 'deps '), [`deps ${path.join(fixture.repo, 'node_modules')}`]);
   assert.deepEqual(lines(result, 'leak '), []);
 });
 
@@ -135,7 +169,7 @@ test('pre-commit clears git repository variables in a linked worktree', () => {
   const result = commit(fixture, worktree);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(lines(result, 'leak '), []);
-  assert.deepEqual([...new Set(lines(result, 'deps '))], [`deps ${path.join(worktree, 'node_modules')}`]);
+  assert.deepEqual(distinct(result, 'deps '), [`deps ${path.join(worktree, 'node_modules')}`]);
   assert.ok(seen(result).includes('saw a.txt linked'));
 });
 
@@ -146,7 +180,7 @@ test('pre-commit stops at a failing quality gate without running the typecheck',
   const result = run(fixture, fixture.repo, ['commit', '-q', '-m', 'change'], 'npm run');
   assert.notEqual(result.status, 0);
   assert.deepEqual(lines(result, 'run '), ['run npm run --silent quality']);
-  assert.equal(existsSync(lines(result, 'cwd ')[0].slice('cwd '.length)), false);
+  assert.equal(existsSync(onlyDirectory(result)), false);
   assert.equal(commitCount(fixture), '1');
 });
 
@@ -219,74 +253,94 @@ test('pre-commit checks the working copy of a selected partially staged path', (
   assert.equal(git(fixture.repo, 'show', 'HEAD:a.txt'), 'staged then edited');
 });
 
-test('pre-push runs the full suite from the repository root', () => {
+test('pre-commit snapshots keep index modes, symlinks, and checkout filters', () => {
+  const fixture = makeRepository();
+  edit(fixture, 'tool.sh', '#!/bin/sh');
+  chmodSync(path.join(fixture.repo, 'tool.sh'), 0o644);
+  git(fixture.repo, 'add', 'tool.sh');
+  git(fixture.repo, 'update-index', '--chmod=+x', 'tool.sh');
+  symlinkSync('a.txt', path.join(fixture.repo, 'link.txt'));
+  writeFileSync(path.join(fixture.repo, '.gitattributes'), 'crlf.txt text eol=crlf\n');
+  edit(fixture, 'crlf.txt', 'one\ntwo');
+  git(fixture.repo, 'add', 'link.txt', '.gitattributes', 'crlf.txt');
+  const result = commit(fixture, fixture.repo);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(distinct(result, 'exec '), ['exec yes'], 'the index mode, not the working-tree mode');
+  assert.deepEqual(distinct(result, 'link '), ['link a.txt a'], 'a relative symlink resolving inside the snapshot');
+  assert.deepEqual(distinct(result, 'crlf '), ['crlf 2'], 'checkout conversion applied');
+  assert.ok(seen(result).includes('saw a.txt a'), 'sources are copies, not links into the checkout');
+});
+
+test('pre-push runs the suite in a removed checkout of the pushed commit', () => {
   const fixture = makeRepository();
   const remote = addRemote(fixture);
-  const result = run(fixture, path.join(fixture.repo, 'sub'), ['push', '-q', 'origin', 'main']);
+  const head = git(fixture.repo, 'rev-parse', 'HEAD');
+  const result = push(fixture, path.join(fixture.repo, 'sub'), ['main']);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(lines(result, 'run '), ['run npm run --silent test:all']);
-  assert.deepEqual(lines(result, 'cwd '), [`cwd ${fixture.repo}`]);
+  const checkout = onlyDirectory(result);
+  assert.notEqual(checkout, fixture.repo);
+  assert.equal(existsSync(checkout), false, 'the checkout is removed');
+  assert.equal(worktreeCount(fixture), 1, 'and unregistered');
+  assert.deepEqual(lines(result, 'head '), [`head ${head}`]);
+  assert.deepEqual(lines(result, 'deps '), [`deps ${path.join(fixture.repo, 'node_modules')}`]);
+  assert.deepEqual(lines(result, 'target '), [`target ${path.join(fixture.repo, NATIVE, 'target')}`]);
   assert.deepEqual(lines(result, 'leak '), []);
   assert.notEqual(remoteRefs(remote), '');
 });
 
-test('pre-push blocks the push when the suite fails', () => {
+test('pre-push blocks the push when the suite fails and still removes the checkout', () => {
   const fixture = makeRepository();
   const remote = addRemote(fixture);
-  const result = run(fixture, fixture.repo, ['push', '-q', 'origin', 'main'], 'npm run');
+  const result = push(fixture, fixture.repo, ['main'], 'npm run');
   assert.notEqual(result.status, 0);
+  assert.equal(existsSync(onlyDirectory(result)), false);
+  assert.equal(worktreeCount(fixture), 1);
   assert.equal(remoteRefs(remote), '');
 });
 
-test('pre-push refuses a checkout whose tracked files differ from the pushed commit', () => {
-  for (const change of ['unstaged', 'staged']) {
-    const fixture = makeRepository();
-    const remote = addRemote(fixture);
-    edit(fixture, 'a.txt', change);
-    if (change === 'staged') {
-      git(fixture.repo, 'add', 'a.txt');
-    }
-    const result = run(fixture, fixture.repo, ['push', '-q', 'origin', 'main']);
-    assert.notEqual(result.status, 0, change);
-    assert.match(result.stderr, /a\.txt/);
-    assert.deepEqual(result.log, [], 'no suite runs against content the push does not contain');
-    assert.equal(remoteRefs(remote), '');
-  }
-});
-
-test('pre-push refuses a checkout with untracked files', () => {
+test('pre-push tests the pushed commit, not a dirty checkout', () => {
   const fixture = makeRepository();
-  const remote = addRemote(fixture);
+  addRemote(fixture);
+  edit(fixture, 'a.txt', 'staged');
+  git(fixture.repo, 'add', 'a.txt');
+  edit(fixture, 'b.txt', 'unstaged');
   edit(fixture, 'untracked.txt', 'untracked');
-  const result = run(fixture, fixture.repo, ['push', '-q', 'origin', 'main']);
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /untracked\.txt/);
-  assert.deepEqual(result.log, []);
-  assert.equal(remoteRefs(remote), '');
+  const result = push(fixture, fixture.repo, ['main']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(seen(result), ['saw a.txt a', 'saw b.txt b', 'saw untracked.txt absent']);
+  assert.equal(git(fixture.repo, 'show', ':a.txt'), 'staged', 'the checkout is untouched');
 });
 
-test('pre-push refuses to push a commit that is not checked out', () => {
+test('pre-push tests a pushed branch that is not checked out', () => {
   const fixture = makeRepository();
-  const remote = addRemote(fixture);
-  git(fixture.repo, 'branch', 'other');
-  git(fixture.repo, 'switch', '-q', 'other');
+  addRemote(fixture);
+  git(fixture.repo, 'switch', '-q', '-c', 'other');
   edit(fixture, 'a.txt', 'other');
   git(fixture.repo, 'commit', '-q', '--no-verify', '-am', 'other');
+  const other = git(fixture.repo, 'rev-parse', 'HEAD');
   git(fixture.repo, 'switch', '-q', 'main');
-  const result = run(fixture, fixture.repo, ['push', '-q', 'origin', 'other']);
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /refs\/heads\/other/);
-  assert.deepEqual(result.log, []);
-  assert.equal(remoteRefs(remote), '');
+  const result = push(fixture, fixture.repo, ['other']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(lines(result, 'head '), [`head ${other}`]);
+  assert.ok(seen(result).includes('saw a.txt other'));
+});
+
+test('pre-push tests each distinct pushed commit once', () => {
+  const fixture = makeRepository();
+  addRemote(fixture);
+  git(fixture.repo, 'branch', 'same');
+  const result = push(fixture, fixture.repo, ['main', 'same']);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(lines(result, 'run '), ['run npm run --silent test:all']);
 });
 
 test('pre-push lets a branch deletion through without running the suite', () => {
   const fixture = makeRepository();
   const remote = addRemote(fixture);
   git(fixture.repo, 'push', '-q', '--no-verify', 'origin', 'main:gone');
-  const result = run(fixture, fixture.repo, ['push', '-q', 'origin', ':gone']);
+  const result = push(fixture, fixture.repo, [':gone']);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(result.log, []);
   assert.doesNotMatch(remoteRefs(remote), /gone/);
-  rmSync(fixture.root, { recursive: true, force: true });
 });

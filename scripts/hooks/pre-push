@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
-# Test gate: the full suite (about 85 seconds on an M-series laptop), run
-# only when the checkout is exactly the commit being pushed.
+# Test gate: the full suite (about 65 seconds on an M-series laptop), run
+# once per distinct pushed commit in a temporary checkout of that commit.
 set -euo pipefail
 
 hooks="$(dirname "${BASH_SOURCE[0]}")"
 source "$hooks/lib/enter-repository.sh"
-source "$hooks/lib/pushed-checkout.sh"
+source "$hooks/lib/pushed-commits.sh"
 enter_repository
 
-tested="$(require_pushed_checkout)"
-if ((tested == 0)); then
-  exit 0
-fi
+checkout=""
+trap 'if [[ -n "$checkout" ]]; then remove_checkout "$checkout"; fi' EXIT
 
-echo "pre-push: full test suite"
-npm run --silent test:all
+commits="$(pushed_commits)"
+for commit in $commits; do
+  checkout="$(mktemp -d "${TMPDIR:-/tmp}/jedit-pre-push.XXXXXX")"
+  git worktree add --quiet --detach "$checkout" "$commit"
+  link_checkout_dependencies "$checkout"
+  echo "pre-push: full test suite at ${commit:0:12}"
+  (cd "$checkout" && npm run --silent test:all)
+  remove_checkout "$checkout"
+  checkout=""
+done

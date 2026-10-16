@@ -9,8 +9,10 @@
   repository-local variables before running tools, with specs covering a
   normal clone and a linked worktree. Pre-commit runs its checks on a snapshot
   of the index the commit records, including for `commit -a` and
-  `commit <paths>`. Pre-push refuses unless every pushed ref is the clean
-  checked-out commit, so the suite tests what is pushed. Specs run the real
+  `commit <paths>`, keeping index modes, symlinks, and checkout filters.
+  Pre-push runs the suite once per distinct pushed commit in a temporary
+  detached worktree of that commit, so it tests what is pushed regardless of
+  the checkout's state or which branch is checked out. Specs run the real
   hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
   configuration. Enable them with `scripts/install-hooks.sh`.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
