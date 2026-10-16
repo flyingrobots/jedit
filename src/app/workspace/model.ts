@@ -12,6 +12,7 @@ import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
 import type { TitleScene } from "../../ui/title-scene.js";
 import type {
   TitleAsciiPalette,
+  TitleBackdropKind,
   TitleRenderMode,
 } from "../../ui/title-screen.js";
 import type { ProfilerState } from "../raytracer-profiler.js";
@@ -92,6 +93,7 @@ export interface WorkspaceModel
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
   readonly titleMouseLook?: TitleCameraMouseLookPointer;
+  readonly titleBackdropKind: TitleBackdropKind;
   readonly titleRenderMode: TitleRenderMode;
   readonly titleAsciiPalette: TitleAsciiPalette;
   readonly titleMeshMaterialIndex: number;

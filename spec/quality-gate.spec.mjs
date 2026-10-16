@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { REPO_ROOT } from './dist-helpers.mjs';
 
 const QUALITY_GATE_SCRIPT = path.join(process.cwd(), 'scripts', 'quality-gate.mjs');
 
@@ -409,4 +410,28 @@ test('quality gate rejects overlong source lines', () => {
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
+});
+
+test('the quality gate scans spec files, not only TypeScript sources', () => {
+  const gate = readFileSync(path.join(REPO_ROOT, 'scripts', 'quality-gate.mjs'), 'utf8');
+  const baseline = JSON.parse(
+    readFileSync(path.join(REPO_ROOT, 'quality-baseline.json'), 'utf8'),
+  );
+
+  assert.match(gate, /collectSpecFiles/);
+  assert.ok(
+    Object.keys(baseline.maxLines).some((file) => file.startsWith('spec/')),
+    'a spec file is tracked by the max-lines ratchet',
+  );
+});
+
+test('every tracked spec ceiling matches a file that still exists', () => {
+  const baseline = JSON.parse(
+    readFileSync(path.join(REPO_ROOT, 'quality-baseline.json'), 'utf8'),
+  );
+  const missing = Object.keys(baseline.maxLines).filter(
+    (file) => !existsSync(path.join(REPO_ROOT, file)),
+  );
+
+  assert.deepEqual(missing, []);
 });

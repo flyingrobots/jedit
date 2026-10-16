@@ -1144,6 +1144,17 @@ effect, and executable-identity boundaries. Any implementation that cannot
 demonstrate them remains a compatibility or experimental composition rather
 than the canonical Jim architecture.
 
+### Vocabulary Echo must never carry
+
+Echo production code must never branch on or implement Jim/Jedit nouns or
+verbs. In particular, Echo has no `ReplaceRange` variant, rope intrinsic,
+`Buffer` or `TextWindow` semantics, native Jim planner callback,
+`MutationPlan`, or caller-authored graph patch. Application coordinates may be
+carried opaquely in packages, fixtures, and receipts.
+
+This prohibition previously lived in `ARCHITECTURE.md`. It is target-ownership
+law, so it belongs to this document; `ARCHITECTURE.md` now routes here.
+
 ## Known claims gaps and active review questions
 
 The architecture is deliberately under review because several written claims

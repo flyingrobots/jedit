@@ -10,7 +10,7 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
-import { clampIndex } from './viewport.js';
+import { wrapIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
@@ -70,13 +70,13 @@ function updateTreeNavigationFromKey(msg: KeyMsg, model: WorkspaceModel): Worksp
   if (isWorkspaceDownKey(msg)) {
     return {
       ...model,
-      selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
+      selectedIndex: wrapIndex(model.selectedIndex + 1, model.entries.length),
     };
   }
   if (isWorkspaceUpKey(msg)) {
     return {
       ...model,
-      selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
+      selectedIndex: wrapIndex(model.selectedIndex - 1, model.entries.length),
     };
   }
   return undefined;

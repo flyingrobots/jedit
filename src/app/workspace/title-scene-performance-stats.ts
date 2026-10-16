@@ -5,7 +5,7 @@ import {
 } from "../../ui/title-scene.js";
 import type { TitleScene, TitleSceneObject } from "../../ui/title-scene.js";
 import { titleSceneRenderMaterialColors } from "../../ui/title-screen.js";
-import { TITLE_RENDER_MODE } from "../../ui/title-screen.js";
+import { TITLE_BACKDROP_KIND, TITLE_RENDER_MODE } from "../../ui/title-screen.js";
 import { ASCII_SAMPLE_COUNT } from "../../ui/averaging-ascii-canvas.js";
 import { BRAILLE_SAMPLE_COUNT } from "../../ui/averaging-braille-canvas.js";
 import type { WorkspaceModel } from "./model.js";
@@ -30,6 +30,12 @@ export function titleScenePerformanceStats(
   model: WorkspaceModel,
 ): TitleScenePerformanceStats | undefined {
   if (model.editor != null) {
+    return undefined;
+  }
+  if (model.titleBackdropKind !== TITLE_BACKDROP_KIND.LegacyScene) {
+    // Nothing is traced unless the legacy backdrop is selected. Reporting a
+    // generated scene's object, triangle and ray counts for a backdrop that
+    // was never drawn made the overlay claim rays the renderer never cast.
     return undefined;
   }
   const scene = titleSceneForModel(model);

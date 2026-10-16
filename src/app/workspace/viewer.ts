@@ -12,8 +12,7 @@ import {
   MIN_COLUMNS,
   MIN_ROWS,
   workspaceBodyHeight,
-  FOOTER_ROWS,
-} from './viewport.js';
+  FOOTER_ROWS, WORKSPACE_BODY_TOP_OFFSET } from './viewport.js';
 import type { WorkspaceModel } from './model.js';
 import {
   createViewerContentRenderer,
@@ -30,7 +29,6 @@ import {
 } from './workspace-footer-posture.js';
 import type { JeditColorStop, JeditStyleToken } from '../../ui/jedit-theme.js';
 
-const WORKSPACE_BODY_TOP_OFFSET = 2;
 const COMMAND_LINE_WARNING_VARIABLE = 'warning';
 const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND = '#6f1d1b';
 const COMMAND_LINE_ERROR_FALLBACK_FOREGROUND = '#ffeef0';
@@ -90,7 +88,7 @@ function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
     editorDirty: model.editor?.dirty ?? false,
     selectedEntry: model.entries[model.selectedIndex],
   }), model.columns), model.columns, 1);
-  applyTitleToken(title, model.jeditTheme.chrome.titleLogo);
+  applyTitleToken(title, model.jeditTheme.surface.header);
   screen.blit(title, 0, 0);
 }
 

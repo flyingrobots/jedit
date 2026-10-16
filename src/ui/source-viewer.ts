@@ -21,7 +21,6 @@ const GUTTER_DELETION_MARKER_WIDTH = 1;
 const GUTTER_LINE_MARKER_WIDTH = 1;
 const GUTTER_RULE_WIDTH = 1;
 const GUTTER_RULE_GAP = 1;
-const SIGN_CHARACTER_WIDTH = 1;
 const GUTTER_RULE = '│';
 const GUTTER_LINE_MARKER_CHAR = Object.freeze({
   inserted: '+',
@@ -97,9 +96,41 @@ export function renderSourceViewer(
   });
   const viewport = sourceTextViewport(options, gutter, editor.scrollCol);
   paintHighlightedSourceWindow(surface, sourceWindow, highlight, viewport);
+  paintCurrentSourceLineSurface(
+    surface,
+    editor,
+    options,
+    sourceWindow.startLine,
+  );
   paintSourceViewerCursor(surface, editor, options, viewport, sourceWindow.startLine);
 
   return surface;
+}
+
+function paintCurrentSourceLineSurface(
+  surface: Surface,
+  editor: SourceViewerEditor,
+  options: SourceViewerOptions,
+  windowStartLine: number,
+): void {
+  if (editor.mode !== NORMAL_MODE) {
+    return;
+  }
+  const y = options.topPad + editor.cursorRow - windowStartLine;
+  if (y < options.topPad || y >= options.topPad + options.viewport.height) {
+    return;
+  }
+  const token = options.theme.surface.currentLine;
+  const endX = Math.min(surface.width, options.leftPad + options.viewport.width);
+  for (let x = Math.max(0, options.leftPad); x < endX; x += 1) {
+    const cell = surface.get(x, y);
+    surface.set(x, y, {
+      ...cell,
+      bg: token.bg,
+      bgRGB: token.bgRGB,
+      empty: false,
+    });
+  }
 }
 
 function paintSourceViewerCursor(
@@ -290,10 +321,10 @@ function sourceLineNumberLabel(
   if (mode === SOURCE_LINE_NUMBER_MODE.Absolute) {
     return String(lineNumber + FIRST_VISIBLE_LINE_NUMBER);
   }
-  const relative = lineNumber - cursorRow;
-  return relative > CURRENT_LINE_RELATIVE_NUMBER
-    ? `+${relative}`
-    : String(relative);
+  if (lineNumber === cursorRow) {
+    return String(lineNumber + FIRST_VISIBLE_LINE_NUMBER);
+  }
+  return String(Math.abs(lineNumber - cursorRow));
 }
 
 function lineNumberLabelWidth(
@@ -309,13 +340,7 @@ function lineNumberLabelWidth(
     Math.abs(cursorRow),
     Math.abs(totalLineCount - FIRST_VISIBLE_LINE_NUMBER - cursorRow),
   );
-  return Math.max(absoluteWidth, signedLineNumberWidth(maxRelative));
-}
-
-function signedLineNumberWidth(value: number): number {
-  return value <= CURRENT_LINE_RELATIVE_NUMBER
-    ? String(CURRENT_LINE_RELATIVE_NUMBER).length
-    : String(value).length + SIGN_CHARACTER_WIDTH;
+  return Math.max(absoluteWidth, String(maxRelative).length);
 }
 
 function paintGutterRuleGap(

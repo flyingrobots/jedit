@@ -106,38 +106,6 @@ test("continuum gate is the registered default title scene", async () => {
   assert.equal(scene.environment?.walls, undefined);
 });
 
-test("startup snapshot preloads the default title scene", async () => {
-  const [adapter, init, port] = await Promise.all([
-    importDist("adapters", "workspace-initial-model-snapshot.js"),
-    importDist("app", "workspace", "init.js"),
-    importDist("ports", "title-scene-loader.js"),
-  ]);
-  const snapshot = adapter.createInitialModelSnapshot(0, REPO_ROOT, () => 0.5);
-  const model = init.createInitialModel(REPO_ROOT, 120, 24, {
-    ...snapshot,
-    i18n: mockI18n(),
-    jeditTheme: mockJeditTheme(),
-  });
-
-  assert.ok(snapshot.sceneOverride != null);
-  assert.equal(snapshot.sceneOverride.objects[0].label, PRIMARY_OBJECT_LABEL);
-  assert.equal(
-    model.availableScenes[0],
-    port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-  );
-  assert.equal(model.sceneOverride, snapshot.sceneOverride);
-  assert.equal(model.titleCamera.angle, snapshot.sceneOverride.camera.angle);
-  assert.equal(model.titleCamera.radius, snapshot.sceneOverride.camera.radius);
-  assert.deepEqual(
-    model.titleCamera.position,
-    snapshot.sceneOverride.camera.position,
-  );
-  assert.deepEqual(
-    model.titleCamera.target,
-    snapshot.sceneOverride.camera.target,
-  );
-});
-
 test("default title scene renders glass against the day-night light stage", async () => {
   const modules = await loadDefaultSceneModules();
   const scene = await loadDefaultScene(modules);

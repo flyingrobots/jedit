@@ -66,12 +66,49 @@ test("source viewer can paint cursor-relative line numbers", async () => {
     },
   );
 
-  assert.equal(sourceViewer.sourceViewerGutterWidth(5, 2, "relative"), 6);
-  assert.equal(rowText(surface, 0).startsWith("-2  │ line-1"), true);
-  assert.equal(rowText(surface, 1).startsWith("-1  │ line-2"), true);
-  assert.equal(rowText(surface, 2).startsWith(" 0  │ line-3"), true);
-  assert.equal(rowText(surface, 3).startsWith("+1  │ line-4"), true);
-  assert.equal(rowText(surface, 4).startsWith("+2  │ line-5"), true);
+  assert.equal(sourceViewer.sourceViewerGutterWidth(5, 2, "relative"), 5);
+  assert.equal(rowText(surface, 0).startsWith("2  │ line-1"), true);
+  assert.equal(rowText(surface, 1).startsWith("1  │ line-2"), true);
+  assert.equal(rowText(surface, 2).startsWith("3  │ line-3"), true);
+  assert.equal(rowText(surface, 3).startsWith("1  │ line-4"), true);
+  assert.equal(rowText(surface, 4).startsWith("2  │ line-5"), true);
+});
+
+test("source viewer highlights the current row only in normal mode", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const sourceViewer = await loadSourceViewerModule();
+  const theme = sourceViewerTheme();
+  const render = (mode) => {
+    const surface = createSurface(24, 3, { char: ".", empty: false });
+    sourceViewer.renderSourceViewer(
+      surface,
+      {
+        lines: ["one", "two", "three"],
+        cursorRow: 1,
+        cursorCol: 0,
+        scrollRow: 0,
+        scrollCol: 0,
+        mode,
+      },
+      undefined,
+      {
+        viewport: { width: 24, height: 3 },
+        leftPad: 0,
+        topPad: 0,
+        theme,
+      },
+    );
+    return surface;
+  };
+
+  const normal = render("normal");
+  assert.equal(normal.get(0, 1).bg, theme.surface.currentLine.bg);
+  assert.equal(normal.get(normal.width - 1, 1).bg, theme.surface.currentLine.bg);
+  assert.notEqual(normal.get(0, 0).bg, theme.surface.currentLine.bg);
+
+  const insert = render("insert");
+  assert.notEqual(insert.get(0, 1).bg, theme.surface.currentLine.bg);
+  assert.notEqual(insert.get(insert.width - 1, 1).bg, theme.surface.currentLine.bg);
 });
 
 test("source viewer paints causal inserted and modified gutter markers", async () => {
@@ -270,6 +307,7 @@ function sourceViewerTheme() {
   return {
     surface: {
       workspace,
+      currentLine: token("#f0f6fc", "#30363d"),
     },
     cursor: {
       normal: token("#0d1117", "#58a6ff"),

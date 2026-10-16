@@ -463,7 +463,9 @@ export function mockJeditTheme() {
     variables: new Map(),
     surface: {
       workspace,
+      currentLine: drawer,
       drawer,
+      header: drawer,
       footer: drawer,
     },
     cursor: {
@@ -560,6 +562,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       crouching: false,
     },
     titleMouseLook: undefined,
+    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.StaticLogo,
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,

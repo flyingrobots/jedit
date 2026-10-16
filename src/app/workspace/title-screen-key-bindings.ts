@@ -9,6 +9,7 @@ import {
 import {
   nextTitleAsciiPalette,
   TITLE_ASCII_PALETTE,
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   type TitleAsciiPalette,
 } from "../../ui/title-screen.js";
@@ -19,12 +20,15 @@ import {
   titleMeshMaterialPresetAt,
 } from "./title-mesh-materials.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
+import { workspaceDrawerHasFocus } from './focused-pane-key-bindings.js';
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 
 const TITLE_SHADER_TOAST_TITLE = "Title shader";
 const TITLE_ASCII_PALETTE_TOAST_TITLE = "ASCII palette";
+const TITLE_MESH_MATERIAL_NEEDS_SCENE =
+  "Load a scene first (ctrl+l) -- the generated backdrop takes its materials from the theme.";
 const TITLE_MESH_MATERIAL_TOAST_TITLE = "Title material";
 const TITLE_SHADER_BRAILLE_LABEL = "Braille";
 const TITLE_SHADER_ASCII_LABEL = "ASCII";
@@ -55,7 +59,7 @@ export function updateTitleScreenKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  if (model.editor != null) {
+  if (model.editor != null || workspaceDrawerHasFocus(model)) {
     return undefined;
   }
 
@@ -74,14 +78,20 @@ function updateTitleRenderKey(
 ): KeyBindingResult | undefined {
   if (msg.key === WorkspaceKeys.One) {
     return pushTitleScreenToast(
-      { ...model, titleRenderMode: TITLE_RENDER_MODE.Braille },
+      activateLegacyTitleBackdrop({
+        ...model,
+        titleRenderMode: TITLE_RENDER_MODE.Braille,
+      }),
       TITLE_SHADER_BRAILLE_LABEL,
       context,
     );
   }
   if (msg.key === WorkspaceKeys.Two) {
     return pushTitleScreenToast(
-      { ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii },
+      activateLegacyTitleBackdrop({
+        ...model,
+        titleRenderMode: TITLE_RENDER_MODE.Ascii,
+      }),
       asciiShaderLabel(model),
       context,
     );
@@ -95,7 +105,7 @@ function updateTitleRenderKey(
 
   const titleAsciiPalette = nextTitleAsciiPalette(model.titleAsciiPalette);
   return pushAsciiPaletteToast(
-    { ...model, titleAsciiPalette },
+    activateLegacyTitleBackdrop({ ...model, titleAsciiPalette }),
     titleAsciiPalette,
     context,
   );
@@ -113,16 +123,20 @@ function updateTitleMeshMaterialKey(
     model.titleMeshMaterialIndex,
   );
   const preset = titleMeshMaterialPresetAt(titleMeshMaterialIndex);
-  const sceneOverride =
-    model.sceneOverride == null
-      ? undefined
-      : applyTitleMeshMaterial(model.sceneOverride, preset);
+  // With no scene loaded there is nothing to apply a material to: the generated
+  // backdrop takes its materials from the theme and never reads
+  // titleMeshMaterialIndex. Cycling the index anyway used to switch the legacy
+  // backdrop on and toast that the preset had been applied, so the reader was
+  // told a change had happened that could not have happened.
+  if (model.sceneOverride == null) {
+    return pushTitleMeshMaterialToast(model, TITLE_MESH_MATERIAL_NEEDS_SCENE, context);
+  }
   return pushTitleMeshMaterialToast(
-    {
+    activateLegacyTitleBackdrop({
       ...model,
       titleMeshMaterialIndex,
-      ...(sceneOverride == null ? {} : { sceneOverride }),
-    },
+      sceneOverride: applyTitleMeshMaterial(model.sceneOverride, preset),
+    }),
     preset.name,
     context,
   );
@@ -146,7 +160,17 @@ function updateTitleCameraKey(
   });
   return update == null
     ? undefined
-    : [{ ...model, titleCamera: update.state }, update.commands];
+    : [
+        activateLegacyTitleBackdrop({ ...model, titleCamera: update.state }),
+        update.commands,
+      ];
+}
+
+function activateLegacyTitleBackdrop(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
+  };
 }
 
 function pushTitleScreenToast(

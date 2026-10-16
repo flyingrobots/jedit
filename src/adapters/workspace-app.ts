@@ -17,6 +17,8 @@ import {
   createWorkspaceNotificationTickCmd,
   createWorkspaceTimeTickCmd,
 } from './workspace-animation-commands.js';
+import { openWorkspaceFileEntry } from '../app/workspace/file-tree.js';
+import type { WorkspaceModel } from '../app/workspace/model.js';
 
 export interface WorkspaceAppOptions {
   initialColumns: number;
@@ -72,6 +74,16 @@ function workspaceRuntimeDependencies(
     profileOnStartup: options.profileEnabled ?? false,
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
+    openEntry: (
+      model: WorkspaceModel,
+      entry: NonNullable<WorkspaceModel['entries'][number]>,
+    ) => openWorkspaceFileEntry(model, entry, nowMs, {
+      fileSystem: FileSystemPortAdapter,
+      editorFile,
+      graftSession,
+      sourceHighlighter,
+      productionTextSession: productionText.productionTextSession,
+    }),
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,
     createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,

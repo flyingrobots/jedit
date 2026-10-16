@@ -4,7 +4,21 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const REPO_ROOT = process.cwd();
+// Discovered, not assumed. Treating `process.cwd()` as the repository root
+// only holds when tests are launched from the root; run from anywhere else the
+// specs silently resolve paths against the wrong tree. Asking git removes the
+// hidden harness assumption.
+export function discoverRepoRoot(fromDirectory = process.cwd()) {
+  const result = spawnSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: fromDirectory,
+    encoding: 'utf8',
+  });
+  return result.status === 0 && typeof result.stdout === 'string'
+    ? result.stdout.trim()
+    : fromDirectory;
+}
+
+export const REPO_ROOT = discoverRepoRoot();
 
 const PREBUILT_DIST_ENV = 'JEDIT_DIST_PREBUILT';
 const PREBUILT_DIST_ENABLED = '1';

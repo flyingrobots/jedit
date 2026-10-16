@@ -1,64 +1,30 @@
 import { BijouI18nAdapter } from "./bijou-i18n-adapter.js";
 import type { WorkspaceInitialModelSnapshot } from "../app/workspace/init.js";
-import {
-  DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-  type BuiltInTitleSceneName,
-} from "../ports/title-scene-loader.js";
-import type { TitleScene } from "../ui/title-scene.js";
 import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
 import {
   JEDIT_THEME_ENV,
   resolveInitialJeditTheme,
 } from "../ui/jedit-themes.js";
 import { loadEntries } from "./filesystem.js";
-import { loadBuiltInTitleSceneSync } from "./title-scene-loader.js";
-import { loadStartupTitleMeshes } from "./workspace-title-meshes.js";
 
-const DEFAULT_TITLE_SCENE_WARNING_PREFIX =
-  "jedit default title scene unavailable";
-
-interface StartupTitleScene {
-  readonly name: BuiltInTitleSceneName;
-  readonly scene: TitleScene;
-}
+// Startup loads no title geometry. The ray-traced title subsystem parses
+// ~1.75 MB of OBJ text (teapot, dragon, bunny) and that cost belonged to a
+// title screen jedit no longer shows on launch. The meshes and scenes remain
+// in the tree and load on demand for anything that opts into the legacy
+// backdrop; nothing on the startup path pays for them.
+const NO_STARTUP_TITLE_MESHES: TitleMeshLibrary = Object.freeze({});
 
 export function createInitialModelSnapshot(
   nowMs: number,
   cwd: string,
   random: () => number,
 ): WorkspaceInitialModelSnapshot {
-  const titleMeshes = loadStartupTitleMeshes();
-  const startupTitleScene = loadStartupTitleScene(titleMeshes);
   return {
     entries: loadEntries(cwd),
-    titleMeshes,
-    ...(startupTitleScene == null
-      ? {}
-      : {
-          sceneOverride: startupTitleScene.scene,
-          sceneOverrideName: startupTitleScene.name,
-        }),
+    titleMeshes: NO_STARTUP_TITLE_MESHES,
     titleSceneSeed: random(),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     i18n: new BijouI18nAdapter(),
     nowMs,
   };
-}
-
-function loadStartupTitleScene(
-  titleMeshes: TitleMeshLibrary,
-): StartupTitleScene | undefined {
-  try {
-    return {
-      name: DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-      scene: loadBuiltInTitleSceneSync(
-        DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-        titleMeshes,
-      ),
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`${DEFAULT_TITLE_SCENE_WARNING_PREFIX}: ${message}\n`);
-    return undefined;
-  }
 }

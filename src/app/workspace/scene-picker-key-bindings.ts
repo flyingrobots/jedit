@@ -15,6 +15,7 @@ import {
   isWorkspaceScenePickerPreviousKey,
 } from "./workspace-key.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
+import { TITLE_BACKDROP_KIND } from "../../ui/title-screen.js";
 
 const SCENE_PICKER_MIN_INDEX = 0;
 const SCENE_PICKER_STEP = 1;
@@ -33,7 +34,14 @@ export function updateScenePickerKey(
     !msg.alt &&
     msg.key === JEDIT_SCENE_PICKER_TOGGLE_KEY
   ) {
-    return [{ ...model, scenePickerOpen: !model.scenePickerOpen }, []];
+    return [
+      {
+        ...model,
+        scenePickerOpen: !model.scenePickerOpen,
+        titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
+      },
+      [],
+    ];
   }
 
   if (!model.scenePickerOpen) {

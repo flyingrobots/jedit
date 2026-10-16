@@ -1,5 +1,7 @@
-import * as fs from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+// The promises API is reached through node:fs rather than a second
+// node:fs/promises import, so the sync and async reads in this module cost
+// one import between them.
+import { existsSync, promises as fs, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SceneDecodeError, SceneLoadError } from "../domain/errors.js";
@@ -15,7 +17,6 @@ import {
   TITLE_SCENE_DEFAULT_CAMERA_TARGET,
   titleSceneCameraPlacementFromPosition,
 } from "../ui/title-scene-camera.js";
-import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
 import { titleSceneObjectFootprintCenterAt } from "../ui/title-scene-transform.js";
 import {
   BUILT_IN_TITLE_SCENE_NAMES,
@@ -24,6 +25,7 @@ import {
 } from "../ports/title-scene-loader.js";
 import { decodeTitleSceneEnvironment } from "./title-scene-environment-decoder.js";
 import { decodeSceneObject } from "./title-scene-object-decoder.js";
+import { withBuiltInTitleMeshes, type TitleMeshLibrary } from "./workspace-title-meshes.js";
 import {
   arrayAt,
   objectAt,
@@ -46,6 +48,7 @@ export interface TitleSceneLoaderOptions {
 
 const EMPTY_DIRECTION_LENGTH = 0;
 const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
+
 const BUILT_IN_SCENE_CANDIDATE_URLS = [
   (name: BuiltInTitleSceneName): URL =>
     new URL(`../scenes/${name}`, import.meta.url),
@@ -70,7 +73,7 @@ export function loadBuiltInTitleSceneSync(
   }
   return parseTitleSceneText(
     readFileSync(resolveBuiltInTitleScenePath(name, undefined), "utf8"),
-    meshes,
+    withBuiltInTitleMeshes(meshes),
   );
 }
 
@@ -98,7 +101,7 @@ export async function loadBuiltInTitleScene(
   }
   return loadTitleSceneFromFile(
     resolveBuiltInTitleScenePath(name, undefined),
-    meshes,
+    withBuiltInTitleMeshes(meshes),
   );
 }
 
@@ -128,7 +131,7 @@ export function createTitleSceneLoaderPort(
       }
       return loadTitleSceneFromFile(
         resolveBuiltInTitleScenePath(name, options.builtInSceneDirectories),
-        meshes,
+        withBuiltInTitleMeshes(meshes),
       );
     },
   };

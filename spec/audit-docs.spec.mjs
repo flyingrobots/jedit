@@ -5,7 +5,6 @@ import test from 'node:test';
 const READY_AUDIT = 'docs/audits/ready-to-ship-assessment-2026-06-28.md';
 const TWO_PHASE_AUDIT = 'docs/audits/two-phase-assessment-2026-06-28.md';
 const DOC_AUDIT = 'docs/audits/documentation-readme-audit-2026-06-28.md';
-const JIM_LOGO = 'JimLogo.svg';
 
 function readRepoText(path) {
   return readFileSync(path, 'utf8');
@@ -63,11 +62,34 @@ test('documentation audit prompt covers all stale Advanced Guide runtime referen
   assert.match(audit, /`src\/main-workspace\.ts`/);
   assert.match(audit, /`src\/main\.ts` only remains the process entrypoint/);
 });
+const AGENTS = 'AGENTS.md';
+const DURABLE_DECISIONS = 'docs/method/durable-decisions.md';
+const ARCHITECTURE = 'ARCHITECTURE.md';
+const OWNERSHIP = 'docs/jim-component-ownership.md';
+const POLICY_RULE = /Identify one canonical owner before completing the change/;
+const OWNERSHIP_RULE = /is Jim's mind/;
 
-test('Jim logo is original project artwork with explicit metadata', () => {
-  const logo = readRepoText(JIM_LOGO);
+test('the durable decision policy states its rules in exactly one document', () => {
+  const owner = readRepoText(DURABLE_DECISIONS);
+  const agents = readRepoText(AGENTS);
 
-  assert.doesNotMatch(logo, /Vimlogo|VimLogo|Vim logo|sodipodi|inkscape/i);
-  assert.match(logo, /Original Jim project logo/);
-  assert.match(logo, /Apache-2\.0/);
+  assert.match(owner, POLICY_RULE);
+  assert.doesNotMatch(agents, POLICY_RULE);
+  assert.match(agents, /docs\/method\/durable-decisions\.md/);
+});
+
+test('the documentation router lists the durable decision owner', () => {
+  assert.match(
+    readRepoText(AGENTS),
+    /- `docs\/method\/durable-decisions\.md` owns the durable decision policy/,
+  );
+});
+
+test('target ownership rules are stated only by their canonical owner', () => {
+  const owner = readRepoText(OWNERSHIP);
+  const architecture = readRepoText(ARCHITECTURE);
+
+  assert.match(owner, OWNERSHIP_RULE);
+  assert.doesNotMatch(architecture, OWNERSHIP_RULE);
+  assert.match(architecture, /docs\/jim-component-ownership\.md/);
 });

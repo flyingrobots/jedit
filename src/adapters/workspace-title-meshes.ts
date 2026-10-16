@@ -16,6 +16,23 @@ import {
   loadTitleTeapotMeshSource,
 } from "./title-bunny-mesh.js";
 
+export type { TitleMeshLibrary };
+
+// Startup loads no title geometry, so the workspace model carries an empty mesh
+// library and hands it straight to the scene loader. Every built-in scene
+// references bunny, teapot or dragon, so without this they all failed to
+// decode -- including continuum-gate, the one the picker offers first. The
+// meshes are parsed at most once, and only when a scene is actually opened,
+// which is what preserves the startup saving that emptied the library.
+let onDemandMeshes: TitleMeshLibrary | undefined;
+
+export function withBuiltInTitleMeshes(meshes: TitleMeshLibrary): TitleMeshLibrary {
+  onDemandMeshes ??= loadStartupTitleMeshes();
+  // The caller's library wins, so a scene opened with an explicitly supplied
+  // mesh keeps it and only the gaps are filled.
+  return { ...onDemandMeshes, ...meshes };
+}
+
 export function loadStartupTitleMeshes(): TitleMeshLibrary {
   return {
     bunny: loadStartupTitleMesh(

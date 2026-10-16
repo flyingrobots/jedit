@@ -1,0 +1,226 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { importDist } from "./dist-helpers.mjs";
+import {
+  mockKeyBindingContext,
+  mockTitleScreenModel,
+} from "./workspace-helpers.mjs";
+
+const ENTRIES = Object.freeze([
+  { name: "alpha.txt", isDirectory: false },
+  { name: "beta.txt", isDirectory: false },
+  { name: "gamma.txt", isDirectory: false },
+]);
+const LAST_INDEX = ENTRIES.length - 1;
+const FIRST_INDEX = 0;
+
+async function fileDrawerModel(overrides = {}) {
+  const [titleScreen, panelFocus] = await Promise.all([
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "panel-focus.js"),
+  ]);
+  return mockTitleScreenModel(titleScreen, {
+    editor: undefined,
+    entries: ENTRIES,
+    selectedIndex: FIRST_INDEX,
+    fileDrawerOpen: true,
+    focusPane: panelFocus.FocusPanes.Files,
+    startupIntroComplete: true,
+    ...overrides,
+  });
+}
+
+test("down arrow moves the file explorer selection", async () => {
+  const keyBindings = await importDist("app", "workspace", "key-bindings.js");
+  const model = await fileDrawerModel();
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "down" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(next.selectedIndex, 1);
+});
+
+test("up arrow moves the file explorer selection", async () => {
+  const keyBindings = await importDist("app", "workspace", "key-bindings.js");
+  const model = await fileDrawerModel({ selectedIndex: 1 });
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "up" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(next.selectedIndex, FIRST_INDEX);
+});
+
+test("arrow keys in the file explorer never start the ray-traced backdrop", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = await fileDrawerModel();
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "down" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.notEqual(
+    next.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
+});
+
+test("the file explorer selection wraps from the last entry to the first", async () => {
+  const keyBindings = await importDist("app", "workspace", "key-bindings.js");
+  const model = await fileDrawerModel({ selectedIndex: LAST_INDEX });
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "j" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(next.selectedIndex, FIRST_INDEX);
+});
+
+test("the file explorer selection wraps from the first entry to the last", async () => {
+  const keyBindings = await importDist("app", "workspace", "key-bindings.js");
+  const model = await fileDrawerModel({ selectedIndex: FIRST_INDEX });
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "k" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(next.selectedIndex, LAST_INDEX);
+});
+
+test("an empty file explorer stays put instead of wrapping onto nothing", async () => {
+  const keyBindings = await importDist("app", "workspace", "key-bindings.js");
+  const model = await fileDrawerModel({ entries: [], selectedIndex: 0 });
+
+  const [next] = keyBindings.updateFromKey(
+    { key: "j" },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(next.selectedIndex, 0);
+});
+
+test("mouse movement over the file explorer never starts the ray-traced backdrop", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = await fileDrawerModel();
+
+  const [next] = runtimeModule.updateFromMouse(
+    { type: "mouse", button: "none", action: "move", col: 4, row: 6, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.notEqual(
+    next.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
+});
+
+test("the wheel still scrolls the focused file explorer", async () => {
+  const mouse = await importDist("app", "workspace", "mouse.js");
+  const model = await fileDrawerModel();
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "none", action: "scroll-down", col: 4, row: 6, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.notEqual(next.selectedIndex, model.selectedIndex);
+});
+
+test("the title keeps naming the open document while browsing other files", async () => {
+  const chrome = await importDist("ui", "workspace-chrome.js");
+  const highlighted = { kind: "file", name: "beta.txt", path: "/w/beta.txt" };
+
+  const title = chrome.activeWorkspaceTitle({
+    cwd: "/w",
+    editorPath: "/w/foo.txt",
+    editorDirty: false,
+    selectedEntry: highlighted,
+  });
+
+  assert.equal(title, "foo.txt");
+});
+
+test("the title names the highlighted file only when nothing is open", async () => {
+  const chrome = await importDist("ui", "workspace-chrome.js");
+  const highlighted = { kind: "file", name: "beta.txt", path: "/w/beta.txt" };
+
+  const title = chrome.activeWorkspaceTitle({
+    cwd: "/w",
+    editorPath: undefined,
+    editorDirty: false,
+    selectedEntry: highlighted,
+  });
+
+  assert.equal(title, "beta.txt");
+});
+
+test("clicking a file explorer row selects that entry", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 2);
+});
+
+test("clicking outside the file explorer leaves the selection alone", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 95, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 1);
+});
+
+test("clicking past the last entry leaves the selection alone", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 20;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 1);
+});

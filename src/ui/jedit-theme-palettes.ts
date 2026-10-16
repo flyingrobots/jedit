@@ -103,15 +103,23 @@ const SOLARIZED_DARK_PALETTE: ThemePalette = {
 };
 
 const SOLARIZED_LIGHT_PALETTE: ThemePalette = {
-  ink: [101, 123, 131],
+  // Solarized base01 rather than base00. Upstream Solarized specifies base00
+  // for light-mode body text, which measures 4.13:1 on base3 -- below WCAG AA
+  // and reported as unreadable in use. base01 is a canonical Solarized colour
+  // (its "emphasized content" ink) and reaches 4.99:1 without leaving the
+  // palette.
+  ink: [88, 110, 117],
   muted: [147, 161, 161],
   accent: [211, 54, 130],
   info: [38, 139, 210],
   warning: [181, 137, 0],
   success: [133, 153, 0],
   surface: [253, 246, 227],
-  surfaceRaised: [238, 232, 213],
-  surfaceMuted: [238, 232, 213],
+  // Solarized base2 (238, 232, 213) leaves the current-line band at 4.39:1
+  // against base01 ink. Lifted 20% toward base3, which is the smallest change
+  // that reaches AA while still reading as a distinct tinted highlight.
+  surfaceRaised: [241, 235, 216],
+  surfaceMuted: [241, 235, 216],
 };
 
 const DRACULA_PALETTE: ThemePalette = {

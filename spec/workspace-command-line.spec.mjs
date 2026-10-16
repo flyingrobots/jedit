@@ -1946,7 +1946,13 @@ function commandLineRenderTheme() {
     source: new Map(),
     sourceRoleMap: new Map(),
     markdown: new Map(),
-    surface: { workspace, drawer: footer, footer },
+    surface: {
+      workspace,
+      currentLine: workspace,
+      drawer: footer,
+      header: footer,
+      footer,
+    },
     cursor: { normal: workspace, insert: workspace },
     chrome: {
       activeEdge: edge,

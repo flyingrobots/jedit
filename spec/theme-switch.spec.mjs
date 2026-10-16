@@ -36,6 +36,7 @@ const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
 const MIN_GUTTER_CONTRAST_RATIO = 3;
+const MIN_CHROME_CONTRAST_RATIO = 3;
 
 async function loadThemesModule() {
   await ensureDistBuilt();
@@ -221,6 +222,37 @@ test("built-in gutter tokens retain named surface backgrounds and readable contr
     style.JEDIT_THEME_MODE.Dark,
     style.JEDIT_THEME_MODE.Light,
   ]);
+});
+
+test("built-in themes expose distinct current-line and shared chrome surfaces", async () => {
+  const { themes, style } = await loadThemesModule();
+
+  for (const theme of themes.availableJeditThemes()) {
+    assert.notDeepEqual(
+      theme.surface.currentLine.bgRGB,
+      theme.surface.workspace.bgRGB,
+      `${theme.name} distinguishes the normal-mode current line`,
+    );
+    assert.notDeepEqual(
+      theme.surface.header.bgRGB,
+      theme.surface.workspace.bgRGB,
+      `${theme.name} distinguishes editor chrome from the workspace`,
+    );
+    assert.deepEqual(
+      theme.surface.header.bgRGB,
+      theme.surface.footer.bgRGB,
+      `${theme.name} repeats the same surface in header and footer`,
+    );
+    assert.ok(
+      theme.surface.header.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold),
+      `${theme.name} emphasizes the active filename`,
+    );
+    assert.ok(
+      contrastRatio(theme.surface.header.fgRGB, theme.surface.header.bgRGB)
+        >= MIN_CHROME_CONTRAST_RATIO,
+      `${theme.name} keeps chrome text readable`,
+    );
+  }
 });
 
 function colorLuminance(color) {

@@ -12,6 +12,7 @@ import {
   TITLE_SCENE_PREVIEW_INPUT,
   type TitleScenePreviewInput,
 } from "./title-scene-preview-input.js";
+import { wrapIndex } from './list-index.js';
 
 export {
   TITLE_SCENE_PREVIEW_INPUT,
@@ -483,9 +484,3 @@ function clampIndex(index: number, count: number): number {
   return Math.min(Math.max(index, FIRST_INDEX), count - 1);
 }
 
-function wrapIndex(index: number, count: number): number {
-  if (count <= EMPTY_LENGTH) {
-    return FIRST_INDEX;
-  }
-  return ((index % count) + count) % count;
-}
