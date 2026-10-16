@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added DL-0159, a draft representation for the Edict-authored rope: schema 2
+  with typed Echo edges for every structural relation, canonical CBOR facts,
+  content-addressed immutable nodes, a basis chain that keeps every version
+  inside Echo's state root, and an import anchor tying a head to its file.
+- Added complete, not-yet-compiling drafts of `ReplaceRange` in Edict source
+  under `edict/replace-range/draft/`: a flat-text semantic reference and the
+  persistent AVL rope. Their README classifies every blocker by owner and
+  states the evidence plan. They are not part of the application gate.
 - Repinned the ReplaceRange Edict application to Edict main `e60411fc` and
   Echo main `9b3b9396` (provider and pure evaluator), with Rust 1.96.0 as Edict
   now requires. The verified executable subject is byte-identical to the
