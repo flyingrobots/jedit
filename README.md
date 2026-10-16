@@ -122,6 +122,14 @@ Contributions are welcome, but this is not a “throw code at it until destiny r
 
 Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
 
+Git hooks are plain shell scripts in `scripts/hooks/`. Hook installation is local, so merging the hooks does not install them. Enable them once per clone; linked worktrees share them. The installer writes small launchers into the repository's own hooks directory, which moves with the clone, leaves `core.hooksPath` unset, and refuses if any `core.hooksPath` setting would override that directory. Each launcher decides from the commit being recorded or the commits being pushed, not from the worktree's files: a hook the recorded tree or a pushed tip contains must run, from this worktree's copy, and a missing one is skipped only when that full history never had it, so a branch cannot skip its hooks through a sparse checkout, by deleting or unstaging them, or by merging them away:
+
+```bash
+scripts/install-hooks.sh
+```
+
+Each hook checks exactly what Git is about to record, in a temporary detached worktree that Git checks out itself. `scripts/hooks/pre-commit` checks out the tree `git write-tree` builds for this commit (including for `git commit -a` and `git commit <paths>`) and runs the quality gate and a TypeScript typecheck there, so unstaged edits, untracked and intent-to-add files, and files recreated after `git rm` can neither help nor hurt, skip-worktree files are present, and modes, symlinks, and attributes come from the staged tree. `scripts/hooks/pre-push` runs the full test suite (about 65 seconds) once per distinct commit a pushed ref will point to, whatever the checkout contains and whichever branch is checked out; intermediate commits of a pushed range are not tested separately, so a passing push says nothing about whether every commit builds on its own (bisectability), and deleting a remote branch runs nothing. A pass is evidence about the tested commit in this machine's environment, not about every environment it may run in. The temporary worktree ignores the caller's sparse checkout and any local replacement objects. Every temporary worktree installs its own dependencies with `npm ci` (a few seconds from the npm cache), which refuses a `package.json` that disagrees with its `package-lock.json`; it never borrows the checkout's `node_modules`. The Rust build cache is shared. Both call `enter_repository` from `scripts/hooks/lib/enter-repository.sh`, which clears the repository-local variables Git exports into hooks so tools that ask Git about the repository get the right answer in linked worktrees. `spec/git-hook-entrypoints.spec.mjs` runs the real hooks with `npm` and `npx` stubbed.
+
 Bug reports, design feedback, and causal UX ideas are welcome through GitHub issues and Discussions.
 
 ## Information

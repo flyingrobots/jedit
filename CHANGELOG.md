@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Replaced the leftover Husky hook path with plain shell hooks in
+  `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
+  typecheck, and pre-push runs the full test suite. Both share
+  `scripts/hooks/lib/enter-repository.sh`, which clears git's
+  repository-local variables before running tools, with specs covering a
+  normal clone and a linked worktree. Both hooks run in a temporary detached
+  worktree of exactly the commit being recorded: pre-commit checks out the
+  tree `git write-tree` builds (so intent-to-add files are absent,
+  skip-worktree files present, and attributes staged), and pre-push tests the
+  commit each pushed ref will point to, whatever the checkout contains; it
+  does not test intermediate commits, so it says nothing about bisectability.
+  The temporary worktree ignores the caller's sparse checkout and local
+  replacement objects, and installs its own dependencies with `npm ci`,
+  which refuses a manifest its lockfile disagrees with. Specs run the real
+  hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
+  configuration. Enable them with `scripts/install-hooks.sh`, which writes
+  launchers into the repository's own hooks directory (so they move with the
+  clone), refuses any `core.hooksPath` override in any scope or linked
+  worktree before changing anything, and restores what it found if the
+  result would not take effect. Each launcher decides from the commit being
+  recorded or the commits being pushed, not from the worktree's files: a
+  hook the recorded tree or a pushed tip contains must run, and deleting or
+  unstaging a hook, or merging it away, is refused because the full history
+  had it.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Test gate: the full suite (about 65 seconds on an M-series laptop), run
+# once per distinct commit a pushed ref will point to, in a temporary
+# checkout of that commit.
+set -euo pipefail
+
+hooks="$(dirname "${BASH_SOURCE[0]}")"
+source "$hooks/lib/enter-repository.sh"
+source "$hooks/lib/pushed-commits.sh"
+source "$hooks/lib/temporary-checkout.sh"
+enter_repository
+repository="$PWD"
+
+checkout=""
+trap 'if [[ -n "$checkout" ]]; then remove_temporary_checkout "$repository" "$checkout"; fi' EXIT
+
+commits="$(pushed_commits)"
+for commit in $commits; do
+  checkout="$(make_checkout_directory pre-push)"
+  add_temporary_checkout "$checkout" "$commit"
+  provide_checkout_dependencies "$checkout"
+  echo "pre-push: full test suite at ${commit:0:12}"
+  (cd "$checkout" && npm run --silent test:all)
+  remove_temporary_checkout "$repository" "$checkout"
+  checkout=""
+done
