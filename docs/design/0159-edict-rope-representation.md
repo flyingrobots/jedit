@@ -257,7 +257,9 @@ The filesystem testifies; it does not edit Jim's history:
   separate acts. Under Jim's law a divergence may lawfully stay `Plural`
   (§4.2) until a settlement is chosen.
 - **The optic** (Definition 3.1, Ψ = (Ω, χ, ρ, Π, Λ)) is Jim's: the slice χ is
-  the buffer's file site, ρ presents B, L, and H as comparable claims, Π is
+  the smallest lawful comparison closure within the buffer's file site. A
+  whole-file comparison is acceptable at first, but it is not a requirement;
+  the optic is bounded. ρ presents B, L, and H as comparable claims, Π is
   Jim's Edict-authored admissibility law, and Λ is the retention contract that
   decides whether B's bytes remain available for a merge.
 
