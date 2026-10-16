@@ -115,7 +115,7 @@ Facts (alpha atoms, canonical CBOR v1 via `echo-edict-canonical`):
 | `Branch` | `byteLength: U64`, `lineBreaks: U64`, `height: U8` | no |
 | `Leaf` | `bytes: Bytes<max=4096>`, `lineBreaks: U64` | no |
 | `Import` | `fileCoordinate`, `hostDigest: Bytes<exact=32>` | no |
-| `Export` | `fileCoordinate`, `logicalDigest: Bytes<exact=32>`, `hostDigest: Bytes<exact=32>` | no |
+| `Export` | `fileCoordinate`, `logicalDigest: Bytes<exact=32>`, `hostDigest: Bytes<exact=32>`, `exportEvent: Bytes<exact=32>` | no |
 
 Edges (no payload; one edge per source node and type):
 
@@ -125,7 +125,6 @@ Edges (no payload; one edge per source node and type):
 | `jedit.text.root` | Head → Branch or Leaf | the head's tree; absent for empty text |
 | `jedit.text.anchor` | Head → Import | the imported bytes this head's lineage descends from (provenance only) |
 | `jedit.text.lastExport` | Buffer → Export | the last witnessed write of this buffer to its file; retargeted by each save |
-| `jedit.text.exportedHead` | Export → Head | the head whose bytes that save wrote |
 | `jedit.text.left`, `jedit.text.right` | Branch → Branch or Leaf | ordered children |
 
 Identity law:
@@ -191,17 +190,94 @@ Head-to-file identity (anchored refinement). Three facts are kept apart:
 - The current logical digest is computed over the rope's bytes when a crossing
   needs it (save, reopen, reconciliation), not on every edit, so edits stay
   path-copies. The root node id is not that digest: it depends on tree shape.
-- Save is a witnessed crossing. It requires the file's current host digest to
-  equal the last exported digest (or the import digest, if never exported),
-  writes the bytes, and records an `Export` with the head, the logical digest,
-  and the resulting host digest. A mismatch is a typed conflict that needs an
-  explicit reconciliation decision; save never overwrites silently.
+- An `Export` is evidence of one crossing: the file, the logical digest of the
+  bytes written, the resulting host digest, and `exportEvent`, the identity of
+  the causal event that witnessed it. It names the exported head only through
+  that event and the logical digest; there is no edge to the head, so a save
+  does not keep a historical rope reachable. A pinned saved snapshot, if one is
+  ever wanted, is an explicit retention lease with its own lifetime.
+- The `Export` reachable through `lastExport` witnesses the last successful
+  export. It is never file authority: the filesystem's current bytes are, and
+  every crossing re-observes them.
+- Save is a crossing to a foreign system, so its steps stay separate
+  (`docs/jim-component-ownership.md`, `ExportIntent` and `ExportObserved`):
+  1. **Export intent.** An admitted Jim operation records the head to write,
+     its logical digest, the expected prior host digest (the last export's,
+     or the import's if never exported), and an occurrence key.
+  2. **Host write.** A host effector writes the bytes. Its own concurrency
+     protocol decides how close it gets to compare-and-write; see below.
+  3. **Observation.** The effector reads back the resulting host digest. That
+     reading enters Echo as witnessed ingress.
+  4. **Export outcome.** An admitted Jim operation records the `Export` and
+     retargets `lastExport` only when the observed digest equals the intended
+     bytes' digest. Any other observation is a typed conflict that needs an
+     explicit reconciliation decision.
+  5. **Recovery.** An intent without an outcome is resolved by re-observing
+     the file under the same occurrence key: the intended digest means the
+     write happened; the expected prior digest means it did not and may be
+     retried under the same key; anything else is an external change and a
+     conflict.
+- What this does and does not guarantee: comparing digests before writing
+  detects most external modifications, but a writer that changes the file
+  between that check and the write is not prevented by it. Echo's atomic
+  commit does not make the host write atomic with it. Preventing that race
+  needs a host-side concurrency protocol (an exclusive lock, or an atomic
+  compare-and-replace the filesystem actually provides). Until one is chosen,
+  the claim is detection after the fact, and step 3's observation is what
+  makes it detectable.
 - Reopening compares the file's current host digest with the last exported
   digest, or the import digest if the buffer was never exported. A mismatch
   means the file changed outside Jim: a typed obstruction or an explicit,
   witnessed external-edit transition, never silent reuse (#350).
 - The `Export` node and `lastExport` edge are part of schema 2; the save
   operation itself is designed separately.
+
+Third-party file changes. Another process (an editor, `git checkout`, a
+formatter, a sync client) can write the file while Jim holds a buffer for it.
+Jim's view of the file is always a past observation, so this is an ordinary
+case, not an error:
+
+- **Synchronization basis.** A buffer's synchronization basis is the host
+  digest of its last export, or of its import if it was never exported. It
+  says what the file held the last time Jim and the file agreed.
+- **Detection.** Jim learns of a change only by observing the file: a watcher
+  event (best effort; missed or coalesced events are reported as gaps), focus
+  or explicit refresh, reopen (#350), or the save protocol's step 1 and
+  step 3. Each observation enters Echo as witnessed ingress. A file whose host
+  digest differs from the synchronization basis has changed outside Jim; an
+  unobserved file is `Unknown`, never assumed unchanged.
+- **External change record.** An observed change is admitted as a new
+  `Import` for the same file coordinate with the observed host digest. It is
+  provenance for the external bytes, not yet a decision about the buffer.
+- **Clean buffer** (the current logical digest equals the synchronization
+  basis's content). Jim may adopt the external bytes as a new head anchored to
+  the new `Import`, by an admitted operation, either automatically under a
+  declared policy or on request. Adoption is a forward edit; the old head stays
+  in causal history.
+- **Dirty buffer** (unsaved edits since the synchronization basis). The buffer
+  and the file have diverged from a common base. Jim never resolves this
+  silently. The decision is explicit and witnessed, and the choices are:
+  1. **Keep mine.** Save anyway: an export whose expected prior digest is the
+     *observed external* digest, recorded as overwriting a known third-party
+     change.
+  2. **Take theirs.** Adopt the external bytes as a new head. The unsaved head
+     remains in causal history, and retention decides how long its bytes stay
+     reconstructible; Jim may offer it as a recoverable alternative.
+  3. **Merge.** A three-way merge with base = the synchronization basis's
+     bytes, ours = the current head, theirs = the external bytes. A clean merge
+     is a new head with both `Import`s in its provenance. An overlapping merge
+     is a `Plural` outcome the user resolves, never a guess.
+  4. **Defer.** Keep editing; the divergence stays recorded, and save is
+     obstructed until one of the above is chosen.
+- **Merge base availability.** A merge needs the base bytes. Without an
+  `Export → Head` edge they live only in causal history, so whether they are
+  still reconstructible is Echo's retention decision. If they are not, merge is
+  refused with a typed `MergeBaseUnavailable` and only keep-mine and
+  take-theirs remain. A retention lease on the last synchronized head would
+  guarantee the base; that is an open decision below.
+- **Save during divergence.** The save protocol's expected prior digest makes
+  an unresolved divergence a conflict at step 1, and a change that lands
+  between check and write a conflict at step 3. Neither overwrites silently.
 
 ## Runtime / API Contract
 
@@ -296,6 +372,17 @@ and the Echo evaluation-to-effect design.
 - Reconstruction: a past state is rebuilt from Echo's checkpoints and replay,
   and the test states which retention guarantee it relies on.
 - Anchor: reopen with a changed host digest obstructs (#350).
+- Third-party change, clean buffer: adoption produces a head anchored to the
+  new `Import` with exactly the external bytes.
+- Third-party change, dirty buffer: save is obstructed until keep-mine,
+  take-theirs, or merge is chosen; each choice leaves the expected head and
+  provenance; overlapping merges are `Plural`.
+- Merge base gone: with the base bytes unretained, merge refuses with
+  `MergeBaseUnavailable` and the other choices still work.
+- Race: a file changed between the save's check and its write is reported as a
+  conflict at observation, never recorded as a successful export.
+- Recovery: a crash between export intent and outcome resolves to written,
+  not written, or external change by re-observation.
 
 ## Acceptance Criteria
 
@@ -333,9 +420,10 @@ None yet. This is a representation decision.
   surfaces Jim commits to (language server, external protocols), not from
   today's consumers.
 - Open: which hash Edict source exposes for identities.
-- Open: `Export → Head` keeps the last exported head reachable, which is one
-  deliberately retained snapshot (the saved state). Confirm that is wanted, or
-  record only the logical digest and leave the bytes to Echo's retention.
+- Open: whether the last synchronized head gets a retention lease so a
+  three-way merge always has its base (see Third-party file changes), and that
+  lease's lifetime and release.
+- Open: the host-side concurrency protocol for the export write.
 - Settled by the anchor split: a reopen check compares host digests only, so
   it never materializes the rope; the logical digest is computed at save.
 - Open: Rewrite and Diff facts in schema 2.

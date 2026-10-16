@@ -38,10 +38,13 @@ type ImportFact = {
 };
 
 // Synchronization: one witnessed write of a buffer's bytes to its file.
+// Evidence of the crossing, not file authority. `exportEvent` names the causal
+// event that witnessed the write; the exported head is not reachable from it.
 type ExportFact = {
   fileCoordinate: String<max=4096>,
   logicalDigest: Bytes<exact=32>,
   hostDigest: Bytes<exact=32>,
+  exportEvent: Bytes<exact=32>,
 };
 
 // ---- Edge types (no payload; one edge per source node and type) ----
@@ -50,7 +53,6 @@ type CanonicalHead = Unit;   // Buffer -> Head
 type Root = Unit;            // Head -> Branch | Leaf
 type Anchor = Unit;          // Head -> Import, copied to every new head
 type LastExport = Unit;      // Buffer -> Export, retargeted by each save
-type ExportedHead = Unit;    // Export -> Head written by that save
 // No head-to-predecessor edge: Echo's ticks and receipts own history (DL-0159).
 type Left = Unit;            // Branch -> Branch | Leaf
 type Right = Unit;           // Branch -> Branch | Leaf
