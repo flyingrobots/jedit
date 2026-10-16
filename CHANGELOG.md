@@ -7,12 +7,13 @@
   typecheck, and pre-push runs the full test suite. Both share
   `scripts/hooks/lib/enter-repository.sh`, which clears git's
   repository-local variables before running tools, with specs covering a
-  normal clone and a linked worktree. Pre-commit runs its checks on a snapshot
-  of the index the commit records, including for `commit -a` and
-  `commit <paths>`, keeping index modes, symlinks, and checkout filters.
-  Pre-push runs the suite once per distinct pushed commit in a temporary
-  detached worktree of that commit, so it tests what is pushed regardless of
-  the checkout's state or which branch is checked out. Specs run the real
+  normal clone and a linked worktree. Both hooks run in a temporary detached
+  worktree of exactly the commit being recorded: pre-commit checks out the
+  tree `git write-tree` builds (so intent-to-add files are absent,
+  skip-worktree files present, and attributes staged), and pre-push tests the
+  commit each pushed ref will point to, whatever the checkout contains. They
+  borrow `node_modules` only when the lockfile is identical, and otherwise
+  run `npm ci`. Specs run the real
   hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
   configuration. Enable them with `scripts/install-hooks.sh`.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact

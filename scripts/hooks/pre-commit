@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # Lint gate: the same checks CI's quality job and TypeScript build enforce,
-# run on a snapshot of exactly what this commit records.
+# run in a temporary checkout of exactly the tree this commit records.
 set -euo pipefail
 
 hooks="$(dirname "${BASH_SOURCE[0]}")"
 source "$hooks/lib/enter-repository.sh"
 source "$hooks/lib/staged-snapshot.sh"
+source "$hooks/lib/temporary-checkout.sh"
 
-snapshot="$(mktemp -d "${TMPDIR:-/tmp}/jedit-pre-commit.XXXXXX")"
-trap 'rm -rf "$snapshot"' EXIT
-write_staged_snapshot "$snapshot"
+snapshot="$(staged_snapshot_commit)"
 enter_repository
-link_snapshot_dependencies "$snapshot"
-cd "$snapshot"
+repository="$PWD"
 
-echo "pre-commit: quality gate (staged snapshot)"
+checkout="$(mktemp -d "${TMPDIR:-/tmp}/jedit-pre-commit.XXXXXX")"
+trap 'remove_temporary_checkout "$repository" "$checkout"' EXIT
+add_temporary_checkout "$checkout" "$snapshot"
+provide_checkout_dependencies "$checkout"
+cd "$checkout"
+
+echo "pre-commit: quality gate (staged tree)"
 npm run --silent quality
 
-echo "pre-commit: typecheck (staged snapshot)"
+echo "pre-commit: typecheck (staged tree)"
 npx --no-install tsc -p tsconfig.json --noEmit

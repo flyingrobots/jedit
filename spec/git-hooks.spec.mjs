@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -20,8 +20,9 @@ cd sub
 git rev-parse --show-toplevel > "$PROBE_OUT"
 `;
 
-function makeRepository() {
+function makeRepository(t) {
   const root = realpathSync(mkdtempSync(path.join(tmpdir(), 'jedit-hooks-')));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
   const repo = path.join(root, 'repo');
   mkdirSync(path.join(repo, 'sub'), { recursive: true });
   mkdirSync(path.join(repo, 'hooks'));
@@ -47,21 +48,21 @@ function commitAndProbe(checkout, label) {
   return readFileSync(probeOut, 'utf8').trim();
 }
 
-test('a hook in a normal clone sees the clone root from a subdirectory', () => {
-  const { repo } = makeRepository();
+test('a hook in a normal clone sees the clone root from a subdirectory', (t) => {
+  const { repo } = makeRepository(t);
   assert.equal(commitAndProbe(repo, 'clone'), repo);
 });
 
-test('a hook in a linked worktree sees the worktree root from a subdirectory', () => {
-  const { root, repo } = makeRepository();
+test('a hook in a linked worktree sees the worktree root from a subdirectory', (t) => {
+  const { root, repo } = makeRepository(t);
   commitAndProbe(repo, 'seed');
   const worktree = path.join(root, 'linked');
   git(repo, 'worktree', 'add', '-q', worktree);
   assert.equal(commitAndProbe(worktree, 'linked'), worktree);
 });
 
-test('entering the repository succeeds with no git variables exported', () => {
-  const { repo } = makeRepository();
+test('entering the repository succeeds with no git variables exported', (t) => {
+  const { repo } = makeRepository(t);
   const script = 'set -euo pipefail; source "$PROBE_HELPER"; enter_repository; pwd';
   const result = spawnSync('bash', ['-c', script], {
     cwd: path.join(repo, 'sub'),
