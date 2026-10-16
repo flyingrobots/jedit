@@ -240,8 +240,28 @@ file while Jim holds a buffer for it. That is an ordinary case of two
 authorities evolving independently, so it is part of the file model, not an
 edge case of save.
 
-This is causal transport, not a new mechanism. The filesystem testifies; it
-does not edit Jim's history:
+This is causal transport, not a new mechanism, and AIΩN Paper VII ("WARP:
+Optics, Holograms, and Worldlines over Shared Causal History") already gives
+its shape: "Distribution changes the slice boundary; it does not change the
+downstream law." Jim observes a transported claim, takes part in constructing
+a comparable braid, and authors the law under which that braid may be lowered.
+The filesystem testifies; it does not edit Jim's history:
+
+- **Transport precedes judgment** (Paper VII §4.3). An observed file version
+  must be re-expressed at Jim's receiving frontier before it can be judged. B
+  is that comparable basis. The adapter establishes only the basis it can
+  actually support; it cannot manufacture ancestry the external writer never
+  supplied.
+- **A braid is not a merge** (Definition 2.4, Remark 2.6). Observing (holding
+  the claim), braiding (presenting L and H over B), judging, and admitting are
+  separate acts. Under Jim's law a divergence may lawfully stay `Plural`
+  (§4.2) until a settlement is chosen.
+- **The optic** (Definition 3.1, Ψ = (Ω, χ, ρ, Π, Λ)) is Jim's: the slice χ is
+  the buffer's file site, ρ presents B, L, and H as comparable claims, Π is
+  Jim's Edict-authored admissibility law, and Λ is the retention contract that
+  decides whether B's bytes remain available for a merge.
+
+In Echo's current contracts:
 
 - A filesystem adapter turns a validated observation into ingress, following
   Echo's [Continuum Transport](https://github.com/flyingrobots/echo/blob/main/docs/architecture/continuum-transport.md)
@@ -402,6 +422,19 @@ causal history and receipts, not from rope topology.
 - History Over State ch. 21 and 42: a rope head is the workspace coordinate,
   an anchored refinement of it, or the source of a witnessed crossing.
 - DL-0158: codec or edge migration is a separately admitted operation.
+- AIΩN Paper VII ("WARP: Optics, Holograms, and Worldlines over Shared Causal
+  History"), as an architectural foundation, not as evidence that anything
+  below is implemented:
+  - §3.3, commitment, folding, and revelation are separate: the graph commits
+    the current rope; what stays retained is the contract Λ, not rope topology.
+  - §4.2 and §4.3, braid plurality and transport before import: the external
+    file reconciliation contract above.
+  - §6.2, the authored hot-text optic: its `replaceRangeAsTick` surface declares
+    a `ropeRangeClosure` slice closure and updates only `canonicalHead`. The
+    draft's guided closure read and the single head retarget follow that shape.
+  - §8 lists app-authored optic compilation and export semantics at the
+    causal-medium boundary as open engineering seams. This document's
+    Edict-authored rope and save crossing are attempts at exactly those seams.
 
 ## Design Alternatives Considered
 
