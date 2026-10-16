@@ -2,7 +2,10 @@
 # Lint gate: the same checks CI's quality job and TypeScript build enforce.
 set -euo pipefail
 
-source "$(dirname "${BASH_SOURCE[0]}")/lib/enter-repository.sh"
+hooks="$(dirname "${BASH_SOURCE[0]}")"
+source "$hooks/lib/staged-content.sh"
+source "$hooks/lib/enter-repository.sh"
+refuse_partial_staging
 enter_repository
 
 echo "pre-commit: quality gate"

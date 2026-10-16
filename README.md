@@ -128,7 +128,7 @@ Git hooks are plain shell scripts in `scripts/hooks/`. `core.hooksPath` is local
 scripts/install-hooks.sh
 ```
 
-`scripts/hooks/pre-commit` runs the quality gate and a TypeScript typecheck. `scripts/hooks/pre-push` runs the full test suite (about 85 seconds). Both first call `enter_repository` from `scripts/hooks/lib/enter-repository.sh`, which clears the repository-local variables Git exports into hooks so tools that ask Git about the repository get the right answer in linked worktrees.
+`scripts/hooks/pre-commit` runs the quality gate and a TypeScript typecheck. `scripts/hooks/pre-push` runs the full test suite (about 85 seconds). Both first call `enter_repository` from `scripts/hooks/lib/enter-repository.sh`, which clears the repository-local variables Git exports into hooks so tools that ask Git about the repository get the right answer in linked worktrees. Because the checks run on the working tree, pre-commit first refuses a commit when a tracked file has both staged and unstaged changes, so the checked copy of every staged file is the copy being committed. Unstaged work in other files and untracked files are still allowed. `spec/git-hook-entrypoints.spec.mjs` runs the real hooks with `npm` and `npx` stubbed.
 
 Bug reports, design feedback, and causal UX ideas are welcome through GitHub issues and Discussions.
 
