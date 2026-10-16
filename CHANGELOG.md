@@ -4,8 +4,11 @@
 
 - Replaced the leftover Husky hook path with plain shell hooks in
   `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
-  typecheck, and pre-push runs the full test suite. Enable them with
-  `git config --local core.hooksPath scripts/hooks`.
+  typecheck, and pre-push runs the full test suite. Both share
+  `scripts/hooks/lib/enter-repository.sh`, which clears git's
+  repository-local variables before running tools, with specs covering a
+  normal clone and a linked worktree. Enable them with
+  `scripts/install-hooks.sh`.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

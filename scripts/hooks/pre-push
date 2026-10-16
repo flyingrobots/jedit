@@ -2,10 +2,8 @@
 # Test gate: the full suite (about 85 seconds on an M-series laptop).
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
-# Git exports GIT_DIR and friends into hooks; specs that ask git for the
-# repository root must see a normal environment.
-unset $(git rev-parse --local-env-vars)
+source "$(dirname "${BASH_SOURCE[0]}")/lib/enter-repository.sh"
+enter_repository
 
 echo "pre-push: full test suite"
 npm run --silent test:all

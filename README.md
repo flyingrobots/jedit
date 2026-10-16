@@ -122,13 +122,13 @@ Contributions are welcome, but this is not a “throw code at it until destiny r
 
 Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
 
-Git hooks are plain shell scripts in `scripts/hooks/`. Enable them once per clone:
+Git hooks are plain shell scripts in `scripts/hooks/`. `core.hooksPath` is local Git configuration, so merging the hooks does not install them. Enable them once per clone; linked worktrees share the setting:
 
 ```bash
-git config --local core.hooksPath scripts/hooks
+scripts/install-hooks.sh
 ```
 
-`scripts/hooks/pre-commit` runs the quality gate and a TypeScript typecheck. `scripts/hooks/pre-push` runs the full test suite (about 85 seconds).
+`scripts/hooks/pre-commit` runs the quality gate and a TypeScript typecheck. `scripts/hooks/pre-push` runs the full test suite (about 85 seconds). Both first call `enter_repository` from `scripts/hooks/lib/enter-repository.sh`, which clears the repository-local variables Git exports into hooks so tools that ask Git about the repository get the right answer in linked worktrees.
 
 Bug reports, design feedback, and causal UX ideas are welcome through GitHub issues and Discussions.
 
