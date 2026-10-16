@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Test gate: the full suite (about 85 seconds on an M-series laptop).
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-push: full test suite"
+npm run --silent test:all

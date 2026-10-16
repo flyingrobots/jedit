@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Lint gate: the same checks CI's quality job and TypeScript build enforce.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-commit: quality gate"
+npm run --silent quality
+
+echo "pre-commit: typecheck"
+npx --no-install tsc -p tsconfig.json --noEmit

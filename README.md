@@ -122,6 +122,14 @@ Contributions are welcome, but this is not a “throw code at it until destiny r
 
 Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
 
+Git hooks are plain shell scripts in `scripts/hooks/`. Enable them once per clone:
+
+```bash
+git config --local core.hooksPath scripts/hooks
+```
+
+`scripts/hooks/pre-commit` runs the quality gate and a TypeScript typecheck. `scripts/hooks/pre-push` runs the full test suite (about 85 seconds).
+
 Bug reports, design feedback, and causal UX ideas are welcome through GitHub issues and Discussions.
 
 ## Information
