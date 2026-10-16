@@ -39,8 +39,8 @@ type ImportFact = {
 
 type CanonicalHead = Unit;   // Buffer -> Head
 type Root = Unit;            // Head -> Branch | Leaf
-type Basis = Unit;           // Head -> Head
-type Anchor = Unit;          // Head -> Import
+type Anchor = Unit;          // Head -> Import, copied to every new head
+// No head-to-predecessor edge: Echo's ticks and receipts own history (DL-0159).
 type Left = Unit;            // Branch -> Branch | Leaf
 type Right = Unit;           // Branch -> Branch | Leaf
 

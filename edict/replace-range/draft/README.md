@@ -89,8 +89,8 @@ All are covered by the proposed Echo design
 - Closure size: two boundary paths plus their inner spines, `O(h²)` nodes,
   with `h ≤ 1.44 log2(leaves)`. Bounded by `text.maxClosureNodes`.
 - Patch size: about `(h + 1)` new branches, up to 2 new leaves plus
-  `replacement / 4096` leaves, two edges per branch, one head, three head
-  edges. Echo caps a Tick at 128 operations, which a 1 MiB replacement exceeds;
+  `replacement / 4096` leaves, two edges per branch, one head with its `root`
+  and `anchor` edges, and one retargeted `canonicalHead` edge. Echo caps a Tick at 128 operations, which a 1 MiB replacement exceeds;
   the cap or the replacement bound must move, and that is a measured decision.
 - Echo's state root walks all reachable history on every commit (DL-0159 risk).
 - Echo charges a full copy for every local read; `Tree` values are large.

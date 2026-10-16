@@ -49,6 +49,8 @@ intent replaceRange(input: Input) returns Result
   let head = headRef.read() else text.FactMissing;
   let textId = echo.edge<v2.HeadFact, TextFact, v2.Root>(headRef)
     .target() else text.FactMissing;
+  let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
+    .target() else text.FactMissing;
   let old = echo.ref<TextFact>(textId).read() else text.FactMissing;
   require len(old.bytes) == head.byteLength else text.MalformedRope;
 
@@ -72,13 +74,13 @@ intent replaceRange(input: Input) returns Result
     lineCount: fact.lineBreaks + 1u64,                       // needs checked +
     sequence: head.sequence + 1u64,
   };
-  let newHeadId = v2.nodeId("head", core.cbor.encode(newHead), [newTextId, input.basisHeadId]);
+  let newHeadId = v2.nodeId("head", core.cbor.encode(newHead), [newTextId, importId]);
   let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
   newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
   echo.edge<v2.HeadFact, TextFact, v2.Root>(newHeadRef)
     .ensure(newTextId) else text.ContentIdentityMismatch;   // PROPOSED: edge ensure
-  echo.edge<v2.HeadFact, v2.HeadFact, v2.Basis>(newHeadRef)
-    .ensure(input.basisHeadId) else text.ContentIdentityMismatch;
+  echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(newHeadRef)
+    .ensure(importId) else text.ContentIdentityMismatch;
 
   echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
     .replace(input.basisHeadId, newHeadId) else text.BasisNotCanonical;  // PROPOSED: compare-and-retarget

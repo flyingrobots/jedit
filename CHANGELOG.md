@@ -4,8 +4,9 @@
 
 - Added DL-0159, a draft representation for the Edict-authored rope: schema 2
   with typed Echo edges for every structural relation, canonical CBOR facts,
-  content-addressed immutable nodes, a basis chain that keeps every version
-  inside Echo's state root, and an import anchor tying a head to its file.
+  content-addressed immutable nodes, and an import anchor tying every head to
+  its file. The graph holds only the current rope; Echo's ticks and receipts
+  own history, and retention of superseded nodes is Echo's policy.
 - Added complete, not-yet-compiling drafts of `ReplaceRange` in Edict source
   under `edict/replace-range/draft/`: a flat-text semantic reference and the
   persistent AVL rope. Their README classifies every blocker by owner and

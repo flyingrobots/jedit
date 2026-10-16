@@ -93,6 +93,8 @@ intent replaceRange(input: Input) returns Result
 
   let headRef = echo.ref<v2.HeadFact>(input.basisHeadId);
   let head = headRef.read() else text.FactMissing;
+  let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
+    .target() else text.FactMissing;
   require input.endByte <= head.byteLength else text.RangeOutOfBounds;
   require core.bytes.isUtf8(input.replacement) else text.Utf8BoundaryInvalid;  // PROPOSED
 
@@ -139,15 +141,15 @@ intent replaceRange(input: Input) returns Result
     sequence: head.sequence + 1u64,
   };
   let rootId = if m.byteLength == 0u64 then none() else some(rope.idOf(next));
-  let newHeadId = v2.nodeId("head", core.cbor.encode({ newHead, rootId }), [input.basisHeadId]);
+  let newHeadId = v2.nodeId("head", core.cbor.encode({ newHead, rootId }), [importId]);
   let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
   newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
   if isSome(rootId) {
     echo.edge<v2.HeadFact, v2.BranchFact, v2.Root>(newHeadRef)
       .ensure(unwrap(rootId)) else text.ContentIdentityMismatch;
   }
-  echo.edge<v2.HeadFact, v2.HeadFact, v2.Basis>(newHeadRef)
-    .ensure(input.basisHeadId) else text.ContentIdentityMismatch;
+  echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(newHeadRef)
+    .ensure(importId) else text.ContentIdentityMismatch;
 
   echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
     .replace(input.basisHeadId, newHeadId) else text.BasisNotCanonical;  // PROPOSED: compare-and-retarget

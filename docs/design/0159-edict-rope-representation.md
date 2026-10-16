@@ -28,10 +28,14 @@ The rope that Jim's Edict source reads and writes uses a new text schema,
 `jedit.text.schema@2`. Every structural relation is an Echo edge; atoms carry
 only scalar facts. Atom payloads use Echo's canonical CBOR v1. Immutable nodes
 are content-addressed over their facts and their ordered children, so unchanged
-subtrees keep their identity across edits. Each head links to its basis head, so
-every retained version stays reachable from the worldline root and therefore
-inside the state root. An imported head is anchored to the file coordinate and
-the host digest of the bytes it was built from.
+subtrees keep their identity across edits. Every head is anchored to the file
+coordinate and the host digest of the bytes its lineage was imported from.
+
+The graph holds the **current** rope only. Echo's ticks and receipts are the
+causal history of how it got there; Jim does not duplicate that history as a
+chain of reachable heads. Whether superseded nodes stay retained, and how far
+back a past state can be reconstructed, is Echo's retention and replay
+contract, not a property of rope topology.
 
 This replaces nothing in production yet. `jedit.text.schema@1` (DL-0158), the
 native planner, and its oracle remain the current truth. Schema 2 is the
@@ -45,15 +49,15 @@ cannot see.
 
 ## Sponsored Agent
 
-An agent needs every rope version, and the file bytes each version came from,
-to be reachable through typed graph structure, so it can explain or replay an
-edit without decoding application JSON.
+An agent needs the current rope, and the file bytes it descends from, to be
+reachable through typed graph structure, and needs past edits to be explained
+by Echo's causal history, so it never decodes application JSON.
 
 ## Hill
 
 A reviewer can check, from this document and the draft source alone, which
-node, edge, and atom an Edict-authored `ReplaceRange` reads and writes, and why
-old versions remain visible to the state root.
+node, edge, and atom an Edict-authored `ReplaceRange` reads and writes, and
+which guarantees about past versions come from Echo rather than from the rope.
 
 ## Current Truth
 
@@ -77,8 +81,8 @@ Echo facts that constrain the choice (Echo main `9b3b9396`):
 - Nothing is garbage-collected; reachability decides only what the state root
   commits.
 
-So schema 1 rope versions persist in the store but are invisible to the state
-root, and Edict would have to parse JSON to follow a child.
+So schema 1's current rope is itself invisible to the state root, and Edict
+would have to parse JSON to follow a child.
 
 ## Problem
 
@@ -118,8 +122,7 @@ Edges (no payload; one edge per source node and type):
 | --- | --- | --- |
 | `jedit.text.canonicalHead` | Buffer → Head | current head; retargeted by each edit |
 | `jedit.text.root` | Head → Branch or Leaf | the head's tree; absent for empty text |
-| `jedit.text.basis` | Head → Head | the head this one was derived from |
-| `jedit.text.anchor` | Head → Import | the imported bytes a head descends from |
+| `jedit.text.anchor` | Head → Import | the imported bytes this head's lineage descends from |
 | `jedit.text.left`, `jedit.text.right` | Branch → Branch or Leaf | ordered children |
 
 Identity law:
@@ -141,18 +144,42 @@ Rope law (unchanged from schema 1 except where noted):
   Nothing is deleted.
 - Leaves hold their bytes inline. Schema 1's Blob indirection is dropped;
   content addressing already deduplicates equal leaves.
-- UTF-16 length is dropped from stored metrics. No consumer outside the native
-  rope reads it; a reading may derive it.
 
-History reachability: worldline root → Buffer → `canonicalHead` → Head →
-`basis` → older Head → … Every retained version is reachable, so the state root
-commits all of them.
+Coordinate contract:
+
+- Byte offsets into the UTF-8 text are the only authoritative coordinates.
+  Every operation takes and returns byte offsets.
+- UTF-16 code-unit offsets matter for interoperability (language servers,
+  browser selection, external editing protocols), even though no Jim code reads
+  them today. Whether they are derived on demand, cached in readings, or
+  retained as a per-node witnessed metric is an open decision (see Follow-On
+  Debt). Until it is made, schema 2 does not store them, and nothing may treat
+  their absence as a decision that they are unneeded.
+
+History, current state, and retained material are three different things:
+
+| | Owner | What it guarantees |
+| --- | --- | --- |
+| Causal history | Echo ticks and receipts | what happened, in which causal context, with which outcome |
+| Current state | this graph | the Buffer, its canonical Head, and the nodes reachable from that Head |
+| Retained material | Echo retention and replay | which past states can be reconstructed, from checkpoints or replay inputs |
+
+The graph keeps no edge from a head to the head it replaced. After an edit,
+the state root covers the current rope only. Superseded nodes leave the
+reachable graph. Whether their bytes remain available is Echo's retention
+policy; a tick witnessing a transition does not by itself promise that the
+bytes needed to reconstruct the earlier state are still retained.
+
+Undo and redo are forward operations: Jim proposes a new edit whose target
+state derives from a past witnessed state, subject to the evidence Echo still
+retains and to admission. Nothing moves history backward.
 
 Head-to-file identity (anchored refinement):
 
 - Importing a file creates an `Import` node for its coordinate and the host
   digest of the imported bytes, and anchors the import head to it.
-- Every later head reaches its `Import` through the `basis` chain.
+- Every edit copies the `anchor` edge from the basis head to the new head, so
+  the current head always names its `Import` directly.
 - Reopening compares the current host digest with the anchored digest. A
   mismatch is a typed obstruction or an explicit, witnessed external-edit
   transition, never silent reuse (#350).
@@ -166,8 +193,10 @@ The authored `ReplaceRange` operation, in schema 2 terms:
 2. Read the bounded closure of nodes the edit touches: both boundary paths and
    the spines a join may descend.
 3. Compute, purely, the new nodes and edges.
-4. `ensure` each new immutable node and edge; replace the `canonicalHead` edge
-   and bump `Buffer.version`. All or nothing.
+4. `ensure` each new immutable node and edge, including the new head's `root`
+   and copied `anchor` edges; replace the `canonicalHead` edge and bump
+   `Buffer.version`. All or nothing. No edge points from the new head to the
+   old one.
 
 Generic capabilities this needs, none of which exists today:
 
@@ -195,8 +224,9 @@ only, as in schema 1.
 
 ## Agent Inspectability / Explainability Posture
 
-Every relation an agent needs is a typed edge, so an agent can traverse rope
-history without decoding application payloads.
+Every relation in the current rope is a typed edge, so an agent can traverse it
+without decoding application payloads. Past edits are explained from Echo's
+causal history and receipts, not from rope topology.
 
 ## Linked Invariants
 
@@ -216,8 +246,12 @@ history without decoding application payloads.
   byte-by-byte (the #302 Buffer-decoder probe) and admits several spellings.
 - **Keep Blob slices.** Rejected for schema 2: adds an indirection and a slice
   read per leaf; content-addressed leaves already deduplicate.
-- **Keep UTF-16 length.** Deferred: adds a Unicode-counting primitive to the
-  critical path for a metric nothing outside the native rope reads.
+- **Link each head to its basis head.** Rejected: it would make every version
+  of every buffer permanently reachable, so the state root and retention would
+  grow with editing history, and it duplicates the causal history Echo's ticks
+  and receipts already own. History is not state.
+- **Drop UTF-16 coordinates.** Rejected as a decision: no current consumer is
+  not a reason to discard an interoperability coordinate. Left open instead.
 
 ## Decision
 
@@ -239,8 +273,10 @@ and the Echo evaluation-to-effect design.
   non-canonical encodings.
 - Identity: equal subtrees produce equal ids; any atom or child change changes
   the id.
-- Reachability: after N edits, all N+1 heads are reachable and inside the state
-  root.
+- Reachability: after an edit, the state root covers exactly the current Buffer,
+  Head, Import, and rope; nodes only the superseded head used are unreachable.
+- Reconstruction: a past state is rebuilt from Echo's checkpoints and replay,
+  and the test states which retention guarantee it relies on.
 - Anchor: reopen with a changed host digest obstructs (#350).
 
 ## Acceptance Criteria
@@ -261,9 +297,12 @@ None yet. This is a representation decision.
 ## Risks
 
 - **State-root cost.** Echo recomputes the root by walking the whole reachable
-  graph on every commit. Keeping all history reachable makes that walk grow
-  with history. This is a generic Echo cost (an incremental or Merkle root
-  would fix it), not a reason to hide history. Recorded; deferred.
+  graph on every commit, so an edit costs in proportion to the current rope,
+  not to its history. That is still more than the edit itself; an incremental
+  root is Echo's open state-root decision. Recorded; deferred.
+- **Unreclaimed nodes.** Echo has no garbage collection today, so superseded
+  nodes stay in the store after they leave the reachable graph. Reclaiming them
+  is Echo's retention policy, not Jim's.
 - **Patch size.** About `(depth + 1) × (node + atom + up to 2 edges)` operations
   per edit, against Echo's 128 operations per tick. Depth stays near
   `1.44 × log2(leaves)`; to be measured.
@@ -271,6 +310,10 @@ None yet. This is a representation decision.
 
 ## Follow-On Debt
 
+- Open: Jim's UTF-16 coordinate contract: derive on demand, cache in readings,
+  or retain as a witnessed per-node metric. Decide from the interoperability
+  surfaces Jim commits to (language server, external protocols), not from
+  today's consumers.
 - Open: which hash Edict source exposes for identities.
 - Open: whether Head should carry a content digest of its full text, so a
   reopen check need not materialize the rope.
