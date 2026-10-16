@@ -122,7 +122,7 @@ Contributions are welcome, but this is not a “throw code at it until destiny r
 
 Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
 
-Git hooks are plain shell scripts in `scripts/hooks/`. Hook installation is local, so merging the hooks does not install them. Enable them once per clone; linked worktrees share them. The installer writes small launchers into the repository's own hooks directory, which moves with the clone, leaves `core.hooksPath` unset, and refuses if any `core.hooksPath` setting would override that directory. Each launcher runs the current worktree's tracked hook and refuses when it is missing, unless the history being committed or pushed never had it, so a branch cannot skip its hooks through a sparse checkout or by deleting them:
+Git hooks are plain shell scripts in `scripts/hooks/`. Hook installation is local, so merging the hooks does not install them. Enable them once per clone; linked worktrees share them. The installer writes small launchers into the repository's own hooks directory, which moves with the clone, leaves `core.hooksPath` unset, and refuses if any `core.hooksPath` setting would override that directory. Each launcher decides from the commit being recorded or the commits being pushed, not from the worktree's files: a hook the recorded tree or a pushed tip contains must run, from this worktree's copy, and a missing one is skipped only when that full history never had it, so a branch cannot skip its hooks through a sparse checkout, by deleting or unstaging them, or by merging them away:
 
 ```bash
 scripts/install-hooks.sh

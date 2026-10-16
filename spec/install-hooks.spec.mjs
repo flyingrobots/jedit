@@ -27,8 +27,19 @@ printf ' %s' "$@" >> "$HOOK_LOG"
 printf '\\n' >> "$HOOK_LOG"
 `;
 
-function install(cwd) {
-  return spawnSync('scripts/install-hooks.sh', { cwd, encoding: 'utf8', env: cleanGitEnv() });
+function install(cwd, env = {}) {
+  return spawnSync('scripts/install-hooks.sh', { cwd, encoding: 'utf8', env: cleanGitEnv(env) });
+}
+
+function addRemote(fixture) {
+  const remote = path.join(fixture.root, 'remote.git');
+  git(fixture.root, 'init', '-q', '--bare', remote);
+  git(fixture.repo, 'remote', 'add', 'origin', remote);
+  return remote;
+}
+
+function remoteRefs(remote) {
+  return spawnSync('git', ['--git-dir', remote, 'show-ref'], { encoding: 'utf8', env: cleanGitEnv() }).stdout.trim();
 }
 
 function makeRepository(t) {
@@ -148,14 +159,66 @@ test('a branch from before the hooks existed commits without them', (t) => {
 
 test('pushing a branch that has hooks from a worktree that predates them is refused', (t) => {
   const fixture = makeRepository(t);
-  const remote = path.join(fixture.root, 'remote.git');
-  git(fixture.root, 'init', '-q', '--bare', remote);
-  git(fixture.repo, 'remote', 'add', 'origin', remote);
+  const remote = addRemote(fixture);
   const worktree = path.join(fixture.root, 'old');
   git(fixture.repo, 'worktree', 'add', '-q', '--detach', worktree, fixture.beforeHooks);
   const result = spawnSync('git', ['push', '-q', 'origin', 'main'], { cwd: worktree, encoding: 'utf8', env: hookEnv(fixture) });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /scripts\/hooks\/pre-push/);
-  const refs = spawnSync('git', ['--git-dir', remote, 'show-ref'], { encoding: 'utf8', env: cleanGitEnv() });
-  assert.equal(refs.stdout.trim(), '');
+  assert.equal(remoteRefs(remote), '');
+});
+
+test('unstaging a hook while its file stays in the worktree cannot commit the deletion', (t) => {
+  const fixture = makeRepository(t);
+  git(fixture.repo, 'rm', '-q', '--cached', 'scripts/hooks/pre-commit');
+  const result = spawnSync('git', ['commit', '-q', '-m', 'drop hook'], { cwd: fixture.repo, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-commit/);
+  assert.equal(git(fixture.repo, 'ls-tree', '--name-only', 'HEAD', 'scripts/hooks/pre-commit'), 'scripts/hooks/pre-commit');
+});
+
+test('pushing a branch whose tip deleted its pre-push hook is refused', (t) => {
+  const fixture = makeRepository(t);
+  const remote = addRemote(fixture);
+  git(fixture.repo, 'switch', '-q', '-c', 'drop');
+  git(fixture.repo, 'rm', '-q', 'scripts/hooks/pre-push');
+  git(fixture.repo, 'commit', '-q', '--no-verify', '-m', 'drop pre-push');
+  git(fixture.repo, 'switch', '-q', 'main');
+  const result = spawnSync('git', ['push', '-q', 'origin', 'drop'], { cwd: fixture.repo, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-push/);
+  assert.equal(remoteRefs(remote), '');
+});
+
+test('a merge that dropped the hooks does not hide history that had them', (t) => {
+  const fixture = makeRepository(t);
+  const worktree = path.join(fixture.root, 'old');
+  git(fixture.repo, 'worktree', 'add', '-q', '-b', 'old', worktree, fixture.beforeHooks);
+  git(worktree, 'merge', '-q', '--no-verify', '-s', 'ours', '-m', 'merge main, keep old tree', 'main');
+  assert.equal(existsSync(path.join(worktree, 'scripts', 'hooks', 'pre-commit')), false);
+  const result = commitIn(fixture, worktree);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-commit/);
+});
+
+test('a failed installation keeps the legacy hook path it found', (t) => {
+  const fixture = makeRepository(t);
+  git(fixture.repo, 'config', 'core.hooksPath', 'scripts/hooks');
+  const global = path.join(fixture.root, 'global.gitconfig');
+  writeFileSync(global, `[core]\n\thooksPath = ${path.join(fixture.root, 'global-hooks')}\n`);
+  const result = install(fixture.repo, { GIT_CONFIG_GLOBAL: global });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /core\.hooksPath/);
+  assert.equal(git(fixture.repo, 'config', '--local', '--get', 'core.hooksPath'), 'scripts/hooks');
+});
+
+test('the installer refuses when another linked worktree overrides the hooks directory', (t) => {
+  const fixture = makeRepository(t);
+  const worktree = path.join(fixture.root, 'other');
+  git(fixture.repo, 'worktree', 'add', '-q', worktree);
+  git(fixture.repo, 'config', 'extensions.worktreeConfig', 'true');
+  git(worktree, 'config', '--worktree', 'core.hooksPath', path.join(fixture.root, 'elsewhere'));
+  const result = install(fixture.repo);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, new RegExp(worktree.replaceAll('/', '\\/')));
 });

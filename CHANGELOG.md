@@ -19,8 +19,13 @@
   hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
   configuration. Enable them with `scripts/install-hooks.sh`, which writes
   launchers into the repository's own hooks directory (so they move with the
-  clone), refuses any `core.hooksPath` override, and makes a missing hook
-  refuse unless the history at stake never had it.
+  clone), refuses any `core.hooksPath` override in any scope or linked
+  worktree before changing anything, and restores what it found if the
+  result would not take effect. Each launcher decides from the commit being
+  recorded or the commits being pushed, not from the worktree's files: a
+  hook the recorded tree or a pushed tip contains must run, and deleting or
+  unstaging a hook, or merging it away, is refused because the full history
+  had it.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.
