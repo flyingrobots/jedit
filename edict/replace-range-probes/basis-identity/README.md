@@ -29,7 +29,10 @@ existing pinned provider `49e9efb68001dfd78563d18bac9359a87671e431`, and invokes
 Edict's public JSONL application-build boundary. Each disposable application
 copy uses `application/`, the frozen application manifest and complete published
 lawpack from Jedit commit `9e6466150e43afc83966f9fe67c6ddce2f58d5bc`.
-`application-provenance.json` records every retained file's SHA-256. This closure's
+`application-provenance.json` records every retained file's SHA-256. The Node
+preflight stage checks every hash, refuses missing or unrecorded files and
+unsafe paths, then emits a checksum projection that also binds the provenance
+JSON. The runtime build checks that projection before compiling either source. This closure's
 manifest is `sha256:95758c1605894672cc9069fde01bb8b6e11842b053102660c9cd4f4d6f34d64e`,
 matching both comparison sources. It is independent of the current flat-text
 application, whose published closure may evolve. The build inserts only the

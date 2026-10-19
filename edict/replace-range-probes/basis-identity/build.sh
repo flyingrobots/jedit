@@ -3,6 +3,7 @@
 # © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 set -eu
 [ -f /.dockerenv ] || { echo 'Run in the COPY-based Docker image' >&2; exit 1; }
+(cd /application-source && sha256sum --check /application-checksums.sha256)
 mkdir /comparison-output
 for comparison in head payload; do
   case "$comparison" in
