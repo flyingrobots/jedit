@@ -52,7 +52,7 @@
           "typeParameters": [],
           "parameterTypes": [],
           "returnType": "U64",
-          "costTemplate": "jedit.text@1.replaceRangeBudget",
+          "costTemplate": "jedit.text@1.maxCreatedLeafCountCost",
           "determinismClass": "total",
           "body": {
             "params": [],
@@ -166,9 +166,14 @@
         "effectImplementations": {},
         "budgets": {
           "jedit.text@1.replaceRangeBudget": {
-            "maxSteps": 1048576,
+            "maxSteps": 8388608,
             "maxAllocatedBytes": 16777216,
             "maxOutputBytes": 8388608
+          },
+          "jedit.text@1.maxCreatedLeafCountCost": {
+            "maxSteps": 64,
+            "maxAllocatedBytes": 1024,
+            "maxOutputBytes": 64
           }
         }
       }

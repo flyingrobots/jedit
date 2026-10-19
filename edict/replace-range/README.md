@@ -17,45 +17,34 @@ the authored, built, and evidentiary artifact classes separate:
 
 ## Current executable boundary
 
-The checked-in source is the first compiler-pressure slice, not a completed
-text mutation. It binds exact-length nominal identities, the selected basis,
-range, replacement bytes, operation profile, budget, imported helper
-implementation, and a pure conditional into Edict Core. It intentionally does
-not claim to traverse or rewrite a rope yet.
+The authored source computes flat-text replacement as prefix + replacement +
+suffix. Its ordered guard checks the range before slicing, validates the full
+original text and replacement as UTF-8, validates both offset prefixes as
+UTF-8, and rejects byte-identical replacements. The guard reports a generic
+input-constraint refusal; it does not yet produce the domain's typed outcomes.
 
-With the merged Edict #201, the public application build lowers those Core `let`
-nodes into generic, source-ordered Target IR and independently verifies the compiler-owned
-result projection. The pinned Echo provider emits a distinct
-`compiler-produced-bounded-pure/v1` executable package containing the exact
-Core, lawpack exports, Target IR, and result projection. Echo's structurally
-separate verifier independently reconstructs that package relation and emits an
-accepted report bound to retained canonical `echo.executable-subject/v1` bytes.
+The imported constant helper has its own small cost declaration. The operation
+budget separately includes bounded UTF-8 scan work. Reusing the operation's
+entire budget as the constant helper's cost would consume that budget before
+accounting for the scans.
 
-The compiler pin is Edict main `e60411fc6eb93c55468cc8c728f7fa9166207a6d`,
-which includes merged source functions (#228), proven unsigned subtraction
-(#211, #214), and bounded byte length, slice, and concatenation (#217, #221,
-#223).
-Core retains the imported nominal definitions and their shared exact-length
-`NodeId` representation; record fields refer to those named definitions.
-The nominal identity test follows that reference chain, and repeated public
-builds must reproduce identical Core, Target, package, and verifier-report bytes.
-The Echo provider is pinned to Echo main
-`9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a`; this evidence does not claim that
-this Jedit application has landed on Jedit's main branch. Repinning from the
-earlier #724 provider and #726 evaluator candidates left the executable-subject
-lock byte-identical; only the build closure changed.
+The standalone test host supplies bytes to the freshly compiled package. It
+checks nine literal replacements, thirteen range, UTF-8 and no-op refusals,
+and five host-resource refusals. It performs no native replacement and links
+no native rope planner. The package-chain harness runs both the boundary and
+flat-text targets, and the build closure includes both test sources.
 
-The application gate passes that accepted package unchanged to Echo's generic
-pure evaluator at Echo main `9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a`, which
-includes the merged pure and bounded-read source-function evaluator (#753).
-A separate test-only Rust host consumes the fresh public-build
-output, not the fixture retained in Echo. It checks both conditional branches,
-the imported helper result, exact projected bytes, deterministic repetition,
-the reversed-range constraint, malformed identity bytes, and package-pin
-substitution. Its dependencies and their full resolution are pinned in
-`tests/runtime/Cargo.toml` and `Cargo.lock` and bound into the build closure.
+The toolchain pins Edict main `2b4832efe62de75e1f204cec72f9fe7d00ef9551`
+and Echo main `b314f7fd071985edad1f9876df383a85fb491205`. The generated
+build and executable-subject locks bind the changed source, vendor publication,
+provider and test closure. Public macOS and Linux builds emit identical package
+and verifier-report bytes. The package identity is
+`sha256:4c2b7859f291e97b6b38fb265086e6cb0581ed030d54d38152b0585152120397`.
+The Docker package-chain gate checks the exact clean Git toolchains, rebuilds
+through the public CLI, verifies the locks, runs both runtime targets and
+refuses mutation of authoritative inputs.
 
-This is pure computation only. No graph or rope is mutated, no Tick is settled,
+This is pure computation. No graph or rope is mutated, no Tick is settled,
 and no WAL or recovery evidence is produced. The test host enables Echo's
 trusted-host API only in this standalone unpublished test crate. It is not a
 production dependency or an alternate editor route. The authored rope algorithm

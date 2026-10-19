@@ -31,6 +31,7 @@ const SOURCE_CLOSURE_INPUTS = [
   ["application/tests/runtime/Cargo.toml", "tests/runtime/Cargo.toml"],
   ["application/tests/runtime/Cargo.lock", "tests/runtime/Cargo.lock"],
   ["application/tests/runtime/compiled_boundary.rs", "tests/runtime/compiled_boundary.rs"],
+  ["application/tests/runtime/flat_text.rs", "tests/runtime/flat_text.rs"],
   [
     "application/tests/verification-evidence.mjs",
     "tests/verification-evidence.mjs",

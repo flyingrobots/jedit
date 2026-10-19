@@ -2,19 +2,19 @@
   "schema": "jedit.edict-executable-subject-lock/v1",
   "reference": {
     "coordinate": "echo.executable-subject/v1",
-    "digest": "sha256:93d1c2ee6b9798648f2706ef6ffbb0c426afd886331d23d452605fbc3bcdaccb"
+    "digest": "sha256:ea65a7bfa2055644c99783ef5097bdaa84c03245866f20126816b4c33f75d8cf"
   },
-  "rawSha256": "b36bf152e5bd5693f02e6eb1a58e698e332830218cf306719f11529422e74486",
+  "rawSha256": "7d08ef912c7f294c949abddf255423b3f7145d2accf64794dec5acf225e85cf7",
   "package": {
     "coordinate": "executable-operation-package.echo",
-    "digest": "sha256:b9052d3c40878a9fcba7768be67c8dba50cf0f751682339dfcdd04155871415b"
+    "digest": "sha256:4c2b7859f291e97b6b38fb265086e6cb0581ed030d54d38152b0585152120397"
   },
   "targetIr": {
     "coordinate": "echo.span-ir/v1",
-    "digest": "sha256:2c18d7d5e7d3bf9689e66e7b04c07824641836f6e23ed8396099ca8e24e79ff9"
+    "digest": "sha256:4b4049ae9730091d9450a489a22c88519fd8f84c5b74895f07cf86a250afcf86"
   },
   "resultProjection": {
     "coordinate": "jedit.text.replace_range@1.replaceRange",
-    "digest": "sha256:f804baa01c357e5ed54e86f752ea7f8201e454ad0b47c10813fde8c7dc2aeba6"
+    "digest": "sha256:80d1580fac6effe2d4001364ba2d554db5317e2c324ec30965fe866f79ab6348"
   }
 }

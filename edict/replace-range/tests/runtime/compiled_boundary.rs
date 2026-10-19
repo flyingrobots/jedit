@@ -9,10 +9,10 @@ use warp_core::edict_pure::{evaluate, EvaluationError, EvaluationLimits};
 
 const ID_BYTES: usize = 32;
 const MAX_PACKAGE_BYTES: usize = 32_768;
-const MAX_INPUT_BYTES: usize = 2_097_152;
+const MAX_INPUT_BYTES: usize = 4_194_304;
 const MAX_STEPS: u64 = 10_000;
 const MAX_ALLOCATED_BYTES: u64 = 16_777_216;
-const MAX_OUTPUT_BYTES: u64 = 2_097_152;
+const MAX_OUTPUT_BYTES: u64 = 4_194_304;
 
 fn record(fields: impl IntoIterator<Item = (&'static str, Value)>) -> Value {
     Value::Map(
@@ -27,6 +27,7 @@ fn input(start: u64, end: u64, buffer_id_size: usize) -> Vec<u8> {
     encode(&record([
         ("bufferId", Value::Bytes(vec![1; buffer_id_size])),
         ("basisHeadId", Value::Bytes(vec![2; ID_BYTES])),
+        ("text", Value::Bytes(b"0123456789abcdef".to_vec())),
         ("startByte", Value::Integer(start.into())),
         ("endByte", Value::Integer(end.into())),
         ("replacement", Value::Bytes("λ\r\n".as_bytes().to_vec())),
@@ -60,10 +61,14 @@ fn freshly_compiled_boundary_executes() {
 
     // Literal expectations catch a skipped helper, constant result, wrong
     // branch, or changed field projection without reproducing the evaluator.
-    for (start, end, range_is_empty) in [(7, 7, 1), (7, 11, 0)] {
+    for (start, end, range_is_empty, updated) in [
+        (7, 7, 1, "0123456λ\r\n789abcdef"),
+        (7, 11, 0, "0123456λ\r\nbcdef"),
+    ] {
         let supplied = input(start, end, ID_BYTES);
         let result = evaluate(&package, pin, &supplied, limits()).expect("pure result");
         let expected = record([
+            ("updatedText", Value::Bytes(updated.as_bytes().to_vec())),
             ("bufferId", Value::Bytes(vec![1; ID_BYTES])),
             ("basisHeadId", Value::Bytes(vec![2; ID_BYTES])),
             ("startByte", Value::Integer(start.into())),

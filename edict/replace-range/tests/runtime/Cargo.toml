@@ -8,9 +8,13 @@ publish = false
 [workspace]
 
 [dev-dependencies]
-echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a" }
-warp-core = { git = "https://github.com/flyingrobots/echo", rev = "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a", features = ["trusted_runtime"] }
+echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "b314f7fd071985edad1f9876df383a85fb491205" }
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "b314f7fd071985edad1f9876df383a85fb491205", features = ["trusted_runtime"] }
 
 [[test]]
 name = "compiled_boundary"
 path = "compiled_boundary.rs"
+
+[[test]]
+name = "flat_text"
+path = "flat_text.rs"

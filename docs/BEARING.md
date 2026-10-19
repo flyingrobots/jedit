@@ -124,6 +124,11 @@ or support-policy logic.
 
 ## Immediate Roadmap
 
+- [x] Execute compiler-produced flat-text replacement against literal UTF-8
+  cases, then range, UTF-8, no-op and resource refusals. This is the logical-text
+  reference for the persistent-rope differential gate, not graph admission or
+  recovery evidence.
+
 - [x] Make the pinned Edict package-chain harness discover Cargo's actual
   executable when its output is redirected. Preserve producer pins and verify
   the emitted pure package in Echo; this does not complete the authored rope

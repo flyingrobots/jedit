@@ -302,32 +302,37 @@ async function build() {
     const buildLock = JSON.parse(
       await readFile(path.join(applicationRoot, "edict.build-lock.json"), "utf8"),
     );
-    const runtimeOutput = run(
-      "cargo",
-      [
-        `+${lock.rust.toolchain}`, "test", "--locked", "--manifest-path",
-        path.join(testsDirectory, "runtime", "Cargo.toml"),
-        "--test", "compiled_boundary", "freshly_compiled_boundary_executes",
-        "--", "--exact", "--nocapture",
-      ],
-      {
-        cwd: applicationRoot,
-        timeout: 600_000,
-        env: {
-          CARGO_TARGET_DIR: process.env.CARGO_TARGET_DIR
-            ?? path.join(buildRoot, "runtime-target"),
-          JEDIT_VERIFIED_PACKAGE: path.join(
-            applicationOutput, "executable-operation-package.cbor",
-          ),
-          JEDIT_VERIFIED_PACKAGE_PIN:
-            buildLock.artifacts.executablePackage.digest.slice("sha256:".length),
+    for (const [target, marker] of [
+      ["compiled_boundary", "JEDIT_EDICT_PURE_RUNTIME_OK"],
+      ["flat_text", "JEDIT_EDICT_FLAT_TEXT_RUNTIME_OK"],
+    ]) {
+      const runtimeOutput = run(
+        "cargo",
+        [
+          `+${lock.rust.toolchain}`, "test", "--locked", "--manifest-path",
+          path.join(testsDirectory, "runtime", "Cargo.toml"),
+          "--test", target,
+          "--", "--nocapture",
+        ],
+        {
+          cwd: applicationRoot,
+          timeout: 600_000,
+          env: {
+            CARGO_TARGET_DIR: process.env.CARGO_TARGET_DIR
+              ?? path.join(buildRoot, "runtime-target"),
+            JEDIT_VERIFIED_PACKAGE: path.join(
+              applicationOutput, "executable-operation-package.cbor",
+            ),
+            JEDIT_VERIFIED_PACKAGE_PIN:
+              buildLock.artifacts.executablePackage.digest.slice("sha256:".length),
+          },
         },
-      },
-    );
-    assert.ok(
-      runtimeOutput.includes("JEDIT_EDICT_PURE_RUNTIME_OK"),
-      "runtime conformance witness did not execute",
-    );
+      );
+      assert.ok(
+        runtimeOutput.includes(marker),
+        "runtime conformance witness did not execute",
+      );
+    }
   } catch (error) {
     failure = error;
   }

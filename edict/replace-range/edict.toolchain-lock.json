@@ -29,26 +29,26 @@
     ]
   },
   "edict": {
-    "commit": "e60411fc6eb93c55468cc8c728f7fa9166207a6d",
+    "commit": "2b4832efe62de75e1f204cec72f9fe7d00ef9551",
     "cliVersion": "0.11.0-alpha.1"
   },
   "echo": {
-    "commit": "9b3b9396b635cb0cda6b894ab4804f0c93bf7b6a",
+    "commit": "b314f7fd071985edad1f9876df383a85fb491205",
     "provider": {
       "coordinate": "echo.edict-provider@1",
-      "digest": "sha256:5650d1d272c78d11a3eee1191c21d7f5cc136c71b163f2398fed42cd6d082c9f",
-      "manifestSha256": "196ba049ec8ae1c421547c937957983a42c538327d2b980075a8b313dcc76044",
+      "digest": "sha256:cba96816605f54dc5e675ab6f473adf858bdaebdceae985f955e930711c8a4f9",
+      "manifestSha256": "d9ec3c528d0b27434606ecef27a552eb466034866cbb3cb04d169241f772a6df",
       "targetProfile": {
         "coordinate": "echo.dpo@1",
         "digest": "sha256:2e2494121aecf5e6a2d920f5fb85408825d394765fad41484c416397c920fb04"
       },
       "lowerer": {
         "coordinate": "echo.dpo.lowerer/component@1",
-        "sha256": "ec0debac21c4398b73598c5b5a15a08079ee1f03b8d9d77860d929dd801751b8"
+        "sha256": "79066cfc740da4463fd20baec36fe18c6cfb346917fed475b4ef7119fda9408a"
       },
       "verifier": {
         "coordinate": "echo.dpo.verifier/component@1",
-        "sha256": "c262841549c088dbf8892c16e15515a17a2575dcc3e011b1b414b6fe63105790",
+        "sha256": "577c69937594c0aff2461dd60d43507e1f6ce0903ca2b17ff02919d73efd9b28",
         "contract": {
           "coordinate": "echo.dpo.verifier/v1",
           "digest": "sha256:ca96b190728de3d668072ec1bd37d24e5197e7bd9bd54f70966d8c566b9b67f2"
