@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Corrected the canonical ownership document to describe the executable pure
+  flat-text reference separately from the unfinished stateful rope and installed
+  release. The historical basis-identity probe now supplies its own matching
+  frozen lawpack closure instead of copying the current application's closure.
+
 - Added DL-0159, a draft representation for the Edict-authored rope: schema 2
   with typed Echo edges for every structural relation, canonical CBOR facts,
   content-addressed immutable nodes, and an import anchor tying every head to

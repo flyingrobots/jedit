@@ -10,7 +10,7 @@ WORKDIR /echo
 RUN git init && git remote add origin https://github.com/flyingrobots/echo.git \
     && git fetch --depth=1 origin 49e9efb68001dfd78563d18bac9359a87671e431 \
     && git archive FETCH_HEAD schemas/edict-provider/package/v1 | tar -x
-COPY edict/replace-range /application-source
+COPY edict/replace-range-probes/basis-identity/application /application-source
 COPY edict/replace-range-probes/basis-identity/ReplaceRange.edict /comparison-sources/ReplaceRange.edict
 COPY edict/replace-range-probes/basis-identity/PayloadEquality.edict /comparison-sources/PayloadEquality.edict
 COPY edict/replace-range-probes/basis-identity/build.sh /comparison-build.sh
