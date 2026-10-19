@@ -51,3 +51,10 @@ metered byte equality; it does not provide snapshot reads or make the full
 ReplaceRange acceptance criteria complete. Generic fact reads, application-owned
 codecs and rope semantics, admitted execution, independent oracle agreement,
 Tick, receipts, WAL, and recovery remain required by #296.
+
+The closure checker requires a build-owned immutable input tree, as supplied by
+Docker `COPY`. It rechecks directories before descent and reads regular files
+through descriptors opened with `O_NOFOLLOW`, including the provenance JSON.
+This refuses a leaf symlink swapped after traversal. It does not provide a
+sandbox for a hostile process concurrently replacing ancestor directories;
+mutable trees shared with untrusted writers are outside this probe's contract.

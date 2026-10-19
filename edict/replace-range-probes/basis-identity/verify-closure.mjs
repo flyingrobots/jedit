@@ -1,16 +1,29 @@
 // SPDX-License-Identifier: Apache-2.0
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 import { createHash } from 'node:crypto';
-import { lstatSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+
+// The build owns an immutable COPY snapshot. Leaf descriptors also refuse links
+// swapped after traversal; this is not a sandbox for hostile mutable ancestors.
+function readRegular(path) {
+  if (typeof constants.O_NOFOLLOW !== 'number') throw new Error('O_NOFOLLOW is required');
+  const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    if (!fstatSync(fd).isFile()) throw new Error('nonregular historical input');
+    return readFileSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+}
 
 try {
   const [application, provenance, output] = process.argv.slice(2);
   if (!application || !provenance || !output) throw new Error('expected application, provenance and checksum output');
   const root = resolve(application);
-  const receiptBytes = readFileSync(provenance);
+  const receiptBytes = readRegular(provenance);
   const receipt = JSON.parse(receiptBytes);
   if (receipt.schema !== 'jedit.probe-frozen-application/v1' ||
       !/^[a-f0-9]{40}$/.test(receipt.sourceCommit) ||
@@ -21,6 +34,7 @@ try {
   if (recorded.length === 0) throw new Error('empty historical closure');
   const actual = [];
   function walk(directory, prefix = '') {
+    if (!lstatSync(directory).isDirectory()) throw new Error('nonregular historical directory');
     for (const name of readdirSync(directory).sort()) {
       const path = join(directory, name);
       const entry = lstatSync(path);
@@ -38,7 +52,7 @@ try {
         typeof expected !== 'string' || !/^sha256:[a-f0-9]{64}$/.test(expected)) {
       throw new Error('invalid recorded path or digest');
     }
-    const bytes = readFileSync(join(root, path));
+    const bytes = readRegular(join(root, path));
     if (`sha256:${hash(bytes)}` !== expected) throw new Error(`historical hash mismatch: ${path}`);
     checksums.push(`${expected.slice(7)}  ${path}`);
   }
