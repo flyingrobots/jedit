@@ -20,7 +20,7 @@
       },
       {
         "path": "package-lock.json",
-        "sha256": "4e8b2b702328a0f18453b8681a5c1290d05ee445af5c78c4526516d0e396c4e8"
+        "sha256": "f095cd19b74c3b6b2aca60229e88c057bd494212dce1b2ec47a4ce3a4786fdf4"
       },
       {
         "path": ".github/workflows/ci.yml",
