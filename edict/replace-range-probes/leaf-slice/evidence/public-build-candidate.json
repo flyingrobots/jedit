@@ -1,0 +1,57 @@
+{
+  "compiler": {
+    "commit": "0835f398336ce1c693b5531b262228cd909c0b4b",
+    "tree": "8f984b86c9053a9e570723271babeaaab12e140a",
+    "fileCount": 445,
+    "manifestSha256": "522c6decea5a96058f1dda96e1e5d2632a70d49c6b193a658c3464048cd8e41f",
+    "binarySha256": "a5ffea7b16b641448db4d5dc608bec1539211ab683df3ab78985e12bb1c2fd15"
+  },
+  "providerManifestSha256": "c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc",
+  "results": {
+    "baseline": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "51797e77062585a9f59083ee8a1da3faaf486ef7691e1b62203369a9d9356ee0",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "1860ab8a6cb9a4bfd63a1db99d1c2bc00aa53dae52a9d1998295654379a95d85",
+        "verification-report.cbor": "d96e5d21eecbc1e5bbf6ce76ab438d55cc8e74f6843121d4ffb0f4343e648267"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guard-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "066f7f3858f31bfd2ddc8490470942ae56da2f9a461399a872f7f158b1bc9774",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "361888511419c3689c92d0e4fab0ca5bbd9196ad827fc212f2e7a1a3394f2e74",
+        "verification-report.cbor": "5580f1247b900a862eaf6b6c3eccc87bc23bbd53e40fde0bdc1f66826c5966c2"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "slice": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "81ffc0dae8c5d8900badf66b1ca4b8cac92378935702374785f2b20781e6934c",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "bfacd029cf2dc9247cbcee47d747eca3f8298c7184cac3866eb36f3ab55573c1",
+        "verification-report.cbor": "943ac86ea20c40d68881cc8413b926f98ba2a4ee99408e3dcede4eead1e7bb86"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "path": "/usr/local/rustup/toolchains/1.95.0-aarch64-unknown-linux-gnu",
+    "mtime": 1791180435.339878,
+    "bytes": 199361672
+  },
+  {
+    "path": "/usr/local/rustup/downloads/7c070aeba9bbf12073646995a03f36c346bb5f541d0078ba6d9dc2a7adaaf6af",
+    "mtime": 1791180434.8780186,
+    "bytes": 10412640
+  },
+  {
+    "path": "/usr/local/rustup/downloads/0fe3689eeaed603e5ef24572d11597d3edadaefd2cb181674ad621260f2501d2.partial",
+    "mtime": 1791180445.4150162,
+    "bytes": 46322112
+  },
+  {
+    "path": "/usr/local/rustup/downloads/3a21b271b1ff973b94d69b25e7a39992f9fbcae1ab6d9475844a23e6ad3908ac",
+    "mtime": 1791180442.7890167,
+    "bytes": 28233468
+  },
+  {
+    "path": "/usr/local/rustup/tmp/nhqoekhftw1pdi7k_file",
+    "mtime": 1791180444.6051555,
+    "bytes": 32
+  },
+  {
+    "path": "/usr/local/rustup/tmp/7mlm87b4uhm30gts_file",
+    "mtime": 1791180444.606756,
+    "bytes": 1
+  }
+]
+1.90.0-aarch64-unknown-linux-gnu (active, default)
+1.96.0-aarch64-unknown-linux-gnu
+

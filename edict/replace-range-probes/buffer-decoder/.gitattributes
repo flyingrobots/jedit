@@ -1,0 +1,2 @@
+# Preserve the original cleanup transcript, including its final blank line.
+evidence/resource-stop/partial-toolchain-cleanup.txt whitespace=-blank-at-eof

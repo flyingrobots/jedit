@@ -1,0 +1,67 @@
+{
+  "schema": "edict.lawpack-output/v1",
+  "lawpackId": "jedit.text",
+  "lawpackVersion": "1",
+  "artifacts": [
+    {
+      "path": "manifest.cbor",
+      "kind": "manifest",
+      "coordinate": "edict.lawpack/v1",
+      "digest": "sha256:f385072314ea57af5b66cad9eb4119b51e456df2050ea0c9a6302c7693212dc1"
+    },
+    {
+      "path": "manifest.sha256",
+      "kind": "manifestDigest",
+      "coordinate": "edict.lawpack/v1",
+      "digest": "sha256:f385072314ea57af5b66cad9eb4119b51e456df2050ea0c9a6302c7693212dc1"
+    },
+    {
+      "path": "exports.cbor",
+      "kind": "exports",
+      "coordinate": "jedit.text.exports/v1",
+      "digest": "sha256:fb43312b13f840174fc89a0a3a6f3b3a4df53a96c4fca7d6c672214d9d703e85"
+    },
+    {
+      "path": "exports.sha256",
+      "kind": "exportsDigest",
+      "coordinate": "jedit.text.exports/v1",
+      "digest": "sha256:fb43312b13f840174fc89a0a3a6f3b3a4df53a96c4fca7d6c672214d9d703e85"
+    },
+    {
+      "path": "echo-operation-configuration.cbor",
+      "kind": "localResource",
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:bcb811b2d00d9824a256a26e48c14401c87fff509f2f75deb2ba703003a3f6d4"
+    },
+    {
+      "path": "echo-operation-configuration.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:bcb811b2d00d9824a256a26e48c14401c87fff509f2f75deb2ba703003a3f6d4"
+    },
+    {
+      "path": "verifier-rules.cbor",
+      "kind": "localResource",
+      "coordinate": "jedit.text.verifier-rules/v1",
+      "digest": "sha256:364fb4ff98ae64fcd8d793aae3d7cb133ff8a1ce661330cea47688b13a0a823f"
+    },
+    {
+      "path": "verifier-rules.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "jedit.text.verifier-rules/v1",
+      "digest": "sha256:364fb4ff98ae64fcd8d793aae3d7cb133ff8a1ce661330cea47688b13a0a823f"
+    },
+    {
+      "path": "adapter.cbor",
+      "kind": "adapter",
+      "coordinate": "jedit.text.echo-adapter/v1",
+      "digest": "sha256:d8af5523ee2ddfca241b75cf077f282249727a31cae1984e22cc76b12a72f59c"
+    },
+    {
+      "path": "adapter.sha256",
+      "kind": "adapterDigest",
+      "coordinate": "jedit.text.echo-adapter/v1",
+      "digest": "sha256:d8af5523ee2ddfca241b75cf077f282249727a31cae1984e22cc76b12a72f59c"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{'commit': '17397e2aad18a83ffc617d1afd628764501f49cd', 'tree': 'bcfd3112cd8b3d4630738a88761860679b45714b', 'fileCount': 449, 'manifestSha256': '625592ab9dd715349255bece0133378c64b3d4539fb50e437d116c2a4296f016'}
+     Removed 575 files, 474.9MiB total
+   Compiling edict-syntax v0.11.0-alpha.1 (/edict-207/crates/edict-syntax)
+   Compiling edict-provider-schema v0.11.0-alpha.1 (/edict-207/crates/edict-provider-schema)
+   Compiling edict-provider-host-wasmtime v0.11.0-alpha.1 (/edict-207/crates/edict-provider-host-wasmtime)
+   Compiling edict-cli v0.11.0-alpha.1 (/edict-207/crates/edict-cli)
+    Finished `dev` profile [unoptimized] target(s) in 6.08s
+e2700698829b03f437c66425ed9878b002ef7a34ac183a39bac4eaf6a758cc6d  /lease-target/debug/edict
+{"artifactSha256": {"executable-operation-package.cbor": "afd931700018312d6c0d1e249871313d2c21c0ece1ae41d1f17f2be7af9e5284", "verification-report.cbor": "9114fdd983d456eb83f69969475f558b6e608be23520212a5db5f26bb095d04b"}, "artifacts": ["executable-operation-package.cbor", "verification-report.cbor"], "case": "read-control", "diagnostics": [], "exitCode": 0, "sourceSha256": "4ec3cbf32fd5d98987cbeeaff95d7c9c5ab734dac555e443aac52e8ab02bfbc5", "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61"}
+{"artifactSha256": {}, "artifacts": [], "case": "fn-control", "diagnostics": [{"command": "build", "input": {"kind": "stdin"}, "kind": "InvalidApplicationSource", "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-results/fn-control/src/ReplaceRange.edict` did not parse: ParseError { kind: ExpectedToken, message: \"expected `type`, `enum`, or `intent` declaration, found Ident(\\\"fn\\\")\", span: Span { start: 151, end: 153 } }", "schema": "edict.cli.diagnostic/v1", "severity": "error", "stage": "cli", "type": "diagnostic"}], "exitCode": 2, "sourceSha256": "97475b0e6aaf24d3268736efa3312df377b9153b89c8e59f0e2ceb25ce691218", "stderrSha256": "001929f74b4648fdd8c7946bdb80b1ccea0fae03e5f208012bb454d0ab94a831", "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+{"artifactSha256": {}, "artifacts": [], "case": "decimal", "diagnostics": [{"command": "build", "input": {"kind": "stdin"}, "kind": "InvalidApplicationSource", "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-results/decimal/src/ReplaceRange.edict` did not parse: ParseError { kind: Lex, message: \"invalid string escape\", span: Span { start: 861, end: 862 } }", "schema": "edict.cli.diagnostic/v1", "severity": "error", "stage": "cli", "type": "diagnostic"}], "exitCode": 2, "sourceSha256": "860712eaae8fad67499967e2475d9a2bef9d072762b3eab1004a3ddf4dba2b94", "stderrSha256": "04838a07257a87554d0c8d0f397c0a661adf68719f0e7f604c642217190bae8b", "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+Traceback (most recent call last):
+  File "/tmp/echo-726-runtime/jim-buffer-decoder-input/edict/replace-range-probes/buffer-decoder/run.py", line 75, in <module>
+    main()
+  File "/tmp/echo-726-runtime/jim-buffer-decoder-input/edict/replace-range-probes/buffer-decoder/run.py", line 70, in main
+    raise RuntimeError(f"{name} did not reach the source function parser boundary")
+RuntimeError: fn-control did not reach the source function parser boundary

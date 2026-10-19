@@ -1,0 +1,59 @@
+{
+  "schema": "jedit.edict-toolchain-lock/v1",
+  "rust": {
+    "toolchain": "1.96.0",
+    "rustcVersion": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargoVersion": "cargo 1.96.0 (30a34c682 2026-05-25)"
+  },
+  "validation": {
+    "nodeVersion": "22.23.1",
+    "processVersion": "v22.23.1",
+    "npmVersion": "10.9.8",
+    "cborX": {
+      "version": "1.6.4",
+      "integrity": "sha512-UGKHjp6RHC6QuZ2yy5LCKm7MojM4716DwoSaqwQpaH4DvZvbBTGcoDNTiG9Y2lByXZYFEs9WRkS5tLl96IrF1Q=="
+    },
+    "files": [
+      {
+        "path": "package.json",
+        "sha256": "87cdea23b9312e769f0eed0e2235bc9172b15007dd5de601b4db7c9f73ad6e76"
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "4e8b2b702328a0f18453b8681a5c1290d05ee445af5c78c4526516d0e396c4e8"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "sha256": "bc19286ef44ce7d8ba0fd8a3e39a8ec0313d07ed3084fbe15e25ef42d82bc8f1"
+      }
+    ]
+  },
+  "edict": {
+    "commit": "2b4832efe62de75e1f204cec72f9fe7d00ef9551",
+    "cliVersion": "0.11.0-alpha.1"
+  },
+  "echo": {
+    "commit": "b314f7fd071985edad1f9876df383a85fb491205",
+    "provider": {
+      "coordinate": "echo.edict-provider@1",
+      "digest": "sha256:cba96816605f54dc5e675ab6f473adf858bdaebdceae985f955e930711c8a4f9",
+      "manifestSha256": "d9ec3c528d0b27434606ecef27a552eb466034866cbb3cb04d169241f772a6df",
+      "targetProfile": {
+        "coordinate": "echo.dpo@1",
+        "digest": "sha256:2e2494121aecf5e6a2d920f5fb85408825d394765fad41484c416397c920fb04"
+      },
+      "lowerer": {
+        "coordinate": "echo.dpo.lowerer/component@1",
+        "sha256": "79066cfc740da4463fd20baec36fe18c6cfb346917fed475b4ef7119fda9408a"
+      },
+      "verifier": {
+        "coordinate": "echo.dpo.verifier/component@1",
+        "sha256": "577c69937594c0aff2461dd60d43507e1f6ce0903ca2b17ff02919d73efd9b28",
+        "contract": {
+          "coordinate": "echo.dpo.verifier/v1",
+          "digest": "sha256:ca96b190728de3d668072ec1bd37d24e5197e7bd9bd54f70966d8c566b9b67f2"
+        }
+      }
+    }
+  }
+}
