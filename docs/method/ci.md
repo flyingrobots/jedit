@@ -11,7 +11,7 @@ This document owns how Jedit CI decides what to run. The executable rules live i
 | `plan` | `scripts/ci/changed-shards.mjs` chooses the test shards and whether the release gate runs. |
 | `static / build` | `npm ci`, the TypeScript build, and the native Echo host; uploads `dist` and the host binary. |
 | `test / <shard>` | One job per planned shard, using the uploaded `dist` with `JEDIT_DIST_PREBUILT=1`. |
-| `quality` | `scripts/quality-gate.mjs`. |
+| `quality` | `scripts/quality-gate.mjs`, then `scripts/ci/shellcheck.sh` (see [ShellCheck](#shellcheck)). |
 | `release-gate / jedit-echo` | The Echo host witness, when the plan requires it. |
 | `edict / replace-range package and pure runtime chain` | The pinned Edict and Echo package chain for `edict/replace-range`, on every change. |
 | `check` | The required aggregate. It fails if plan, build, quality, or the Edict chain did not succeed, or if shards or the release gate failed rather than being skipped. |
@@ -40,7 +40,19 @@ Specs that import compiled modules load them through `spec/dist-helpers.mjs`, so
 - Contract and generated-contract changes run `contract-api`, `echo-authority`, and the release gate. Echo authority surfaces run `echo-authority`, `workspace-ui`, and the release gate. Workspace, title, and other UI surfaces run their owning shards. Changes under `docs/`, `ARCHITECTURE.md`, and `README.md` run `docs-release`; other root documents count as unrecognised paths. A changed spec runs its own shard.
 - A path the planner does not recognise runs every shard and the release gate.
 - Every plan runs build and quality.
-- Local `npm run check` remains the full local truth.
+- Local `npm run check` runs the build, the full test suite, and the quality gate. ShellCheck runs in CI; run `scripts/ci/shellcheck.sh` locally when ShellCheck is installed.
+
+## ShellCheck
+
+`scripts/ci/shellcheck.sh` runs ShellCheck over every tracked shell script and
+over the `pre-commit` and `pre-push` launchers that `scripts/install-hooks.sh`
+generates, installed into a throwaway repository. A tracked file counts as a
+shell script when it ends in `.sh` or its shebang names `bash` or `sh`, either
+directly (`#!/bin/sh`) or through a plain `env` (`#!/usr/bin/env bash`, with
+optional `NAME=value` assignments). An `env` shebang that uses options, quotes,
+or escapes (such as `#!/usr/bin/env -S bash -e`) fails the check with a message
+naming the file: use a plain shebang or a `.sh` extension. The classifier is
+`scripts/ci/lib/shebang.sh`, pinned by `spec/ci-shellcheck-shebang.spec.mjs`.
 
 ## Title-scene freeze
 
