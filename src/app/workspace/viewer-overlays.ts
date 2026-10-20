@@ -4,7 +4,6 @@ import {
   renderGraftDiagnosticsPanel,
   resolveGraftDiagnosticsPanelWidth,
 } from '../../ui/graft-diagnostics-panel.js';
-import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
 import type { WorkspaceModel } from './model.js';
@@ -22,6 +21,7 @@ const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   CurrentDirectory: 'startupFileModal.current_directory',
   Empty: 'startupFileModal.empty',
 } as const);
+const LEADER_CAPTURE_HINT_KEY = 'settings.rows.leader.capture_hint';
 
 export function paintWorkspaceOverlays(
   screen: Surface,
@@ -30,20 +30,6 @@ export function paintWorkspaceOverlays(
   bodyHeight: number,
 ): void {
   paintSettingsOverlay(screen, model, bodyTop, bodyHeight);
-
-  if (model.scenePickerOpen && model.editor == null) {
-    screen.blit(
-      renderScenePickerDrawer({
-        scenes: model.availableScenes,
-        selectedIndex: model.scenePickerFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveScenePickerDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
-      0,
-      bodyTop,
-    );
-  }
 
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
   paintWorkspaceInlinePanelOverlay(screen, model, bodyTop, bodyHeight);
@@ -62,6 +48,7 @@ function paintSettingsOverlay(
   const settingsWidth = resolveSettingsDrawerWidth(model.columns);
   screen.blit(
     renderSettingsDrawer({
+      closeHint: model.leaderCaptureActive ? model.i18n.t(LEADER_CAPTURE_HINT_KEY) : undefined,
       rows: settingsRows(model),
       selectedIndex: model.settingsFocusIndex,
       theme: model.jeditTheme,

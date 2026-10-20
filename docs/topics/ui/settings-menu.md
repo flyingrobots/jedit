@@ -47,6 +47,7 @@ The settings drawer can include these rows, depending on runtime capabilities:
 | `Causal markers` | Choose the causal head used as the gutter comparison basis. |
 | `Markdown preview` | Toggle Markdown preview when supported for the current buffer. |
 | `Diagnostics` | Open or close the diagnostics panel. |
+| `Leader` | Capture the key used as the Leader prefix and save it in `~/.jimrc`. |
 
 Language should stay compact because the locale list is long. The row should
 show only the current locale and position, for example:
@@ -98,6 +99,43 @@ contrast for every gutter role. When a semantic palette color cannot meet that
 floor, theme construction falls back to the theme's named `ink` variable. No
 gutter role uses a hard-coded renderer color.
 
+## Keybindings
+
+`Keybindings` currently contains one preference, `Leader`. The default is
+backslash, matching Vim. To use Space:
+
+1. Open Settings with `F2`.
+2. Select `Keybindings` → `Leader` with the arrow keys or `j`/`k`.
+3. Press `Enter`, then `Space`.
+
+Activation starts single-key capture. The next printable character becomes the
+Leader key. During capture, `j`, `k`, `q`, and backtick are valid choices rather
+than navigation or closing commands. `Esc` cancels and leaves Settings open;
+`F2` cancels and closes Settings. Modified keys and named special keys are
+rejected with a visible message. `Ctrl+C` retains its quit behavior.
+
+The choice saves immediately to `~/.jimrc` and loads at the next startup. This
+file contains JSON data, not Vimscript or executable code. For Space:
+
+```json
+{
+  "keybindings": {
+    "leader": " "
+  }
+}
+```
+
+A missing file uses the default without creating a file. Jim creates the file
+when a preference is successfully saved. Other JSON fields survive saves;
+symlinked dotfiles keep their link and update the target. Jim replaces valid
+configuration atomically and leaves malformed configuration untouched. If the
+file is unreadable or invalid, the Leader row displays the error and startup
+uses backslash. If saving fails, the active value stays unchanged. Fix the
+file or filesystem access and activate the row again to retry.
+
+Only the Leader preference persists in this version. Leader command sequences
+such as `Space e` are not implemented by this setting.
+
 ## Setting Feedback
 
 Every setting change should create a short confirmation toast with:
@@ -140,6 +178,8 @@ cursor.
 | --- | --- |
 | [`src/app/settings-session.ts`](../../../src/app/settings-session.ts) | Settings rows, focus movement, and key actions. |
 | [`src/app/workspace/settings.ts`](../../../src/app/workspace/settings.ts) | Workspace handlers for applying setting changes. |
+| [`src/adapters/jim-settings.ts`](../../../src/adapters/jim-settings.ts) | Load and atomically save global JSON configuration. |
+| [`src/app/workspace/leader-key-capture.ts`](../../../src/app/workspace/leader-key-capture.ts) | Capture, cancel, validate, and persist the Leader choice. |
 | [`src/app/workspace/settings-key-bindings.ts`](../../../src/app/workspace/settings-key-bindings.ts) | Settings key dispatch and change notifications. |
 | [`src/app/workspace/workspace-causal-gutter-basis.ts`](../../../src/app/workspace/workspace-causal-gutter-basis.ts) | Save/import comparison choices and evidence validation. |
 | [`src/app/workspace/workspace-causal-line-change-refresh.ts`](../../../src/app/workspace/workspace-causal-line-change-refresh.ts) | Bounded refresh commands and stale-result refusal. |

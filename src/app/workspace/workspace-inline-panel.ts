@@ -200,7 +200,6 @@ function sourceEditorOwnsInlinePanel(model: WorkspaceModel): boolean {
     model.viewMode === ViewModes.Source &&
     model.quitConfirmOpen !== true &&
     model.settingsOpen !== true &&
-    model.scenePickerOpen !== true &&
     model.startupFileModalOpen !== true &&
     model.commandLine.active !== true;
 }

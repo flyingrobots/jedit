@@ -20,7 +20,9 @@ const STARTUP_FILE_MODAL_MIN_SELECTION = 0;
 
 export function initialStartupFileModalState(): StartupFileModalState {
   return {
-    startupIntroComplete: false,
+    // The title is a static logo: there is no intro to play, so startup begins
+    // complete and idle ticks do not keep the workspace rendering.
+    startupIntroComplete: true,
     startupFileModalOpen: false,
     startupFileDrawerProgress: 0,
     startupFileModalInput: "",
@@ -39,7 +41,6 @@ export function isStartupIntroSkipCandidate(model: WorkspaceModel): boolean {
     model.editor == null &&
     model.focusPane === FocusPanes.Editor &&
     model.commandLine?.active !== true &&
-    !model.scenePickerOpen &&
     !model.settingsOpen &&
     !model.startupIntroComplete &&
     !model.startupFileModalOpen
@@ -53,7 +54,6 @@ export function isStartupFileModalReopenCandidate(
     model.editor == null &&
     model.focusPane === FocusPanes.Editor &&
     model.commandLine?.active !== true &&
-    !model.scenePickerOpen &&
     !model.settingsOpen &&
     !model.quitConfirmOpen &&
     model.startupIntroComplete &&

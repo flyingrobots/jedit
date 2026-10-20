@@ -1849,11 +1849,6 @@ test("colon does not enter command mode while higher-priority overlays own focus
       settingsOpen: true,
     }),
     mockTitleScreenModel(titleScreen, {
-      editor: mockEditor(editorMode),
-      focusPane: "editor",
-      scenePickerOpen: true,
-    }),
-    mockTitleScreenModel(titleScreen, {
       editor: undefined,
       focusPane: "editor",
       startupIntroComplete: true,

@@ -37,6 +37,7 @@ const SETTINGS_FALLBACK_CONTENT_X = 2;
 const SETTINGS_FALLBACK_CONTENT_Y = 1;
 
 export interface RenderSettingsDrawerOptions {
+  readonly closeHint?: string;
   readonly rows: readonly JeditSettingsRow[];
   readonly selectedIndex: number;
   readonly theme: JeditTheme;
@@ -101,7 +102,7 @@ function renderSettingsDrawerFallback(options: RenderSettingsDrawerOptions, cont
 function renderSettingsDrawerBody(options: RenderSettingsDrawerOptions): Surface {
   const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
-  paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
+  paintText(surface, options.closeHint ?? SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
   const firstVisibleRow = firstVisibleSettingsRow(options.rows, options.selectedIndex, options.height);
   for (const layout of settingsRowLayouts(options.rows, firstVisibleRow)) {
     if (layout.section != null && layout.sectionY != null) {

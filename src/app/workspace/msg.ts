@@ -1,12 +1,10 @@
+import type { FileExplorerPreviewMessage } from './file-explorer-preview.js';
 import type { RuntimeIssue } from "@flyingrobots/bijou-tui";
 import type { GraftDiagnosticsReport } from "../../ports/graft-diagnostics.js";
 import type { GraftInfo } from "../../ports/graft-session.js";
-import type { BuiltInTitleSceneName } from "../../ports/title-scene-loader.js";
 import type { DrawerKind } from "../../ui/drawer-layout.js";
-import type { TitleScene } from "../../ui/title-scene.js";
 import type { ProfilerMsg } from "../raytracer-profiler.js";
 import type { SourceHighlightMsg } from "../source-highlight-session.js";
-import type { TitleCameraMotionMsg } from "../title-camera-session.js";
 import type { JeditWhyRangeReport } from "../../ports/jedit-why-range.js";
 import type { JeditWhyReport } from "./command-provenance.js";
 import type { ProductionTextObstruction } from "./production-text-session.js";
@@ -28,7 +26,6 @@ import type { WorkspaceBufferCausalLineChanges } from "./workspace-causal-line-c
 const WORKSPACE_MESSAGE_DRAWER_PROGRESS = "drawer-progress";
 const WORKSPACE_MESSAGE_GRAFT_DIAGNOSTICS = "graft-diagnostics";
 const WORKSPACE_MESSAGE_GRAFT_INFO = "graft-info";
-const WORKSPACE_MESSAGE_LOAD_SCENE_RESULT = "load-scene-result";
 const WORKSPACE_MESSAGE_TOGGLE_PROFILER = "toggle-profiler";
 const WORKSPACE_MESSAGE_NOTIFICATION_TICK = "notification-tick";
 const WORKSPACE_MESSAGE_TIME_TICK = "time-tick";
@@ -54,10 +51,10 @@ const WORKSPACE_INPUT_MESSAGE_KEY = "key";
 const WORKSPACE_INPUT_MESSAGE_MOUSE = "mouse";
 
 export const WorkspaceMessageTypes = Object.freeze({
+  FileExplorerPreviewResult: 'file-explorer-preview-result',
   DrawerProgress: WORKSPACE_MESSAGE_DRAWER_PROGRESS,
   GraftDiagnostics: WORKSPACE_MESSAGE_GRAFT_DIAGNOSTICS,
   GraftInfo: WORKSPACE_MESSAGE_GRAFT_INFO,
-  LoadSceneResult: WORKSPACE_MESSAGE_LOAD_SCENE_RESULT,
   ToggleProfiler: WORKSPACE_MESSAGE_TOGGLE_PROFILER,
   NotificationTick: WORKSPACE_MESSAGE_NOTIFICATION_TICK,
   TimeTick: WORKSPACE_MESSAGE_TIME_TICK,
@@ -101,6 +98,7 @@ export type WorkspaceWhyRangeOutcome =
     };
 
 export type WorkspaceMsg =
+  | ({ readonly type: typeof WorkspaceMessageTypes.FileExplorerPreviewResult } & FileExplorerPreviewMessage)
   | {
       type: typeof WorkspaceMessageTypes.DrawerProgress;
       kind: DrawerKind;
@@ -116,15 +114,9 @@ export type WorkspaceMsg =
       requestId: number;
       info: GraftInfo;
     }
-  | {
-      type: typeof WorkspaceMessageTypes.LoadSceneResult;
-      scene: TitleScene | undefined;
-      sceneName?: BuiltInTitleSceneName;
-    }
   | ProfilerMsg
   | { type: typeof WorkspaceMessageTypes.ToggleProfiler }
   | SourceHighlightMsg
-  | TitleCameraMotionMsg
   | { type: typeof WorkspaceMessageTypes.NotificationTick; atMs: number }
   | { type: typeof WorkspaceMessageTypes.TimeTick; time: number }
   | { type: typeof WorkspaceMessageTypes.TogglePerf }

@@ -1,3 +1,4 @@
+import type { FilePreviewSource } from '../../ports/file-preview.js';
 import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
@@ -5,7 +6,6 @@ import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
 import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
@@ -13,17 +13,15 @@ import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
-import type { WorkspaceEntryOpener } from './mouse.js';
+import type { JimSettingsPort } from '../../ports/jim-settings.js';
 
 export type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 export type WorkspaceResizeMsg = ResizeMsg;
 
 export interface WorkspaceRuntimeDependencies {
-  // Supplied by the composition root so pointer clicks can open an entry.
-  // Optional: the pointer path still selects without it, and test harnesses
-  // that never click do not have to construct the filesystem dependencies.
-  readonly openEntry?: WorkspaceEntryOpener['openEntry'];
+  readonly jimSettings?: JimSettingsPort;
+  readonly filePreviewSource?: FilePreviewSource;
   readonly initialColumns: number;
   readonly initialRows: number;
   readonly initialWorkingDirectory: string;
@@ -32,7 +30,6 @@ export interface WorkspaceRuntimeDependencies {
   readonly graftDiagnostics: GraftDiagnosticsPort;
   readonly graftSession: GraftSessionPort;
   readonly sourceHighlighter: SourceHighlighter;
-  readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
   readonly profiler: ProfilerTracePort;
   readonly profileOnStartup: boolean;

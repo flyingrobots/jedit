@@ -10,7 +10,6 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
-import { wrapIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
@@ -20,7 +19,9 @@ import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import { createWorkspaceTextOpenCmd, defaultWorkspaceTextAperture } from './workspace-text-commands.js';
 import { pendingWorkspaceTextOpen } from './workspace-text-authority.js';
+import { EMPTY_FILE_SEARCH, fileSearchState, fileSearchWithInput, moveFileSearchSelection, selectedFileSearchEntry } from './file-search.js';
 import {
+  WorkspaceKeys,
   isWorkspaceBackKey,
   isWorkspaceDownKey,
   isWorkspaceOpenKey,
@@ -35,6 +36,8 @@ import {
 } from './workspace-buffer-registry.js';
 
 export const FILE_TREE_META_MIN = 0;
+const FILE_TREE_FORWARD_STEP = 1;
+const FILE_TREE_BACKWARD_STEP = -1;
 
 export interface UpdateTreeFromKeyDeps {
   readonly fileSystem: FileSystemPort;
@@ -50,6 +53,8 @@ export function updateTreeFromKey(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const modified = updateModifiedTreeKey(msg, model, nowMs, deps.fileSystem);
+  if (modified != null) return modified;
   const navigation = updateTreeNavigationFromKey(msg, model);
   if (navigation != null) {
     return [navigation, []];
@@ -66,18 +71,29 @@ export function updateTreeFromKey(
     : [model, []];
 }
 
+function updateModifiedTreeKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  nowMs: () => number,
+  fileSystem: FileSystemPort,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  if (msg.alt && msg.key === WorkspaceKeys.ArrowUp) {
+    return openParentDirectory(model, nowMs, fileSystem);
+  }
+  if (msg.ctrl || msg.alt) {
+    return msg.ctrl && msg.key === WorkspaceKeys.R
+      ? changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, fileSystem)
+      : [model, []];
+  }
+  return undefined;
+}
+
 function updateTreeNavigationFromKey(msg: KeyMsg, model: WorkspaceModel): WorkspaceModel | undefined {
   if (isWorkspaceDownKey(msg)) {
-    return {
-      ...model,
-      selectedIndex: wrapIndex(model.selectedIndex + 1, model.entries.length),
-    };
+    return moveFileSearchSelection(model, FILE_TREE_FORWARD_STEP);
   }
   if (isWorkspaceUpKey(msg)) {
-    return {
-      ...model,
-      selectedIndex: wrapIndex(model.selectedIndex - 1, model.entries.length),
-    };
+    return moveFileSearchSelection(model, FILE_TREE_BACKWARD_STEP);
   }
   return undefined;
 }
@@ -98,7 +114,7 @@ function openSelectedTreeEntry(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const entry = model.entries[model.selectedIndex];
+  const entry = selectedFileSearchEntry(model);
   if (entry == null) {
     return [model, []];
   }
@@ -152,12 +168,12 @@ function openDirectory(
   cwd: string,
   fileSystem: FileSystemPort,
 ): WorkspaceModel {
-  return {
+  return fileSearchWithInput({
     ...model,
     cwd,
     entries: fileSystem.loadEntries(cwd),
     selectedIndex: 0,
-  };
+  }, cwd === model.cwd ? fileSearchState(model) : EMPTY_FILE_SEARCH);
 }
 
 function changeDirectory(

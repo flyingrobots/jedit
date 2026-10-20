@@ -91,7 +91,7 @@ function updateFocusKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | 
   if (msg.key !== WorkspaceKeys.Tab || !hasFocusablePeers(focusState)) {
     return undefined;
   }
-  return [{ ...model, focusPane: cycleFocusPane(focusState) }, []];
+  return [{ ...model, focusPane: cycleFocusPane(focusState), fileSearchEditing: false }, []];
 }
 
 function updateDrawerKey(

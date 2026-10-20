@@ -80,7 +80,7 @@ test("the file explorer selection wraps from the last entry to the first", async
   const model = await fileDrawerModel({ selectedIndex: LAST_INDEX });
 
   const [next] = keyBindings.updateFromKey(
-    { key: "j" },
+    { key: "down" },
     model,
     mockKeyBindingContext(),
   );
@@ -93,7 +93,7 @@ test("the file explorer selection wraps from the first entry to the last", async
   const model = await fileDrawerModel({ selectedIndex: FIRST_INDEX });
 
   const [next] = keyBindings.updateFromKey(
-    { key: "k" },
+    { key: "up" },
     model,
     mockKeyBindingContext(),
   );
@@ -106,7 +106,7 @@ test("an empty file explorer stays put instead of wrapping onto nothing", async 
   const model = await fileDrawerModel({ entries: [], selectedIndex: 0 });
 
   const [next] = keyBindings.updateFromKey(
-    { key: "j" },
+    { key: "down" },
     model,
     mockKeyBindingContext(),
   );
@@ -180,7 +180,7 @@ test("clicking a file explorer row selects that entry", async () => {
     importDist("app", "workspace", "viewport.js"),
   ]);
   const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1 });
-  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.FILE_SEARCH_LIST_TOP + 2;
 
   const [next] = mouse.updateFromMouse(
     { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },
@@ -197,7 +197,7 @@ test("clicking outside the file explorer leaves the selection alone", async () =
     importDist("app", "workspace", "viewport.js"),
   ]);
   const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
-  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.FILE_SEARCH_LIST_TOP + 2;
 
   const [next] = mouse.updateFromMouse(
     { type: "mouse", button: "left", action: "press", col: 95, row: clickRow, shift: false, alt: false, ctrl: false },
@@ -214,7 +214,7 @@ test("clicking past the last entry leaves the selection alone", async () => {
     importDist("app", "workspace", "viewport.js"),
   ]);
   const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
-  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 20;
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.FILE_SEARCH_LIST_TOP + 20;
 
   const [next] = mouse.updateFromMouse(
     { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },

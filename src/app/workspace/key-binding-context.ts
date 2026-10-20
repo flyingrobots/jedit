@@ -4,10 +4,10 @@ import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { CreateDrawerAnimationCmd } from './drawer.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
+import type { JimSettingsPort } from '../../ports/jim-settings.js';
 
 export type CreateStartupFileDrawerAnimationCmd = (
   from: number,
@@ -15,12 +15,12 @@ export type CreateStartupFileDrawerAnimationCmd = (
 ) => Cmd<WorkspaceMsg>[];
 
 export interface UpdateFromKeyDeps {
+  readonly jimSettings?: JimSettingsPort;
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly graftDiagnostics: GraftDiagnosticsPort;
   readonly graftSession: GraftSessionPort;
-  readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
 }
 

@@ -40,7 +40,8 @@ escape_hatch: |
 
 # title-scene-freeze
 
-The ray-traced title scene is frozen. It stays exactly as beautiful as it is
-today. PRs that touch frozen title paths fail the CI plan step unless they
+The ray-tracer engine and scene assets are frozen. Since DX-0160 the title
+screen shows a static logo, and the engine is reachable only through the
+`title:preview`, `title:profile`, and `title:record` tools. PRs that touch frozen title paths fail the CI plan step unless they
 carry the `title-unfreeze` label. See frontmatter for enforcement, escape
 hatch, and the deletion trigger.

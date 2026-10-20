@@ -10,10 +10,7 @@ import type { WorkspaceMsg } from './msg.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
-// A focused drawer owns its own navigation keys. Without this, the title
-// screen's camera bindings claimed the arrow keys whenever no file was open,
-// so arrows did nothing in the explorer and quietly switched on the
-// ray-traced backdrop instead.
+// A focused drawer owns its navigation and Escape handling.
 export function workspaceDrawerHasFocus(model: WorkspaceModel): boolean {
   return (
     (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) ||
