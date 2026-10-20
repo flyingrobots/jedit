@@ -2,10 +2,10 @@
   "schema": "jedit.edict-build-lock/v1",
   "applicationCoordinate": "jedit.text.replace_range@1",
   "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
-  "toolchainLockSha256": "55020f1231cfdac71b05c9618ac922a587cfaf546e84c0db7a97784712518408",
+  "toolchainLockSha256": "54d282d7d1171901a4d118cdf993c4a85b6b99ec260c646326c9651927631504",
   "sourceClosure": {
     "schema": "jedit.edict-source-closure/v1",
-    "digest": "sha256:e0df3b5d5acefab1ff931da52f5cd98c97ea2fd3258c80e608b0b7f41a4e34be",
+    "digest": "sha256:85c9f5bde8752cc51dbdae2de56709f35736b17ca4bb474d314024a739c0b8df",
     "files": [
       {
         "path": "application/edict.application.json",
@@ -17,7 +17,7 @@
       },
       {
         "path": "application/edict.toolchain-lock.json",
-        "sha256": "55020f1231cfdac71b05c9618ac922a587cfaf546e84c0db7a97784712518408"
+        "sha256": "54d282d7d1171901a4d118cdf993c4a85b6b99ec260c646326c9651927631504"
       },
       {
         "path": "application/src/ReplaceRange.edict",
@@ -89,7 +89,7 @@
       },
       {
         "path": "project/package-lock.json",
-        "sha256": "4e8b2b702328a0f18453b8681a5c1290d05ee445af5c78c4526516d0e396c4e8"
+        "sha256": "f095cd19b74c3b6b2aca60229e88c057bd494212dce1b2ec47a4ce3a4786fdf4"
       }
     ]
   },
