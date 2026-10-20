@@ -162,9 +162,11 @@ if [[ "$name" == pre-push ]]; then
     exec "$hook" "$@" <<<"$updates"
   fi
 else
-  # The index git is about to record (GIT_INDEX_FILE during commit -a or
-  # commit <paths>) decides; a pending merge's other parent counts as history.
-  entry="$(git ls-files --stage -- "$tracked")"
+  # The tree git is about to record decides: git write-tree builds it from the
+  # index git will commit (GIT_INDEX_FILE during commit -a or commit <paths>)
+  # and, unlike the index itself, omits intent-to-add entries. A pending
+  # merge's other parent counts as history.
+  entry="$(git --no-replace-objects ls-tree "$(git write-tree)" -- "$tracked")"
   if executable_entry "$entry"; then
     [[ -x "$hook" ]] || refuse "this commit records $tracked, but this worktree is missing"
     exec "$hook" "$@"

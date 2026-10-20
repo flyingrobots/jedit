@@ -25,7 +25,9 @@
   one) or a hook it did not install, writes the launchers before removing a
   legacy `core.hooksPath`, and restores that setting if any later step fails
   or the result would not take effect. Each launcher decides from the commit
-  being recorded or the commits being pushed, not from the worktree's files:
+  being recorded or the commits being pushed, not from the worktree's files
+  (pre-commit reads the tree `git write-tree` builds, so an intent-to-add
+  hook does not count as recorded):
   a hook the recorded tree or a pushed tip contains must run and must be
   recorded with executable mode `100755`, and deleting or unstaging a hook,
   dropping its executable mode, or merging it away is refused because the

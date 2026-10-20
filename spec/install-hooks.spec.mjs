@@ -7,6 +7,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   readlinkSync,
   realpathSync,
   renameSync,
@@ -245,15 +246,27 @@ test('a launcher that cannot be written keeps the legacy hook path it found', (t
   const hooks = path.join(fixture.repo, '.git', 'hooks');
   git(fixture.repo, 'config', 'core.hooksPath', 'scripts/hooks');
   rmSync(path.join(hooks, 'pre-push'));
-  chmodSync(hooks, 0o555);
-  let result;
-  try {
-    result = install(fixture.repo);
-  } finally {
-    chmodSync(hooks, 0o755);
-  }
+  // A failing chmod on PATH fails the write phase whatever the user's
+  // privileges; directory mode bits do not stop root.
+  const failing = path.join(fixture.root, 'failing-bin');
+  mkdirSync(failing);
+  writeFileSync(path.join(failing, 'chmod'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+  const result = install(fixture.repo, { PATH: `${failing}${path.delimiter}${process.env.PATH}` });
   assert.notEqual(result.status, 0);
   assert.equal(git(fixture.repo, 'config', '--local', '--get', 'core.hooksPath'), 'scripts/hooks');
+  assert.equal(existsSync(path.join(hooks, 'pre-push')), false, 'no launcher was put in place');
+  assert.deepEqual(readdirSync(hooks).filter((name) => name.includes('.install.')), [], 'no staged launcher was left behind');
+});
+
+test('an intent-to-add hook does not count as recorded by the commit', (t) => {
+  const fixture = makeRepository(t);
+  git(fixture.repo, 'rm', '-q', '--cached', 'scripts/hooks/pre-commit');
+  git(fixture.repo, 'add', '-N', 'scripts/hooks/pre-commit');
+  const before = git(fixture.repo, 'rev-parse', 'HEAD');
+  const result = spawnSync('git', ['commit', '-q', '-m', 'drop hook'], { cwd: fixture.repo, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-commit/);
+  assert.equal(git(fixture.repo, 'rev-parse', 'HEAD'), before);
 });
 
 test('the installer refuses when a registered worktree is unavailable', (t) => {
