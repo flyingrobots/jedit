@@ -59,20 +59,11 @@ text in `EditorState`. The current production session creates or reopens the
 buffer through the trusted native Echo host, then requests a bounded text-window
 observation from the admitted head.
 
-Every open sends the file's current host basis: the SHA-256 digest and length
-of its raw bytes, or the absence of a file. Creating a buffer records an import
-anchor in the same admitted Tick, binding the file path, that basis, and the
-head built from those bytes, so the anchor survives restart with the buffer. A
-later open reuses the buffer only when the anchor names the file's current
-basis. Otherwise the host refuses with a typed obstruction and writes nothing:
-`file-changed-since-import` when only the file changed,
-`file-and-buffer-changed-since-import` when the buffer also has unsaved edits,
-and `import-anchor-missing` when a buffer has no anchor to compare against. The
-disk never silently replaces the rope, and the rope is never reported clean
-against a file it does not match. A reused buffer is clean only at its anchored
-head, so unsaved edits stay dirty across restart. Saving does not yet move the
-anchor (production export is still unsupported), and reconciling an external
-edit is separate work.
+A buffer is reused for a file only when its import anchor names the file's
+current bytes; otherwise the open is refused with a typed obstruction and
+nothing is written. The canonical statement of this policy, its obstruction
+codes, and what is not yet implemented is
+[How Jim sees source files](docs/jim-component-ownership.md#how-jim-sees-source-files).
 
 ## Mutating A Buffer
 
