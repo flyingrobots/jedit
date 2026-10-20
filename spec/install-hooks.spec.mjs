@@ -1,14 +1,17 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readlinkSync,
   realpathSync,
   renameSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -221,4 +224,105 @@ test('the installer refuses when another linked worktree overrides the hooks dir
   const result = install(fixture.repo);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, new RegExp(worktree.replaceAll('/', '\\/')));
+});
+
+test('the installer treats a dangling hook symlink as a hook it did not install', (t) => {
+  const fixture = makeRepository(t);
+  const slot = path.join(fixture.repo, '.git', 'hooks', 'pre-push');
+  const target = path.join(fixture.root, 'dotfiles', 'pre-push');
+  mkdirSync(path.dirname(target));
+  rmSync(slot);
+  symlinkSync(target, slot);
+  const result = install(fixture.repo);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /pre-push/);
+  assert.equal(existsSync(target), false, 'the symlink target was not created');
+  assert.equal(readlinkSync(slot), target, 'the symlink was left alone');
+});
+
+test('a launcher that cannot be written keeps the legacy hook path it found', (t) => {
+  const fixture = makeRepository(t);
+  const hooks = path.join(fixture.repo, '.git', 'hooks');
+  git(fixture.repo, 'config', 'core.hooksPath', 'scripts/hooks');
+  rmSync(path.join(hooks, 'pre-push'));
+  chmodSync(hooks, 0o555);
+  let result;
+  try {
+    result = install(fixture.repo);
+  } finally {
+    chmodSync(hooks, 0o755);
+  }
+  assert.notEqual(result.status, 0);
+  assert.equal(git(fixture.repo, 'config', '--local', '--get', 'core.hooksPath'), 'scripts/hooks');
+});
+
+test('the installer refuses when a registered worktree is unavailable', (t) => {
+  const fixture = makeRepository(t);
+  const worktree = path.join(fixture.root, 'removable');
+  git(fixture.repo, 'worktree', 'add', '-q', worktree);
+  git(fixture.repo, 'worktree', 'lock', worktree);
+  renameSync(worktree, path.join(fixture.root, 'unplugged'));
+  const result = install(fixture.repo);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, new RegExp(worktree.replaceAll('/', '\\/')));
+});
+
+test('pushing a branch whose pre-push hook is not executable is refused', (t) => {
+  const fixture = makeRepository(t);
+  const remote = addRemote(fixture);
+  git(fixture.repo, 'switch', '-q', '-c', 'plain');
+  chmodSync(path.join(fixture.repo, 'scripts', 'hooks', 'pre-push'), 0o644);
+  git(fixture.repo, 'add', 'scripts/hooks/pre-push');
+  git(fixture.repo, 'commit', '-q', '--no-verify', '-m', 'pre-push loses its mode');
+  git(fixture.repo, 'switch', '-q', 'main');
+  const result = spawnSync('git', ['push', '-q', 'origin', 'plain'], { cwd: fixture.repo, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-push/);
+  assert.equal(remoteRefs(remote), '');
+});
+
+test('a commit that records its pre-commit hook as not executable is refused', (t) => {
+  const fixture = makeRepository(t);
+  git(fixture.repo, 'update-index', '--chmod=-x', 'scripts/hooks/pre-commit');
+  const result = spawnSync('git', ['commit', '-q', '-m', 'pre-commit loses its mode'], { cwd: fixture.repo, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-commit/);
+  assert.equal(git(fixture.repo, 'ls-tree', 'HEAD', 'scripts/hooks/pre-commit').split(' ')[0], '100755');
+});
+
+function shallowCloneAfterDeletion(fixture) {
+  git(fixture.repo, 'rm', '-q', '-r', 'scripts/hooks');
+  git(fixture.repo, 'commit', '-q', '--no-verify', '-m', 'delete hooks');
+  const shallow = path.join(fixture.root, 'shallow');
+  git(fixture.root, 'clone', '-q', '--depth', '1', `file://${fixture.repo}`, shallow);
+  git(shallow, 'config', 'user.email', 'hooks@test.invalid');
+  git(shallow, 'config', 'user.name', 'hooks test');
+  const result = install(shallow);
+  assert.equal(result.status, 0, result.stderr);
+  return shallow;
+}
+
+test('a shallow clone cannot conclude its history never had the hooks when committing', (t) => {
+  const fixture = makeRepository(t);
+  const shallow = shallowCloneAfterDeletion(fixture);
+  const before = git(shallow, 'rev-parse', 'HEAD');
+  const result = commitIn(fixture, shallow);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /shallow/);
+  assert.equal(git(shallow, 'rev-parse', 'HEAD'), before);
+});
+
+test('a shallow clone cannot conclude its history never had the hooks when pushing', (t) => {
+  const fixture = makeRepository(t);
+  const shallow = shallowCloneAfterDeletion(fixture);
+  // The remote already has the full history, so git itself accepts a push
+  // from the shallow clone; only the launcher can refuse it.
+  const remote = path.join(fixture.root, 'full.git');
+  git(fixture.root, 'clone', '-q', '--bare', fixture.repo, remote);
+  writeFileSync(path.join(shallow, 'a.txt'), 'hookless\n');
+  git(shallow, 'commit', '-q', '--no-verify', '-am', 'hookless change');
+  const result = spawnSync('git', ['push', '-q', remote, 'HEAD:refs/heads/hookless'], { cwd: shallow, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /shallow/);
+  assert.doesNotMatch(remoteRefs(remote), /refs\/heads\/hookless/);
 });

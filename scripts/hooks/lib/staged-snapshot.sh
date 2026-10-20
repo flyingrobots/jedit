@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the hooks in scripts/hooks/. Not a hook itself.
 #
 # Git commits the tree `git write-tree` builds from the index, not the raw

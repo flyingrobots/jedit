@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Lint gate: the same checks CI's quality job and TypeScript build enforce,
 # run in a temporary checkout of exactly the tree this commit records.
+# shellcheck source-path=SCRIPTDIR
 set -euo pipefail
 
 hooks="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=lib/enter-repository.sh
 source "$hooks/lib/enter-repository.sh"
+# shellcheck source=lib/staged-snapshot.sh
 source "$hooks/lib/staged-snapshot.sh"
+# shellcheck source=lib/temporary-checkout.sh
 source "$hooks/lib/temporary-checkout.sh"
 
 snapshot="$(staged_snapshot_commit)"

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the hooks in scripts/hooks/. Not a hook itself.
 #
 # Prints each distinct commit a pushed ref will point to, from the ref lines
@@ -5,8 +6,8 @@
 # prints nothing. Intermediate commits of a pushed range are not listed:
 # pre-push tests what each ref will point to, not every commit it publishes.
 pushed_commits() {
-  local local_ref local_oid remote_ref remote_oid
-  while read -r local_ref local_oid remote_ref remote_oid; do
+  local local_oid
+  while read -r _ local_oid _ _; do
     if [[ ! "$local_oid" =~ ^0+$ ]]; then
       git --no-replace-objects rev-parse --verify "$local_oid^{commit}"
     fi

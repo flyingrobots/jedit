@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the hooks in scripts/hooks/. Not a hook itself.
 #
 # Git exports repository-local variables (GIT_DIR, GIT_INDEX_FILE, and

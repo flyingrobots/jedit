@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Sourced by the hooks in scripts/hooks/. Not a hook itself.
 #
 # Both hooks validate a commit that is about to become authoritative, so they

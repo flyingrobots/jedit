@@ -20,12 +20,17 @@
   configuration. Enable them with `scripts/install-hooks.sh`, which writes
   launchers into the repository's own hooks directory (so they move with the
   clone), refuses any `core.hooksPath` override in any scope or linked
-  worktree before changing anything, and restores what it found if the
-  result would not take effect. Each launcher decides from the commit being
-  recorded or the commits being pushed, not from the worktree's files: a
-  hook the recorded tree or a pushed tip contains must run, and deleting or
-  unstaging a hook, or merging it away, is refused because the full history
-  had it.
+  worktree before changing anything, refuses when a registered worktree is
+  unavailable to check or a hook slot holds a symbolic link (even a dangling
+  one) or a hook it did not install, writes the launchers before removing a
+  legacy `core.hooksPath`, and restores that setting if any later step fails
+  or the result would not take effect. Each launcher decides from the commit
+  being recorded or the commits being pushed, not from the worktree's files:
+  a hook the recorded tree or a pushed tip contains must run and must be
+  recorded with executable mode `100755`, and deleting or unstaging a hook,
+  dropping its executable mode, or merging it away is refused because the
+  full history had it. A shallow clone cannot show that its history never
+  had a hook, so a launcher there refuses rather than skipping.
 - Corrected the canonical ownership document to describe the executable pure
   flat-text reference separately from the unfinished stateful rope and installed
   release. The historical basis-identity probe now supplies its own matching

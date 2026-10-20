@@ -2,11 +2,15 @@
 # Test gate: the full suite (about 65 seconds on an M-series laptop), run
 # once per distinct commit a pushed ref will point to, in a temporary
 # checkout of that commit.
+# shellcheck source-path=SCRIPTDIR
 set -euo pipefail
 
 hooks="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=lib/enter-repository.sh
 source "$hooks/lib/enter-repository.sh"
+# shellcheck source=lib/pushed-commits.sh
 source "$hooks/lib/pushed-commits.sh"
+# shellcheck source=lib/temporary-checkout.sh
 source "$hooks/lib/temporary-checkout.sh"
 enter_repository
 repository="$PWD"
