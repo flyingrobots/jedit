@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Removed the unused direct `@modelcontextprotocol/sdk` dependency declaration.
+  No Jedit code imports it; the SDK remains installed as a dependency of
+  `@flyingrobots/graft`, at the version (1.32.1) the security update selected.
+  The ReplaceRange proof locks were refreshed for the changed package bytes.
+
 - Replaced the leftover Husky hook path with plain shell hooks in
   `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
   typecheck, and pre-push runs the full test suite. Both share
