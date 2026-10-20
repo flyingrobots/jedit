@@ -5,7 +5,6 @@ import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
 import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
@@ -32,7 +31,6 @@ export interface WorkspaceRuntimeDependencies {
   readonly graftDiagnostics: GraftDiagnosticsPort;
   readonly graftSession: GraftSessionPort;
   readonly sourceHighlighter: SourceHighlighter;
-  readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
   readonly profiler: ProfilerTracePort;
   readonly profileOnStartup: boolean;

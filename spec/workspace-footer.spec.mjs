@@ -288,7 +288,7 @@ test('workspace footer shows settings drawer controls while settings are open', 
   );
 });
 
-test('workspace footer obtains the scene picker hint label from i18n', async () => {
+test('workspace footer requests available file and graft hints without scene selection', async () => {
   const footer = await loadFooterModule();
   const requestedKeys = [];
   const i18n = {
@@ -335,11 +335,11 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       graftSelection: undefined,
     }),
     [
-      'BROWSE [ctrl+l scene picker · ctrl+b files · ctrl+g graft]',
+      'BROWSE [ctrl+b files · ctrl+g graft]',
       '/repo',
     ],
   );
-  assert.equal(requestedKeys.includes('footer.hints.ctrl_l_scene_picker'), true);
+  assert.equal(requestedKeys.includes('footer.hints.ctrl_l_scene_picker'), false);
 });
 
 test('workspace footer obtains command hints from i18n', async () => {

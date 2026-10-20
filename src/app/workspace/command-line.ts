@@ -187,7 +187,6 @@ export function canOpenWorkspaceCommandLine(model: WorkspaceModel): boolean {
     model.commandLine?.active !== true &&
     !model.quitConfirmOpen &&
     !model.settingsOpen &&
-    !model.scenePickerOpen &&
     !model.startupFileModalOpen
   );
 }

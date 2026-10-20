@@ -7,7 +7,6 @@ import {
   createGraftDiagnosticsPort,
   createGraftSourceHighlighter,
 } from './graft-source-highlighter.js';
-import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createPerfApp } from './workspace-perf-app.js';
 import type { WorkspaceProductionTextDependencies } from './workspace-production-text-dependencies.js';
@@ -27,7 +26,6 @@ export interface WorkspaceAppOptions {
   perfEnabled: boolean;
   profileEnabled?: boolean;
   nowMs?: () => number;
-  random?: () => number;
   seed?: ReturnType<typeof createInitialModelSnapshot>;
 }
 
@@ -36,11 +34,9 @@ export function createWorkspaceApp(
   productionText: WorkspaceProductionTextDependencies,
 ) {
   const nowMs = options.nowMs ?? (() => Date.now());
-  const random = options.random ?? Math.random;
   const runtime = createWorkspaceRuntime(workspaceRuntimeDependencies(
     options,
     nowMs,
-    random,
     productionText,
   ));
   return createPerfApp(workspaceRuntimeApp(runtime), {
@@ -51,14 +47,12 @@ export function createWorkspaceApp(
 function workspaceRuntimeDependencies(
   options: WorkspaceAppOptions,
   nowMs: () => number,
-  random: () => number,
   productionText: WorkspaceProductionTextDependencies,
 ) {
   const editorFile = editorFilePort;
   const graftDiagnostics = createGraftDiagnosticsPort();
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
-  const titleSceneLoader = createTitleSceneLoaderPort();
   return {
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
@@ -69,10 +63,9 @@ function workspaceRuntimeDependencies(
     productionTextSession: productionText.productionTextSession,
     graftSession,
     sourceHighlighter,
-    titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
     profileOnStartup: options.profileEnabled ?? false,
-    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,
     openEntry: (
       model: WorkspaceModel,
