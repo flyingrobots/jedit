@@ -49,7 +49,9 @@ export function fileSearchEntries(model: Pick<WorkspaceModel, 'entries' | 'works
 function relativeFilePath(root: string, entry: FileEntry): string {
   const prefix = root?.endsWith(PATH_SEPARATOR) ? root : `${root ?? ''}${PATH_SEPARATOR}`;
   const path = entry.searchPath ?? entry.path ?? entry.name;
-  return path.startsWith(prefix) ? path.slice(prefix.length) : path;
+  // Outside the search root (after following `..` upward) only the name is
+  // searchable; the absolute path would leak ancestor text into every match.
+  return path.startsWith(prefix) ? path.slice(prefix.length) : entry.name;
 }
 
 function fuzzyPathMatches(path: string, query: string): readonly number[] | undefined {

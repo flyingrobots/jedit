@@ -282,6 +282,9 @@ test('the input background remains distinct across built-in dark and light theme
   const initial = { ...model, workspaceRoot: 'C:\\repo', workspaceSearchRoot: portableFileSearchPath('C:\\repo') };
   assert.equal(type(runtime, initial, 'src/index').selectedIndex, 0);
   assert.equal(type(runtime, initial, 'repo').selectedIndex, -1);
+  const above = { ...initial, entries: [{ kind: 'file', name: 'notes.md', path: 'C:\\repo\\notes.md', searchPath: portableFileSearchPath('C:\\repo\\notes.md') }] };
+  assert.equal(type(runtime, { ...above, workspaceSearchRoot: portableFileSearchPath('C:\\repo\\src') }, 'repo').selectedIndex, -1);
+  assert.equal(type(runtime, above, 'notes').selectedIndex, 0);
 });
 
  test('selected rows remain readable and distinct from hover across dark and light themes', async () => {
