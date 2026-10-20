@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Removed the unused direct `@modelcontextprotocol/sdk` dependency declaration.
+  No Jedit code imports it; the SDK remains installed as a dependency of
+  `@flyingrobots/graft`, at the version (1.32.1) the security update selected.
+  The ReplaceRange proof locks were refreshed for the changed package bytes.
+
 - Fixed reopening a file silently reusing a stale rope (#350). Opening a file
   now sends the SHA-256 digest and length of its raw bytes (or its absence) to
   the native Echo host, which records a `jedit.text.ImportAnchor.v1` fact in the
