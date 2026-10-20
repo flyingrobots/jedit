@@ -147,6 +147,9 @@ jobs:
       - name: Run quality gate
         run: npm run quality
 
+      - name: ShellCheck scripts and generated hook launchers
+        run: scripts/ci/shellcheck.sh
+
   release-gate:
     name: release-gate / jedit-echo
     needs: [ plan ]

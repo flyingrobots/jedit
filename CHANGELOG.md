@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- CI now runs ShellCheck (`scripts/ci/shellcheck.sh`, in the `quality` job) over
+  every tracked shell script and over the pre-commit and pre-push launchers that
+  `scripts/install-hooks.sh` generates, installed into a throwaway repository.
+  The ReplaceRange proof locks were refreshed for the changed workflow bytes.
+
 - Removed the unused direct `@modelcontextprotocol/sdk` dependency declaration.
   No Jedit code imports it; the SDK remains installed as a dependency of
   `@flyingrobots/graft`, at the version (1.32.1) the security update selected.
