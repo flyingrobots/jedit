@@ -16,8 +16,9 @@
   reads is part of the execution's observed footprint, and receipts carry
   `InstalledInvocationEvidence`, of which the host accepts only the generated
   contract variant. The ReplaceRange schema, codec vectors, and oracle cases are
-  byte-identical; only the oracle's source-set digest, which hashes the host's
-  `Cargo.toml` and `Cargo.lock`, changed. The Edict package chain moves from
+  byte-identical; only the oracle's source-set digest and its sidecar changed.
+  That digest covers every path the oracle's `sourceSet` declares, including the
+  host's `Cargo.toml` and `Cargo.lock`. The Edict package chain moves from
   Edict `2b4832e` and Echo `b314f7f` to Edict main `2ddc069` and Echo main: the
   `jedit.text` lawpack is republished for the new oracle digests, and the
   toolchain, build, and executable-subject locks are regenerated from a real
