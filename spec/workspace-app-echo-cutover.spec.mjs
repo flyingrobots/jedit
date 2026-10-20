@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { fileHostBasis } from './host-basis-helpers.mjs';
 import { createWorkspaceEchoAppHarness, productionTextObstruction } from './workspace-echo-app-harness.mjs';
 import {
   byteOffsetAtLine,
@@ -27,6 +28,7 @@ test('real workspace app path opens files through production text authority', as
     bufferKey: '/repo/notes.md',
     initialText: 'host-only text',
     projectionPath: '/repo/notes.md',
+    hostBasis: fileHostBasis('host-only text'),
     atMs: 42,
   }]);
   assert.equal(harness.calls.observe.length, 1);

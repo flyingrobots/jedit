@@ -21,6 +21,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     materialization: worldline.WorkspaceMaterializationKinds.Materialized,
     hostBasis: authority.WorkspaceTextHostBasisKinds.File,
     hostFingerprint: fileFingerprint('opened'),
+    importHeadId: HEAD_OPENED,
     cache: basisCache(HEAD_OPENED),
   });
 
@@ -173,6 +174,7 @@ test('buffer durability refuses causal line evidence for the wrong basis', async
   const durability = await importDist('app', 'workspace', 'workspace-buffer-durability.js');
   const opened = durability.openedWorkspaceBufferDurability({
     basisHeadId: HEAD_OPENED,
+    importHeadId: HEAD_OPENED,
     hostBasis: 'file',
     materialization: 'materialized',
   });
@@ -225,3 +227,44 @@ function fileFingerprint(digest) {
     byteLength: 0,
   };
 }
+
+// #350: a reopened buffer is clean only against the head its file bytes were
+// anchored to, never against whatever head the buffer has reached since.
+async function reopenedAuthority(cacheHeadId, importHeadId) {
+  const [authority, profile, worldline] = await Promise.all([
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'text-runtime-profile.js'),
+    importDist('app', 'workspace', 'workspace-materialization.js'),
+  ]);
+  return authority.openedWorkspaceTextAuthority({
+    profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    readOnly: false,
+    dirty: false,
+    materialization: worldline.WorkspaceMaterializationKinds.Materialized,
+    hostBasis: authority.WorkspaceTextHostBasisKinds.File,
+    hostFingerprint: fileFingerprint('anchored'),
+    importHeadId,
+    cache: basisCache(cacheHeadId),
+  });
+}
+
+test('a reopened buffer with unsaved edits is dirty against its anchored import head', async () => {
+  const durability = await importDist('app', 'workspace', 'workspace-buffer-durability.js');
+  const reopened = await reopenedAuthority(HEAD_EDITED, HEAD_OPENED);
+
+  assert.equal(reopened.dirty, true);
+  assert.equal(reopened.durability.causal.headId, HEAD_EDITED);
+  assert.equal(reopened.durability.file.kind, durability.WorkspaceBufferFileDurabilityKinds.Saved);
+  assert.equal(reopened.durability.file.basisHeadId, HEAD_OPENED);
+  assert.equal(reopened.durability.importBasisHeadId, HEAD_OPENED);
+});
+
+test('a buffer opened without an anchored import is never assumed to match its file', async () => {
+  const durability = await importDist('app', 'workspace', 'workspace-buffer-durability.js');
+  const reopened = await reopenedAuthority(HEAD_OPENED, undefined);
+
+  assert.equal(reopened.durability.file.kind, durability.WorkspaceBufferFileDurabilityKinds.Unknown);
+  assert.equal(durability.workspaceBufferFileDirty(reopened.durability), undefined);
+});

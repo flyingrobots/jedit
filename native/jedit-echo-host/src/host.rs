@@ -3,14 +3,16 @@ use std::path::Path;
 use warp_core::{
     make_head_id, make_intent_kind, make_node_id, make_type_id, ContractOperationKind,
     EngineBuilder, GraphStore, InboxPolicy, IngressEnvelope, IngressTarget,
-    InstalledContractPackage, IntentOutcome, IntentOutcomeReceipt, NodeRecord, ObservationAt,
-    ObservationCoordinate, ObservationFrame, ObservationPayload, ObservationProjection,
-    ObservationReadBudget, PlaybackMode, SchedulerKind, TrustedRuntimeHost,
+    InstalledContractPackage, IntentOutcome, IntentOutcomeReceipt, NodeId, NodeRecord,
+    ObservationAt, ObservationCoordinate, ObservationFrame, ObservationPayload,
+    ObservationProjection, ObservationReadBudget, PlaybackMode, SchedulerKind, TrustedRuntimeHost,
     TrustedRuntimeWalConfig, WorldlineId, WorldlineRuntime, WorldlineState, WriterHead,
     WriterHeadKey,
 };
 
-use crate::contract::{generated_checkpoint_reason, installed_package};
+use crate::contract::{
+    generated_checkpoint_reason, generated_import_host_basis, installed_package,
+};
 use crate::error::{HostError, HostResult};
 use crate::generated::contract::__echo_wesley_generated::{
     CreateBufferWorldlineVars, DeclareCheckpointVars, ReplaceRangeAsTickVars, TextWindowVars,
@@ -22,7 +24,8 @@ use crate::generated::contract::{
     OP_CREATE_BUFFER_WORLDLINE, OP_DECLARE_CHECKPOINT, OP_REPLACE_RANGE_AS_TICK, OP_TEXT_WINDOW,
 };
 use crate::identity::{node_id_hex, parse_node_id};
-use crate::protocol::{BufferResponse, HostRequest, HostResponse};
+use crate::import_anchor::{read_import_anchor, reopen_buffer, Reopen};
+use crate::protocol::{BufferResponse, HostBasis, HostRequest, HostResponse, ImportAnchorResponse};
 use crate::records::CheckpointReason;
 use crate::rope::{
     buffer_snapshot, checkpoint_fact, existing_buffer, plan_checkpoint, plan_replace,
@@ -60,8 +63,15 @@ impl JeditEchoHost {
                 buffer_key,
                 initial_text,
                 projection_path,
+                host_basis,
                 ..
-            } => self.open_buffer(request_id, buffer_key, initial_text, projection_path),
+            } => self.open_buffer(
+                request_id,
+                buffer_key,
+                initial_text,
+                projection_path,
+                host_basis,
+            ),
             HostRequest::Replace {
                 buffer_id,
                 start_byte,
@@ -98,26 +108,53 @@ impl JeditEchoHost {
         })
     }
 
+    /// Opens the buffer for a host coordinate. An existing buffer is reused
+    /// only when its anchored import names the coordinate's current basis;
+    /// otherwise the open is obstructed and nothing is written. A new buffer
+    /// and its anchor are created together in one admitted Tick.
     fn open_buffer(
         &mut self,
         request_id: u64,
         buffer_key: String,
         initial_text: String,
         projection_path: Option<String>,
+        host_basis: HostBasis,
     ) -> HostResult<HostResponse> {
-        if let Some(snapshot) = existing_buffer(self.store()?, &buffer_key)? {
-            return Ok(HostResponse::Opened {
-                request_id,
-                buffer: snapshot.into(),
-                receipt_id: None,
-                admitted_tick_id: None,
-            });
+        let current = host_basis.to_import()?;
+        match reopen_buffer(
+            self.store()?,
+            &buffer_key,
+            projection_path.as_deref(),
+            &current,
+        )? {
+            Reopen::Absent => {}
+            Reopen::Reuse(snapshot, anchor) => {
+                return Ok(HostResponse::Opened {
+                    request_id,
+                    buffer: (*snapshot).into(),
+                    import_anchor: ImportAnchorResponse::from(&anchor),
+                    receipt_id: None,
+                    admitted_tick_id: None,
+                });
+            }
+            Reopen::Refused(refusal) => {
+                return Ok(HostResponse::Obstructed {
+                    request_id,
+                    code: refusal.code().to_owned(),
+                    message: refusal.message(&buffer_key),
+                });
+            }
         }
+        let (import_host_basis, import_sha256, import_byte_length) =
+            generated_import_host_basis(&current)?;
         let intent = pack_create_buffer_worldline_intent(&CreateBufferWorldlineVars {
             input: CreateBufferWorldlineInput {
                 bufferKey: buffer_key.clone(),
                 initialText: initial_text,
                 projectionPath: projection_path,
+                importHostBasis: import_host_basis,
+                importSha256: import_sha256,
+                importByteLength: import_byte_length,
             },
         })
         .map_err(|error| HostError::Protocol(format!("pack create intent: {error:?}")))?;
@@ -125,9 +162,16 @@ impl JeditEchoHost {
         let snapshot = existing_buffer(self.store()?, &buffer_key)?.ok_or_else(|| {
             HostError::IntentNotApplied("create receipt did not produce a buffer fact".to_owned())
         })?;
+        let anchor = read_import_anchor(self.store()?, snapshot.buffer_id)?;
+        if anchor.host_basis != current || NodeId::from(anchor.head_id) != snapshot.head_id {
+            return Err(HostError::IntentNotApplied(
+                "create receipt did not anchor the imported head".to_owned(),
+            ));
+        }
         Ok(HostResponse::Opened {
             request_id,
             buffer: snapshot.into(),
+            import_anchor: ImportAnchorResponse::from(&anchor),
             receipt_id: Some(hex::encode(receipt.tick_receipt_digest)),
             admitted_tick_id: Some(tick_id(&receipt)),
         })
@@ -475,6 +519,7 @@ mod tests {
                 buffer_key: "recovery.txt".to_owned(),
                 initial_text: "history".to_owned(),
                 projection_path: None,
+                host_basis: crate::protocol::HostBasis::Missing,
             }) else {
                 panic!("buffer should open");
             };

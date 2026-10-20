@@ -1,0 +1,1802 @@
+{
+  "commit": "17397e2aad18a83ffc617d1afd628764501f49cd",
+  "tree": "bcfd3112cd8b3d4630738a88761860679b45714b",
+  "files": [
+    {
+      "path": ".cargo/config.toml",
+      "gitBlob": "5592118f6c54bf8b53b16848e04ece896dd56384"
+    },
+    {
+      "path": ".github/workflows/auto-release-tag.yml",
+      "gitBlob": "87404ceb685191afd496c93494b0bc61e2a59504"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "gitBlob": "c6c6a17f59b6b96db88e3d4b2775bc64b7fe01f3"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "gitBlob": "2c612fc786998bfa5b11e76ae1185114a7cc535f"
+    },
+    {
+      "path": ".gitignore",
+      "gitBlob": "30d7faf0fc8b7f010f99280302d4ed269d5da9ba"
+    },
+    {
+      "path": ".markdownlint.json",
+      "gitBlob": "f3ec2c8dc2fbacc425154a2baedec50c7474aefa"
+    },
+    {
+      "path": "AGENTS.md",
+      "gitBlob": "0c48a5794454cf84e20640994a372316efde7bb5"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "gitBlob": "5b513dd25028092e7e75c8974f1d5f3cc31889ed"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "gitBlob": "cd40892f0f2ed2e5667c65e274f9a1ead1619990"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "gitBlob": "784cf2799bcf8d2a69db5f5781359ef7e18a05fc"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "gitBlob": "9676914060f734dc59eabd9075898dc8170d4d19"
+    },
+    {
+      "path": "Cargo.lock",
+      "gitBlob": "bacb208de0583f182379af7b5e078d31b25e2ca5"
+    },
+    {
+      "path": "Cargo.toml",
+      "gitBlob": "b2e7106eb78f79230c091492ef21b497bdc9ed19"
+    },
+    {
+      "path": "EDICT.md",
+      "gitBlob": "35376134195082d506f0161ba7ecb97efa8b770a"
+    },
+    {
+      "path": "LICENSE",
+      "gitBlob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+    },
+    {
+      "path": "NOTICE",
+      "gitBlob": "c300687bdd9d931d1f257d291e1cb6ff9d7d3607"
+    },
+    {
+      "path": "README.md",
+      "gitBlob": "0812ef9a0c4611bf655dfc67d2ecc3631af9a536"
+    },
+    {
+      "path": "ROADMAP.md",
+      "gitBlob": "d0e0135780537afab1d1a3f53808b363b35a63f4"
+    },
+    {
+      "path": "SECURITY.md",
+      "gitBlob": "0bcc4e7375442e1334405a2d046df316cee05cd5"
+    },
+    {
+      "path": "crates/edict-cli/Cargo.toml",
+      "gitBlob": "e9d844553c395bd312f84e806eb5bac30c5c3a54"
+    },
+    {
+      "path": "crates/edict-cli/src/application_build.rs",
+      "gitBlob": "9c56ae6b4dd4eef0b9fe6db40316e100b2ffa699"
+    },
+    {
+      "path": "crates/edict-cli/src/lawpack_build.rs",
+      "gitBlob": "55e9579153f34a3d5b139141c9de6640808cd386"
+    },
+    {
+      "path": "crates/edict-cli/src/lawpack_build_windows.rs",
+      "gitBlob": "f71d03b368ae83becc1608bbba11cd5f1afa4f07"
+    },
+    {
+      "path": "crates/edict-cli/src/lib.rs",
+      "gitBlob": "60883af60cf4b441680952ecce7ef4fcbfeabb97"
+    },
+    {
+      "path": "crates/edict-cli/src/main.rs",
+      "gitBlob": "0dd9776642c4090479322111e4164ee7049fb9d0"
+    },
+    {
+      "path": "crates/edict-cli/tests/golden_cli.rs",
+      "gitBlob": "9897caad3bcc6fa8bb0f20a1d0e18032285b1fa7"
+    },
+    {
+      "path": "crates/edict-cli/tests/jsonl_cli.rs",
+      "gitBlob": "9ed353ca27d073fc7da49d3800c81ba4c58edd5d"
+    },
+    {
+      "path": "crates/edict-cli/tests/lawpack_authoring_cli.rs",
+      "gitBlob": "0a0c53baaedd0854d0c25bc591cb38db9c2c009b"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/Cargo.toml",
+      "gitBlob": "ebeeb941f09012293d9923fe0e6039b2761b328e"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/src/conversion.rs",
+      "gitBlob": "62c3cd4a85eb156b8c9a405ef3ea4d8a09b80cc3"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/src/invocation.rs",
+      "gitBlob": "a4d6680d289094afebc0f1063abccf706f8149db"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/src/lib.rs",
+      "gitBlob": "353ea7394f265219ebdecad56a3070c9e7d2685c"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/src/limits.rs",
+      "gitBlob": "9e4d12c1b606d2b180f732db17bfbc78f8e26e3a"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/src/replay.rs",
+      "gitBlob": "b8fa7be7c7ee5039793dad4cd0fa6a4f14ce388e"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/tests/invocation.rs",
+      "gitBlob": "7a59a3192852a80bc01221ebf3dd1c437bda9508"
+    },
+    {
+      "path": "crates/edict-provider-host-wasmtime/tests/preflight.rs",
+      "gitBlob": "a295e7547b0294f0355a85d5b9b8d045c8fceefd"
+    },
+    {
+      "path": "crates/edict-provider-schema/Cargo.toml",
+      "gitBlob": "0e74f58acdc054ecce192cb8341afeaddc40deb5"
+    },
+    {
+      "path": "crates/edict-provider-schema/src/contract_pack.rs",
+      "gitBlob": "370480d9c606134dd08ee62ae29ef143941e2f54"
+    },
+    {
+      "path": "crates/edict-provider-schema/src/lib.rs",
+      "gitBlob": "51f5bee8892c9fb2122cb20022edc4d414759ff7"
+    },
+    {
+      "path": "crates/edict-provider-schema/src/recursive_dispatch.rs",
+      "gitBlob": "6d97565b96f941b359d16f7a1c201189968fbeff"
+    },
+    {
+      "path": "crates/edict-provider-schema/src/schema_safety.rs",
+      "gitBlob": "a2f605f62a2bfedcb84b68e37db9ff84b1dc3b05"
+    },
+    {
+      "path": "crates/edict-provider-schema/tests/authority_facts_abi.rs",
+      "gitBlob": "7dd4d0302805ceecffc2045cdb91e386f8e08517"
+    },
+    {
+      "path": "crates/edict-provider-schema/tests/provider_contract_pack.rs",
+      "gitBlob": "a26be8054b39215048825dd8cae7e9bddcfe27c9"
+    },
+    {
+      "path": "crates/edict-provider-schema/tests/registry.rs",
+      "gitBlob": "bdd13ec00e441aef9e67ba49f6592ecbc7dcb303"
+    },
+    {
+      "path": "crates/edict-syntax/Cargo.toml",
+      "gitBlob": "f55bb23e528af78b1e97b52f9b72cbd876a44ba7"
+    },
+    {
+      "path": "crates/edict-syntax/src/admission.rs",
+      "gitBlob": "471430dd13a617bac886fcd44afbf15263e7db3b"
+    },
+    {
+      "path": "crates/edict-syntax/src/ast.rs",
+      "gitBlob": "2a5d208a53a82408f8a18d9a13ccb133ec6a7a2e"
+    },
+    {
+      "path": "crates/edict-syntax/src/authority_facts.rs",
+      "gitBlob": "644de86d63983bdbfbf1279fdbf1dbdaecc151d5"
+    },
+    {
+      "path": "crates/edict-syntax/src/canonical.rs",
+      "gitBlob": "6fb29d50ea4a55eb888a1b9600cdcb31713a6e20"
+    },
+    {
+      "path": "crates/edict-syntax/src/compiler.rs",
+      "gitBlob": "d9661e2605f23f503a8fdf4471462cc0b9bad4c1"
+    },
+    {
+      "path": "crates/edict-syntax/src/compiler/byte_concat.rs",
+      "gitBlob": "185d11c0ae20931cd2737774a34cac92b13d6712"
+    },
+    {
+      "path": "crates/edict-syntax/src/compiler/byte_length.rs",
+      "gitBlob": "0d8d6291064415baee9253d9fe1e11ad87945773"
+    },
+    {
+      "path": "crates/edict-syntax/src/compiler/byte_slice.rs",
+      "gitBlob": "84385fffdf4e38e21285e1fde252e9185a3a76fa"
+    },
+    {
+      "path": "crates/edict-syntax/src/compiler/unsigned_subtraction.rs",
+      "gitBlob": "c2ef2deda74afb52e4346076a310df341556e1c8"
+    },
+    {
+      "path": "crates/edict-syntax/src/contract_bundle.rs",
+      "gitBlob": "9a31645f0e30879d019787e29c21c82eebf58129"
+    },
+    {
+      "path": "crates/edict-syntax/src/core_ir.rs",
+      "gitBlob": "4c6f350b325d13a27947687dd1f4114edf6d548d"
+    },
+    {
+      "path": "crates/edict-syntax/src/highlight.rs",
+      "gitBlob": "28b3f7dcdfe8d4982bdcfb05759f769ccdbffc7f"
+    },
+    {
+      "path": "crates/edict-syntax/src/lawpack.rs",
+      "gitBlob": "54f85bda48c960ad0b7bc316d332b379ab5b6ae0"
+    },
+    {
+      "path": "crates/edict-syntax/src/lawpack_adapter.rs",
+      "gitBlob": "e425960e2437faa2f9eeb5d089ff507417d39586"
+    },
+    {
+      "path": "crates/edict-syntax/src/lawpack_authoring.rs",
+      "gitBlob": "11ff578f458b8a4c8e4df75c0c616e37fa468d49"
+    },
+    {
+      "path": "crates/edict-syntax/src/lib.rs",
+      "gitBlob": "7323475cc7f846e11c2d73f4c26a5e581b7e6157"
+    },
+    {
+      "path": "crates/edict-syntax/src/lowerability.rs",
+      "gitBlob": "c6a1323fd6a79b0460b43aaf338956c3906a633e"
+    },
+    {
+      "path": "crates/edict-syntax/src/parser.rs",
+      "gitBlob": "0b3650e3012e49023ccbb9cc9effe9b5b102f19d"
+    },
+    {
+      "path": "crates/edict-syntax/src/provider.rs",
+      "gitBlob": "18fa661d880979c53dd335fb7e68d5445b638d4c"
+    },
+    {
+      "path": "crates/edict-syntax/src/provider_invocation.rs",
+      "gitBlob": "2526168f0a6f2d1d9b6181b689ff43e203434122"
+    },
+    {
+      "path": "crates/edict-syntax/src/provider_lowering.rs",
+      "gitBlob": "50a4e60b561127cb8c78e3f7c04c6bbaca068e52"
+    },
+    {
+      "path": "crates/edict-syntax/src/result_projection.rs",
+      "gitBlob": "79ba246d4c58960fe368eaca4c7d135fe187832a"
+    },
+    {
+      "path": "crates/edict-syntax/src/semantic.rs",
+      "gitBlob": "76bd133ef5859bf7722d1987613f7fd84836ab62"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir.rs",
+      "gitBlob": "9dd759a18ea3a171837baa50e88c67987c84da13"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/byte_concat.rs",
+      "gitBlob": "bff3a35e1d3183813ffb1e69655934f65f2c9131"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/byte_length.rs",
+      "gitBlob": "972e6ffa943bc7a7a943d76f0af42b342e3d2aac"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/byte_slice.rs",
+      "gitBlob": "62a1c0b9e84a331bb17ab78090cce6d8eb8da486"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/execution_order.rs",
+      "gitBlob": "e69a28805dc5e414a64afdaafee34161c217a044"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/totality.rs",
+      "gitBlob": "a4fb9573d59e1a4bb9d7c250402c5b7e1da0a8c3"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_ir/unsigned_subtraction.rs",
+      "gitBlob": "b83522bfe9a2b506413b4d306f4bc49f8b053f36"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_profile.rs",
+      "gitBlob": "dd514f7380243e795f0655a78aecd06ee3fa2eda"
+    },
+    {
+      "path": "crates/edict-syntax/src/target_profile_contract_resources.rs",
+      "gitBlob": "4efd22961c2fd7591440efd6087944ecaf21e991"
+    },
+    {
+      "path": "crates/edict-syntax/src/token.rs",
+      "gitBlob": "2768586eea6d42d5df357c4cc62a011ee7f455de"
+    },
+    {
+      "path": "crates/edict-syntax/tests/admission.rs",
+      "gitBlob": "57edbc320307c1d6daba85f03d8dc79558d7b849"
+    },
+    {
+      "path": "crates/edict-syntax/tests/authority_facts.rs",
+      "gitBlob": "add9d272be6e8eb1cd6fdde2999a5fb452ecd852"
+    },
+    {
+      "path": "crates/edict-syntax/tests/authority_facts_cbor.rs",
+      "gitBlob": "7359f047d9f731fee208efb5f69072b612d69547"
+    },
+    {
+      "path": "crates/edict-syntax/tests/byte_concat.rs",
+      "gitBlob": "f013cade690112b266dd79b1e5405cc65c6f2d07"
+    },
+    {
+      "path": "crates/edict-syntax/tests/byte_length.rs",
+      "gitBlob": "50945944e8c2223abcc6b1081322432bc540c017"
+    },
+    {
+      "path": "crates/edict-syntax/tests/byte_slice.rs",
+      "gitBlob": "99aae98ac1637a95532cdd833463210bbaa5a5be"
+    },
+    {
+      "path": "crates/edict-syntax/tests/canonical_encoding.rs",
+      "gitBlob": "e4c5d59a88f88193f522eb555359919f7034a264"
+    },
+    {
+      "path": "crates/edict-syntax/tests/common/mod.rs",
+      "gitBlob": "89560bfacb3dab031485c2dfa30d7eb325966574"
+    },
+    {
+      "path": "crates/edict-syntax/tests/compiler_spine.rs",
+      "gitBlob": "2237318cfc0d4209e8a629e45320e42a4b72dbef"
+    },
+    {
+      "path": "crates/edict-syntax/tests/contract_bundle.rs",
+      "gitBlob": "e6a2948335a0efc86d8bbb2e9e2c3d634e53965a"
+    },
+    {
+      "path": "crates/edict-syntax/tests/core_golden_fixtures.rs",
+      "gitBlob": "0e0e42d19b52dc0557902dad9e1b85f37edf53f8"
+    },
+    {
+      "path": "crates/edict-syntax/tests/core_graph_depth.rs",
+      "gitBlob": "1d95462ad2426d29b5974e6bb56ab8c125a92837"
+    },
+    {
+      "path": "crates/edict-syntax/tests/external_action_requests.rs",
+      "gitBlob": "20aac8c03325ea0cdab8f4f54660cb980b4667c4"
+    },
+    {
+      "path": "crates/edict-syntax/tests/highlighting.rs",
+      "gitBlob": "17e6b9ba08c96f0efb6efd440590f0fc917316e2"
+    },
+    {
+      "path": "crates/edict-syntax/tests/lawpack.rs",
+      "gitBlob": "a675999ed96309358c8552a9d32781b5eede20dc"
+    },
+    {
+      "path": "crates/edict-syntax/tests/lawpack_authoring.rs",
+      "gitBlob": "de5e9102d8cfd43706074e482d407ac5f4c6fd26"
+    },
+    {
+      "path": "crates/edict-syntax/tests/lowerability.rs",
+      "gitBlob": "5cfa58f5cbc51cccc7f119caddc1c3fcbc2e4806"
+    },
+    {
+      "path": "crates/edict-syntax/tests/operation_prerequisites.rs",
+      "gitBlob": "753659e1a6e7751c455b8518226fa0902157a745"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_control_flow.rs",
+      "gitBlob": "5245561866d8902c1fbd5ab21f2e34807d568e17"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_greeting.rs",
+      "gitBlob": "f214d0c17745b8203d562780caa8f37b71c1e62c"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_hello.rs",
+      "gitBlob": "bf7b1b065277188f4be8754eb11ace94298394ba"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_keywords.rs",
+      "gitBlob": "78d8a64d785136d42a32655afda3df240c54f884"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_loops.rs",
+      "gitBlob": "d9ece2fce96fd6835d080055f06955d139c7e0ce"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_negative.rs",
+      "gitBlob": "17fdb983b8250470368a8f19d3a7bd9680052548"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_review_regressions.rs",
+      "gitBlob": "560215cfe044a528e190aa1ea7670e52b9365bdf"
+    },
+    {
+      "path": "crates/edict-syntax/tests/parse_variants.rs",
+      "gitBlob": "8849f68f5ca1e2b06d0f66496e59b20d1c0fd022"
+    },
+    {
+      "path": "crates/edict-syntax/tests/provider.rs",
+      "gitBlob": "7e8a596109b1e1fd3f22b3a0ef82f4755f127291"
+    },
+    {
+      "path": "crates/edict-syntax/tests/provider_invocation.rs",
+      "gitBlob": "402647dd6701be65a9e693fd3f5688f26d84988e"
+    },
+    {
+      "path": "crates/edict-syntax/tests/provider_lowering.rs",
+      "gitBlob": "411c306f3ab641de9dc2f7aed229767eba9dbd72"
+    },
+    {
+      "path": "crates/edict-syntax/tests/result_projection.rs",
+      "gitBlob": "a74dd2a419266cb77d846d83da27f726095660f1"
+    },
+    {
+      "path": "crates/edict-syntax/tests/semantic_validation.rs",
+      "gitBlob": "a127988d178c00ed12a0a25f70df6b7fd5e6d931"
+    },
+    {
+      "path": "crates/edict-syntax/tests/target_ir.rs",
+      "gitBlob": "928e1cf921dead0b559bd115bb6eef3faaddd37e"
+    },
+    {
+      "path": "crates/edict-syntax/tests/target_ir/ordered.rs",
+      "gitBlob": "a1b05db81a97a43ec5a2dc2d9bcc9578bc286f30"
+    },
+    {
+      "path": "crates/edict-syntax/tests/target_profile.rs",
+      "gitBlob": "42f1c907f6c60dea1e8a9b4558b56ffd0b3a59ab"
+    },
+    {
+      "path": "crates/edict-syntax/tests/target_profile_contract_resources.rs",
+      "gitBlob": "270c180a12dc10fb7e208cc4dc1e202da82c85fb"
+    },
+    {
+      "path": "crates/edict-syntax/tests/target_unsigned_subtraction.rs",
+      "gitBlob": "e30d91f896afda48eb3cf11617bccf1f9d160e32"
+    },
+    {
+      "path": "crates/edict-syntax/tests/unsigned_subtraction.rs",
+      "gitBlob": "fbd24482fdad4c8ceb4df41302b33595ada337ec"
+    },
+    {
+      "path": "crates/edict/Cargo.toml",
+      "gitBlob": "525403f4f36db4040531e4dd747ec2398f9052cd"
+    },
+    {
+      "path": "crates/edict/README.md",
+      "gitBlob": "a1ecf50bff3443d25a23fabfa6374d3f0a28ca82"
+    },
+    {
+      "path": "crates/edict/src/lib.rs",
+      "gitBlob": "169d820759d6333f27a45ebb712bfcc4f0115107"
+    },
+    {
+      "path": "crates/edict/tests/artifact_models.rs",
+      "gitBlob": "b923109c7195ce2c0071dc54179f0746b95329f0"
+    },
+    {
+      "path": "crates/edict/tests/public_surface.rs",
+      "gitBlob": "a24c4bc9d9484f540da9b280790896701922968a"
+    },
+    {
+      "path": "deny.toml",
+      "gitBlob": "e3f0f54060cead9a0d48b96ed86948d0909c4f78"
+    },
+    {
+      "path": "docs/DESIGN_runtime-neutral-edict-sha-lock-assurance.md",
+      "gitBlob": "ea3badf78ebd19545147a93671fdb5f9af4a61ea"
+    },
+    {
+      "path": "docs/GUIDE_edict-assurance-transparency.md",
+      "gitBlob": "100321157ec43055c45794f1c161b1e5281ba6b4"
+    },
+    {
+      "path": "docs/README.md",
+      "gitBlob": "e21739b842be14d91a17f2508b1a1b629754af01"
+    },
+    {
+      "path": "docs/REQUIREMENTS.md",
+      "gitBlob": "fd69cf5b3f57af39cda8bcf7f94ff21666a34636"
+    },
+    {
+      "path": "docs/RETRO_phase1-parser.md",
+      "gitBlob": "5cfb7b85ca2f140fc58f9186c47e4635e94a1e6f"
+    },
+    {
+      "path": "docs/SPEC_continuum-admission-v1.md",
+      "gitBlob": "0a74a0bfc642337d5d7a85133ce50a0a22caffbd"
+    },
+    {
+      "path": "docs/SPEC_continuum-contract-bundle-v1.md",
+      "gitBlob": "65b36bb33a34beb1f246d1f97384631c83ca631e"
+    },
+    {
+      "path": "docs/SPEC_edict-language-v1.md",
+      "gitBlob": "dd3f1584b000678a12232b76836172e4e66be71b"
+    },
+    {
+      "path": "docs/SPEC_edict-lawpack-abi-v1.md",
+      "gitBlob": "ea1d801f07ab3677f7a411a1f58a28feda589ec3"
+    },
+    {
+      "path": "docs/SPEC_edict-target-profile-abi-v1.md",
+      "gitBlob": "91687bfe45565a21f5f93f6ce9eed84095268691"
+    },
+    {
+      "path": "docs/TECHNICAL_EXPLANATION.md",
+      "gitBlob": "d88561c0552c0e75d1ecc2eef6f9afd003e99674"
+    },
+    {
+      "path": "docs/abi/edict-authority-facts.cddl",
+      "gitBlob": "e9a6d8685706ae0d8dabda401655234161e94299"
+    },
+    {
+      "path": "docs/abi/edict-common.cddl",
+      "gitBlob": "836c11b92425beb6d42b378c0defe6f02d144dd7"
+    },
+    {
+      "path": "docs/abi/edict-core.cddl",
+      "gitBlob": "862f02939fcc3858b4a60cb75f9bf149eae8ffda"
+    },
+    {
+      "path": "docs/abi/edict-lawpack-adapter.cddl",
+      "gitBlob": "8e887c2e196ba7502470ddb45dc7cfd10116ad6b"
+    },
+    {
+      "path": "docs/abi/edict-lawpack.cddl",
+      "gitBlob": "96efd51d437ec785b108b51835e9e8bf87aeab51"
+    },
+    {
+      "path": "docs/abi/edict-result-projection.cddl",
+      "gitBlob": "98b5c2e861e7e9b66b7481502287cb041f6e77e6"
+    },
+    {
+      "path": "docs/abi/edict-target-ir.cddl",
+      "gitBlob": "98134f277ded1920a3a36e5e3946c51153f2e84d"
+    },
+    {
+      "path": "docs/abi/edict-target-profile.cddl",
+      "gitBlob": "746ae03001310f3a83524e5332819dad1a4eea5a"
+    },
+    {
+      "path": "docs/abi/edict-target-provider.wit",
+      "gitBlob": "0efa5903a52d38dc61e429619d86322c6c5f1fa0"
+    },
+    {
+      "path": "docs/audit/2026-06-28_code-quality.md",
+      "gitBlob": "143cbf4f4491a76a6649e919c6edaba73f0bcf4b"
+    },
+    {
+      "path": "docs/audit/2026-06-28_documentation-quality.md",
+      "gitBlob": "656b4fa8dea43306af1818f8622cafd72e82a370"
+    },
+    {
+      "path": "docs/audit/2026-06-28_ship-readiness.md",
+      "gitBlob": "b9d34a8693564d0134f550092e7645e5d5137442"
+    },
+    {
+      "path": "docs/design/authority-fact-governance.md",
+      "gitBlob": "8531061cf718c47ec791f5712b2f357d92adc9e4"
+    },
+    {
+      "path": "docs/design/canonical-target-ir-v0.11.md",
+      "gitBlob": "a46acb84e3523b51e2348c776cfdb63a8b98107a"
+    },
+    {
+      "path": "docs/design/contract-bundle-assembly-v0.11.md",
+      "gitBlob": "a364f8ade5445808f87cf0c63ab3484c03ad616a"
+    },
+    {
+      "path": "docs/design/crate-scope-v0.11.md",
+      "gitBlob": "92fe92285d02465d84bbe82e29d051fdc461f3a6"
+    },
+    {
+      "path": "docs/design/obstruction-strands-v0.md",
+      "gitBlob": "81f70fd688c12798cd23472a4e810191e61eabe2"
+    },
+    {
+      "path": "docs/design/provider-artifact-pipeline-alpha.md",
+      "gitBlob": "60eefa7dc160aba986bcd1188b79610ff5e9f299"
+    },
+    {
+      "path": "docs/design/schema-as-sot-codegen.md",
+      "gitBlob": "d818e0e3f1fafd1d3aba26cb37c739f3ebe69763"
+    },
+    {
+      "path": "docs/design/v2-obligation-closure.md",
+      "gitBlob": "816d22d843a33c6f7e143da4cb45e80679609dc8"
+    },
+    {
+      "path": "docs/releases/v0.1.0-alpha.1.md",
+      "gitBlob": "5dd96057ba7f109cf5e5acde16e29d18627f98d3"
+    },
+    {
+      "path": "docs/releases/v0.10.0-alpha.1.md",
+      "gitBlob": "363c4e9ed6f5ea5758198c7124681b520098e583"
+    },
+    {
+      "path": "docs/releases/v0.11.0-alpha.1.md",
+      "gitBlob": "4612dbb5a1aaf20710bdb199b658ded7ced4ebab"
+    },
+    {
+      "path": "docs/releases/v0.2.0-alpha.1.md",
+      "gitBlob": "7302ef93ed5ff9b562d9cec92d49d85a6b789b27"
+    },
+    {
+      "path": "docs/releases/v0.3.0-alpha.1.md",
+      "gitBlob": "bf023ba4ca2c38f0120c461781447d58fe239ae0"
+    },
+    {
+      "path": "docs/releases/v0.4.0-alpha.1.md",
+      "gitBlob": "769500b59800c02c536b76b0eb850d06d6cd8f58"
+    },
+    {
+      "path": "docs/releases/v0.5.0-alpha.1.md",
+      "gitBlob": "7c7354e89846ea816992aaf55d4ad04367d61a10"
+    },
+    {
+      "path": "docs/releases/v0.6.0-alpha.1.md",
+      "gitBlob": "3f2a0edfc4bccd9f3c60a7443ef4f8cbcbac1971"
+    },
+    {
+      "path": "docs/releases/v0.7.0-alpha.1.md",
+      "gitBlob": "57671d5ef5a6b9f16d1674e0a35ddeb86ff126a8"
+    },
+    {
+      "path": "docs/releases/v0.8.0-alpha.1.md",
+      "gitBlob": "12f77bda185c54fbbd136bf0dc7292716ecdfa39"
+    },
+    {
+      "path": "docs/releases/v0.9.0-alpha.1.md",
+      "gitBlob": "fa295fcf0967415bb052f238256919b32b3fe6ba"
+    },
+    {
+      "path": "docs/schemas/edict.cli-check-result.v1.schema.json",
+      "gitBlob": "eef8cd11f07e06d68b7051efa60ae05f2cfd8a63"
+    },
+    {
+      "path": "docs/schemas/edict.cli-diagnostic.v1.schema.json",
+      "gitBlob": "92a2151a76893c598a4191ed6cecd8a0e671613f"
+    },
+    {
+      "path": "docs/schemas/edict.cli-event.v1.schema.json",
+      "gitBlob": "705d82a893c2ea91caa91ad6977a9be8646b47bb"
+    },
+    {
+      "path": "docs/schemas/edict.cli-info.v1.schema.json",
+      "gitBlob": "2d9a0777b4190b56ff569625275d352d17363afa"
+    },
+    {
+      "path": "docs/schemas/edict.compiler-input.v1.schema.json",
+      "gitBlob": "26da3ba0fe85fab4c826ad79f13968ce09c4f29b"
+    },
+    {
+      "path": "docs/schemas/edict.compiler-settings.v1.schema.json",
+      "gitBlob": "a3e8ba469895b84ab81724da1075c73141a8dd0c"
+    },
+    {
+      "path": "docs/schemas/edict.projection-core.v1.schema.json",
+      "gitBlob": "8c0afe3834256abd1e18efb5f31eae1c4bdf0374"
+    },
+    {
+      "path": "docs/schemas/edict.projection-diagnostics.v1.schema.json",
+      "gitBlob": "28cfb0a67dff7b8f879122c74433158dc0a4e5df"
+    },
+    {
+      "path": "docs/schemas/edict.projection-syntax.v1.schema.json",
+      "gitBlob": "a85f2e14f536863f5e7b107b1a9f3f10816e6234"
+    },
+    {
+      "path": "docs/schemas/edict.projection-target-ir.v1.schema.json",
+      "gitBlob": "8bbb6495ad8800d775d1c08506e85351038d678a"
+    },
+    {
+      "path": "docs/topics/README.md",
+      "gitBlob": "99b06d3124c71cb62dfe6faff7604c13063162a7"
+    },
+    {
+      "path": "docs/topics/admission/README.md",
+      "gitBlob": "755dcba96c0a428eec18d58a529f3e26d57d118c"
+    },
+    {
+      "path": "docs/topics/admission/test-plan.md",
+      "gitBlob": "68ee0a2d2502103285985bf862de9fadf2bac5a0"
+    },
+    {
+      "path": "docs/topics/assurance/README.md",
+      "gitBlob": "cf382008f3d3094a5380a687abbf07538e07404d"
+    },
+    {
+      "path": "docs/topics/assurance/test-plan.md",
+      "gitBlob": "0ea6c971924db763088577a0a52bbd30bfec814c"
+    },
+    {
+      "path": "docs/topics/authority-facts/README.md",
+      "gitBlob": "c5589d2489d6e4a5729c0df2b2655ff281d8d88d"
+    },
+    {
+      "path": "docs/topics/authority-facts/test-plan.md",
+      "gitBlob": "e3769edf8309347b23ffa2e8f0901e06feabd654"
+    },
+    {
+      "path": "docs/topics/cli/README.md",
+      "gitBlob": "af38946c9ccae8da343877c3861b0f52b6076e1b"
+    },
+    {
+      "path": "docs/topics/cli/test-plan.md",
+      "gitBlob": "d72d69ef1d340ffd7057a63dd7bc07e3dfb2c166"
+    },
+    {
+      "path": "docs/topics/compiler-spine/README.md",
+      "gitBlob": "d09184ef695252b85d05fc79017015f18c3869ee"
+    },
+    {
+      "path": "docs/topics/compiler-spine/test-plan.md",
+      "gitBlob": "1b2aaa924d95408bf0ef621d7a1a92b88a00611e"
+    },
+    {
+      "path": "docs/topics/contract-bundles/README.md",
+      "gitBlob": "2347499e8da9dd57bb1588faf67fe386c7a70c03"
+    },
+    {
+      "path": "docs/topics/contract-bundles/test-plan.md",
+      "gitBlob": "3ae4c7362f90fa89081ab9ff2bf1c3db1a811874"
+    },
+    {
+      "path": "docs/topics/core-ir/README.md",
+      "gitBlob": "d747a18d1f53de2b29473ada7a06b819c77cd162"
+    },
+    {
+      "path": "docs/topics/core-ir/canonical-encoding.md",
+      "gitBlob": "34927c69fb1de10b685294a155fc46bb4ac21628"
+    },
+    {
+      "path": "docs/topics/core-ir/test-plan.md",
+      "gitBlob": "0f80304a4dd6b160c78674b73605bdbbb7e11066"
+    },
+    {
+      "path": "docs/topics/developer-tooling/README.md",
+      "gitBlob": "8648d3c1bdf4f6b774bc5fec71c71aa8c59b0ce8"
+    },
+    {
+      "path": "docs/topics/developer-tooling/test-plan.md",
+      "gitBlob": "9240f717434dfbca08a6366e6d3ebafd4ef2c908"
+    },
+    {
+      "path": "docs/topics/documentation/README.md",
+      "gitBlob": "34fa7f4db136c274a88b680f99619d657fda15d5"
+    },
+    {
+      "path": "docs/topics/documentation/test-plan.md",
+      "gitBlob": "47964954fbf640211bc30b0dd361c44c9955c488"
+    },
+    {
+      "path": "docs/topics/external-action-requests/README.md",
+      "gitBlob": "45bc73e469919d3eff6e7eddbe9baa0383c7d91b"
+    },
+    {
+      "path": "docs/topics/external-action-requests/test-plan.md",
+      "gitBlob": "38e7e53827d223c031d414f4ecd63720eb78eae0"
+    },
+    {
+      "path": "docs/topics/fixtures/README.md",
+      "gitBlob": "c8b3b196109fb6d4e37d8ffa17635166010075fb"
+    },
+    {
+      "path": "docs/topics/fixtures/test-plan.md",
+      "gitBlob": "624357dbc544d365835390d3d3c2f11015b7b82f"
+    },
+    {
+      "path": "docs/topics/lawpack-authoring/README.md",
+      "gitBlob": "a7f781666822977d4ca2483024e1e451605cf9f5"
+    },
+    {
+      "path": "docs/topics/lawpack-authoring/test-plan.md",
+      "gitBlob": "1cc83e6b0865257feb89a88787b1eb3b983d1f84"
+    },
+    {
+      "path": "docs/topics/lawpacks/README.md",
+      "gitBlob": "dedaa524dc55663a44bf8101241ab4b6d4755531"
+    },
+    {
+      "path": "docs/topics/lawpacks/test-plan.md",
+      "gitBlob": "f8aa2c7ce40dad2665134956dc95d951d311808f"
+    },
+    {
+      "path": "docs/topics/lowerability/README.md",
+      "gitBlob": "fb9519af3539d846dc5bf2915bf5ca86816e46f8"
+    },
+    {
+      "path": "docs/topics/lowerability/test-plan.md",
+      "gitBlob": "e0fbff0799ba805c9531097d6b8aeea657e2b815"
+    },
+    {
+      "path": "docs/topics/obstruction-strands/README.md",
+      "gitBlob": "a2930645065390cecff8008bfd48b7f034bfcd18"
+    },
+    {
+      "path": "docs/topics/obstruction-strands/test-plan.md",
+      "gitBlob": "20c54ffcaa19930a5bc772a49a5f01119054be2d"
+    },
+    {
+      "path": "docs/topics/providers/README.md",
+      "gitBlob": "8b5a07fb9c708b753861a4e156b866115f4d687b"
+    },
+    {
+      "path": "docs/topics/providers/architecture.md",
+      "gitBlob": "664b38347ccaf37f298d6ac9f19d3423c0277f9e"
+    },
+    {
+      "path": "docs/topics/providers/test-plan.md",
+      "gitBlob": "95c55f9e132ca6859fd9df70470973e678ed8d92"
+    },
+    {
+      "path": "docs/topics/public-rust-api/README.md",
+      "gitBlob": "c64a1081b7f693b02bd2ea63329f2610bae9d84c"
+    },
+    {
+      "path": "docs/topics/public-rust-api/test-plan.md",
+      "gitBlob": "4c3b9e9662afd9edb790ba2b5c57ed5e93df595c"
+    },
+    {
+      "path": "docs/topics/release-process/README.md",
+      "gitBlob": "a474ab8b6a4a58c5c73334c9e677be7c20d1837c"
+    },
+    {
+      "path": "docs/topics/release-process/policy.toml",
+      "gitBlob": "e40b4f4ec721ae61210ec1bb022a847bcb49fb4a"
+    },
+    {
+      "path": "docs/topics/release-process/runbook.md",
+      "gitBlob": "0b6bd8ef44cbfe8c7cdc347273fa74b7c96c4823"
+    },
+    {
+      "path": "docs/topics/release-process/test-plan.md",
+      "gitBlob": "61ecded1d2318d7dd74070cd1c6155f353c947e9"
+    },
+    {
+      "path": "docs/topics/result-projections/README.md",
+      "gitBlob": "d5c2f85a7681a15dcdc3e35f992a389c50d13461"
+    },
+    {
+      "path": "docs/topics/result-projections/test-plan.md",
+      "gitBlob": "9e69d58c88d6a9b7389334a78b994a3449721faa"
+    },
+    {
+      "path": "docs/topics/review-process/README.md",
+      "gitBlob": "25190d37dc30110f75ba5d3a41494575ffecc1c3"
+    },
+    {
+      "path": "docs/topics/review-process/policy.toml",
+      "gitBlob": "a826ba58aad2e509220b65aa8f96c290b600e094"
+    },
+    {
+      "path": "docs/topics/review-process/test-plan.md",
+      "gitBlob": "f1a50aeae47913e4513a8149c1679d9a94c5ef21"
+    },
+    {
+      "path": "docs/topics/rust-standards/README.md",
+      "gitBlob": "2fe29258705d117f4d10604a83fd832a8476e303"
+    },
+    {
+      "path": "docs/topics/rust-standards/test-plan.md",
+      "gitBlob": "0e0d6b306cd2b58db07a7a5da6a752925fe58764"
+    },
+    {
+      "path": "docs/topics/semantic-validation/README.md",
+      "gitBlob": "51cd9761755e7b5879069bf3774eeb487982ca97"
+    },
+    {
+      "path": "docs/topics/semantic-validation/test-plan.md",
+      "gitBlob": "b43969d8eb0a884c1663ab761662f9622617bb3b"
+    },
+    {
+      "path": "docs/topics/syntax/README.md",
+      "gitBlob": "b2a372bf41b1976567c61f400bf000f33abc20cc"
+    },
+    {
+      "path": "docs/topics/syntax/test-plan.md",
+      "gitBlob": "a69efaf12dfe12661fca049b8790b37fa3fb3665"
+    },
+    {
+      "path": "docs/topics/target-ir/README.md",
+      "gitBlob": "73d6b50a99a6231bd0d337ded95bd2a960590328"
+    },
+    {
+      "path": "docs/topics/target-ir/test-plan.md",
+      "gitBlob": "4ec0f497fc0c9e73599d602417acfbfe74e65ff0"
+    },
+    {
+      "path": "docs/topics/target-profiles/README.md",
+      "gitBlob": "6a88f4d732f8069855b2ed2cb9a8769a117b2f60"
+    },
+    {
+      "path": "docs/topics/target-profiles/test-plan.md",
+      "gitBlob": "90084c3f3a1296745469cd86e9b5f2bc928825be"
+    },
+    {
+      "path": "docs/topics/tests/README.md",
+      "gitBlob": "4ad079b6a9718e2a8446a6c67ff45735015bef84"
+    },
+    {
+      "path": "docs/topics/tests/test-plan.md",
+      "gitBlob": "46bc0572d02a41e86f71c6d46baf5be611a462a6"
+    },
+    {
+      "path": "docs/topics/v2-design/README.md",
+      "gitBlob": "b33a07599e43e660aa4def7f119ddd02df6a16de"
+    },
+    {
+      "path": "docs/topics/v2-design/test-plan.md",
+      "gitBlob": "f17f96d381f81b20842393f70ff55b9597858b84"
+    },
+    {
+      "path": "editors/README.md",
+      "gitBlob": "7a933576262bc58bac197f9264fdbf649dd5e696"
+    },
+    {
+      "path": "editors/vscode/.vscodeignore",
+      "gitBlob": "f15b3142e4b8af11d580789a0c82acee3499f571"
+    },
+    {
+      "path": "editors/vscode/README.md",
+      "gitBlob": "8b29840ae9ec8f618b7364022329f694d0ed9746"
+    },
+    {
+      "path": "editors/vscode/language-configuration.json",
+      "gitBlob": "b7f583841649c9c437785edbfcb70ee24e495c79"
+    },
+    {
+      "path": "editors/vscode/package.json",
+      "gitBlob": "cd9e391e7c9afb6f9393fcead118e0e55aadc839"
+    },
+    {
+      "path": "editors/vscode/syntaxes/edict.tmLanguage.json",
+      "gitBlob": "5847d8edfdb32d822f0f3950f41d00c947982185"
+    },
+    {
+      "path": "fixtures/README.md",
+      "gitBlob": "470e3e0fc3aa00654930ecdef892ee9df8a42c8d"
+    },
+    {
+      "path": "fixtures/authority-facts/canonical/README.md",
+      "gitBlob": "28692ce70add5d4f2d4ff5318309c3353924caf9"
+    },
+    {
+      "path": "fixtures/authority-facts/canonical/example-effectful.authority-facts.cbor",
+      "gitBlob": "fe2e59a8e2602e02c52094010a130db2637c5227"
+    },
+    {
+      "path": "fixtures/authority-facts/canonical/example-effectful.authority-facts.json",
+      "gitBlob": "009faa5d2dc1dcf55cf284dcfd14c0b6405f3e0d"
+    },
+    {
+      "path": "fixtures/authority-facts/canonical/example-effectful.authority-facts.sha256",
+      "gitBlob": "a3d68f0a3b3a586e85b6a84cbd884866e662951f"
+    },
+    {
+      "path": "fixtures/bundle/assembly/bounded-hello.bundle-digests.txt",
+      "gitBlob": "da5402db7bd41dd88c6152b7799723561130c91e"
+    },
+    {
+      "path": "fixtures/cli/01-source-ok/expected.stdout.jsonl",
+      "gitBlob": "e08ccf8fdedd3a73beef5d06c443a1bc60274ce1"
+    },
+    {
+      "path": "fixtures/cli/01-source-ok/request.jsonl",
+      "gitBlob": "002fea597e6b93c8468d6972b73cc1344600fa87"
+    },
+    {
+      "path": "fixtures/cli/02-source-parse-rejection/exit",
+      "gitBlob": "d00491fd7e5bb6fa28c517a0bb32b8b506539d4d"
+    },
+    {
+      "path": "fixtures/cli/02-source-parse-rejection/expected.stderr.jsonl",
+      "gitBlob": "1077b73c9a7c02eae99f737bea7b6ff8c64d04da"
+    },
+    {
+      "path": "fixtures/cli/02-source-parse-rejection/request.jsonl",
+      "gitBlob": "dce01f0466bd9384fc6f5cbe2845b6e0bd9a9cfd"
+    },
+    {
+      "path": "fixtures/cli/03-source-semantic-rejection/exit",
+      "gitBlob": "d00491fd7e5bb6fa28c517a0bb32b8b506539d4d"
+    },
+    {
+      "path": "fixtures/cli/03-source-semantic-rejection/expected.stderr.jsonl",
+      "gitBlob": "5ec447700da52d0b4ce1f75825eb9bffaed4884b"
+    },
+    {
+      "path": "fixtures/cli/03-source-semantic-rejection/request.jsonl",
+      "gitBlob": "ddfd529e5448760387961febbd4ce013e49de435"
+    },
+    {
+      "path": "fixtures/cli/04-cli-missing-settings/exit",
+      "gitBlob": "0cfbf08886fca9a91cb753ec8734c84fcbe52c9f"
+    },
+    {
+      "path": "fixtures/cli/04-cli-missing-settings/expected.stderr.jsonl",
+      "gitBlob": "5060bd2fd773ba9ea3ea6db8c80b86a846bfadbd"
+    },
+    {
+      "path": "fixtures/cli/04-cli-missing-settings/request.jsonl",
+      "gitBlob": "8eb12e58d427bd64ccfe339190e05bdccf4c8634"
+    },
+    {
+      "path": "fixtures/cli/05-path-input-ok/expected.stdout.jsonl",
+      "gitBlob": "a05fc582efc41b6414e785167b5deeb7532088ef"
+    },
+    {
+      "path": "fixtures/cli/05-path-input-ok/inputs/hello.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/05-path-input-ok/request.jsonl",
+      "gitBlob": "18facaab79dc198134c535df389cba79efe7dce7"
+    },
+    {
+      "path": "fixtures/cli/06-directory-expansion-ok/expected.stdout.jsonl",
+      "gitBlob": "ef59591526e2084ddf5057249bbc96ab660cf256"
+    },
+    {
+      "path": "fixtures/cli/06-directory-expansion-ok/inputs/a.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/06-directory-expansion-ok/inputs/ignore.txt",
+      "gitBlob": "ed34ae8da336ff94a67b6125fbd6be730c976d91"
+    },
+    {
+      "path": "fixtures/cli/06-directory-expansion-ok/inputs/nested/b.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/06-directory-expansion-ok/request.jsonl",
+      "gitBlob": "bd9aad14fe79caccacaa6d00ffd32b5e13b3551f"
+    },
+    {
+      "path": "fixtures/cli/07-path-list-ok/expected.stdout.jsonl",
+      "gitBlob": "643ecb3e659c10cb98255ec1aced772778e76eb0"
+    },
+    {
+      "path": "fixtures/cli/07-path-list-ok/inputs/first.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/07-path-list-ok/inputs/second.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/07-path-list-ok/request.jsonl",
+      "gitBlob": "f11265b02c5b7559ced4d975471a78b5bef3ee27"
+    },
+    {
+      "path": "fixtures/cli/08-glob-expansion-ok/expected.stdout.jsonl",
+      "gitBlob": "90164a7fce6c51abdadef8f0586d2c56113d9712"
+    },
+    {
+      "path": "fixtures/cli/08-glob-expansion-ok/inputs/x.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/08-glob-expansion-ok/inputs/y.edict",
+      "gitBlob": "39c53bb184a7c10de61da0c637b607eb1d7cc454"
+    },
+    {
+      "path": "fixtures/cli/08-glob-expansion-ok/request.jsonl",
+      "gitBlob": "9335acf3a008ab8fb9942b3e22d73c456ed3827e"
+    },
+    {
+      "path": "fixtures/cli/09-shape-source-ok/expected.stdout.jsonl",
+      "gitBlob": "ac6f9259502ebfe484e1c07a5f53865888dd8207"
+    },
+    {
+      "path": "fixtures/cli/09-shape-source-ok/request.jsonl",
+      "gitBlob": "64c75d9a7b40985bacf0e59a943a16e20419c602"
+    },
+    {
+      "path": "fixtures/cli/10-input-extra-field/exit",
+      "gitBlob": "0cfbf08886fca9a91cb753ec8734c84fcbe52c9f"
+    },
+    {
+      "path": "fixtures/cli/10-input-extra-field/expected.stderr.jsonl",
+      "gitBlob": "2f5a8fba093b71d15a5b37504ad0352191c8299c"
+    },
+    {
+      "path": "fixtures/cli/10-input-extra-field/request.jsonl",
+      "gitBlob": "6052212c652d41f03144a7d3d4018b1cdd18cd09"
+    },
+    {
+      "path": "fixtures/cli/11-input-hybrid-kind/exit",
+      "gitBlob": "0cfbf08886fca9a91cb753ec8734c84fcbe52c9f"
+    },
+    {
+      "path": "fixtures/cli/11-input-hybrid-kind/expected.stderr.jsonl",
+      "gitBlob": "7b6d2ac0c8afbf5e3991498846c2fc4847ac9453"
+    },
+    {
+      "path": "fixtures/cli/11-input-hybrid-kind/request.jsonl",
+      "gitBlob": "b893b640aa6631c77f2a889a807afa31632ac2db"
+    },
+    {
+      "path": "fixtures/cli/12-input-too-large/env.json",
+      "gitBlob": "ab0c7f13fc6b22d61fc73da2f1787ff3aa298ecb"
+    },
+    {
+      "path": "fixtures/cli/12-input-too-large/exit",
+      "gitBlob": "0cfbf08886fca9a91cb753ec8734c84fcbe52c9f"
+    },
+    {
+      "path": "fixtures/cli/12-input-too-large/expected.stderr.jsonl",
+      "gitBlob": "ebda022d79c978d4ff511579512be2c642e3e902"
+    },
+    {
+      "path": "fixtures/cli/12-input-too-large/request.jsonl",
+      "gitBlob": "1e2fbb102503356bbcc627f49a5b58590859f170"
+    },
+    {
+      "path": "fixtures/cli/13-input-root-outside/allowed/.gitkeep",
+      "gitBlob": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+    },
+    {
+      "path": "fixtures/cli/13-input-root-outside/exit",
+      "gitBlob": "0cfbf08886fca9a91cb753ec8734c84fcbe52c9f"
+    },
+    {
+      "path": "fixtures/cli/13-input-root-outside/expected.stderr.jsonl",
+      "gitBlob": "9c5b8567a755c9ea2ee6e0168bf96f429185f675"
+    },
+    {
+      "path": "fixtures/cli/13-input-root-outside/outside/outside.edict",
+      "gitBlob": "44abebc15811c38cc266007484dd74ae10a26a4d"
+    },
+    {
+      "path": "fixtures/cli/13-input-root-outside/request.jsonl",
+      "gitBlob": "116dbbb4b1a80938bc042e41747872cb6da161cd"
+    },
+    {
+      "path": "fixtures/cli/README.md",
+      "gitBlob": "9388df4182fedec41c353e85cf9210e88906fa3d"
+    },
+    {
+      "path": "fixtures/core/canonical/README.md",
+      "gitBlob": "d9a0ca79557c3623c0b843d9eff4808f94fd7b18"
+    },
+    {
+      "path": "fixtures/core/canonical/bounded-hello.core.cbor",
+      "gitBlob": "a0ec54aa1a5e20624192091526445cfd803e6f0c"
+    },
+    {
+      "path": "fixtures/core/canonical/bounded-hello.core.sha256",
+      "gitBlob": "86ba062c26a3ad3fd733ccd8c80d7faa7ed62d94"
+    },
+    {
+      "path": "fixtures/core/canonical/statement-branch.core.hex",
+      "gitBlob": "c22760cace0e4d146a2fdc8d7c7b50c38497622a"
+    },
+    {
+      "path": "fixtures/core/canonical/statement-branch.core.sha256",
+      "gitBlob": "0b62657b192232390479319f0a1c8f601020a58f"
+    },
+    {
+      "path": "fixtures/core/canonical/workspace-snapshot.core.cbor",
+      "gitBlob": "58e4f724610861f5b61537bf386a87062e8a57a7"
+    },
+    {
+      "path": "fixtures/core/canonical/workspace-snapshot.core.sha256",
+      "gitBlob": "4bcb3e0813cd3f4a7afc7cf311d846f1dfdd0a9d"
+    },
+    {
+      "path": "fixtures/core/schema/accepted/core-fn-body-minimal.fields",
+      "gitBlob": "bef3ca412ab0ea97465b8658499ae5e05e1ec760"
+    },
+    {
+      "path": "fixtures/core/schema/accepted/core-intent-minimal.fields",
+      "gitBlob": "268b28ce942fed4f139aafe5c7cd50c15a0ee640"
+    },
+    {
+      "path": "fixtures/core/schema/accepted/core-module-minimal.fields",
+      "gitBlob": "249ff76349f936c9a5ff6cb65d81de8e80d53de8"
+    },
+    {
+      "path": "fixtures/core/schema/rejected/core-fn-body-effect-node-field.fields",
+      "gitBlob": "9af8fa3540b25ec810936bc4dc82e26f6dd0dd48"
+    },
+    {
+      "path": "fixtures/core/schema/rejected/core-intent-unknown-verified-mode.fields",
+      "gitBlob": "667ae032ee117f32c1bcbafd21393e406621f517"
+    },
+    {
+      "path": "fixtures/core/schema/rejected/core-module-missing-intents.fields",
+      "gitBlob": "17f37c7ac4c199de4eace7f31e6a59b9a6d3a0f6"
+    },
+    {
+      "path": "fixtures/core/schema/rejected/local-ref-missing-alpha-name.fields",
+      "gitBlob": "456a89528ffe74d892be40c9c9be4a078ff5c18a"
+    },
+    {
+      "path": "fixtures/lang/bounds/bounded-hello.edict",
+      "gitBlob": "e3443a1d3b1c8f0e137ac698b621dd2f3afb673b"
+    },
+    {
+      "path": "fixtures/lang/effects/conditional-blob.edict",
+      "gitBlob": "1e4f2ca6112f26d57ee4d20058666ec7cd693b75"
+    },
+    {
+      "path": "fixtures/lang/effects/read-greeting.edict",
+      "gitBlob": "5e3838d1547be171e0a0384a7a200f52a2b9d139"
+    },
+    {
+      "path": "fixtures/lang/external-actions/workspace-snapshot.edict",
+      "gitBlob": "e54b0fbccad2fd680505f3ee46ca28d39d7e776e"
+    },
+    {
+      "path": "fixtures/lang/operations/explicit-basis-u64.edict",
+      "gitBlob": "444d8ca77b9827746df81885f0620dce2d1a3b73"
+    },
+    {
+      "path": "fixtures/lang/tooling/highlight-smoke.edict",
+      "gitBlob": "8c2d91084be22e5e1594a42159992aca95c73612"
+    },
+    {
+      "path": "fixtures/lang/types/color-match.edict",
+      "gitBlob": "dd98d6de677904f36d7601165a0094d92928e536"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/README.md",
+      "gitBlob": "52e8cc1e2af8aea86c1090a1b20b5f5ab3e07c06"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/adapter.cbor",
+      "gitBlob": "3b0c8b1b3a8591a322b6e785d9f963899319310c"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/adapter.sha256",
+      "gitBlob": "f8231bc941e1fbe02279865a82e183cbeeb0988a"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/echo-operation-configuration.cbor",
+      "gitBlob": "24527d30d0146b567fda157561ac6a2587cae919"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/echo-operation-configuration.sha256",
+      "gitBlob": "d293c8a14b1955a3e171703400c4df620c7871a1"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/exports.cbor",
+      "gitBlob": "384f4839adfe8e5b0f1aa848bfe2aeb1c3f640b6"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/exports.sha256",
+      "gitBlob": "4f836f6b03497338a1f8eacc55480cbe1a3b49e9"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/manifest.cbor",
+      "gitBlob": "b9311a236d7898861a0b90b1f30b852b35cef623"
+    },
+    {
+      "path": "fixtures/lawpack/causal-cell/manifest.sha256",
+      "gitBlob": "685fd6a6c72fc3100d595d009b6198a81c731a40"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/README.md",
+      "gitBlob": "79f6612f1f5608a8f7dc4835e5470878cd27f96e"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/adapter.cbor",
+      "gitBlob": "24e2f546e2b97747b53462a72faaa1d5d85d62f1"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/adapter.sha256",
+      "gitBlob": "91df491028061e026ecaaeb4e1598e2ac369af44"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.core.cbor",
+      "gitBlob": "246b6135855c415def0bd89b275f0457752ee563"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.core.sha256",
+      "gitBlob": "9adc71605e0a275349161809614bd17de97d129c"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.edict",
+      "gitBlob": "825d50565230bd71d62bfbeb59d0399a89864b4c"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.result-projection.cbor",
+      "gitBlob": "981cba6e1c7ab6bdae6829116749c4796167e4e6"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.result-projection.sha256",
+      "gitBlob": "d55e4083771e1d9791f59cf87fd5cc5f1ea3b9f4"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.target-ir.cbor",
+      "gitBlob": "c8a934cefec17dbab0a43d9be9cebd2533268798"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/create-greeting.target-ir.sha256",
+      "gitBlob": "20186cbe9482e8a7df7c44fabec13ffd4efbcf36"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/echo-operation-configuration.cbor",
+      "gitBlob": "84838ab0d8627237232fa5a9b9fa39087bcc5f8a"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/echo-operation-configuration.sha256",
+      "gitBlob": "0898688f14067560dd22abd04b97f020071fd3e8"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/exports.cbor",
+      "gitBlob": "0e1220ceed9442a7b35870eeb02fcb65454d8c5c"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/exports.sha256",
+      "gitBlob": "e1f3e9223de9ce935bc7f60dda3cfa7d12d54fdc"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/manifest.cbor",
+      "gitBlob": "d715900f03ec454a0ad96e6710f52a46120d0b9d"
+    },
+    {
+      "path": "fixtures/lawpack/hello-echo/manifest.sha256",
+      "gitBlob": "20171199b401cecace2dd74e18f3cc1d5c7ed3de"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/README.md",
+      "gitBlob": "67cd35f2e0660aa7455de1c197ad821d5438679b"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/adapter.cbor",
+      "gitBlob": "2d6f09a7e2fab381b97a05cfad1e692902e878c3"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/adapter.sha256",
+      "gitBlob": "d44eb9675e126716e8a5ef3c53fd39ade49d76fb"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/apply-validated-patch.core.cbor",
+      "gitBlob": "6a88c127e426288a3e51d4749d5c31d5b0cb60cb"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/apply-validated-patch.core.sha256",
+      "gitBlob": "0204b6f1d8b346a67800a7738ee39df49e78571f"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/apply-validated-patch.edict",
+      "gitBlob": "6e11a3d022a53a8fb2c20a77e35e29840f5fe086"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/apply-validated-patch.target-ir.cbor",
+      "gitBlob": "a6124a995a3cdbb5d39cd0a6e046b329048703aa"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/apply-validated-patch.target-ir.sha256",
+      "gitBlob": "f7ac419ce15b32d491e09bddbe7c75f8227f51d8"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/exports.cbor",
+      "gitBlob": "3a6fd19dc8059b9fe1bde74fb1da61398b0e80cc"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/exports.sha256",
+      "gitBlob": "b301dd883a31fffe324e9306ec90ae2b1ec44520"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/input-schema.cbor",
+      "gitBlob": "3045d9b696864fefe111c3eb641b3b68532752d2"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/input-schema.sha256",
+      "gitBlob": "9f1284b4f0a2c7f6dbe1915a6113cd13a9700cb8"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/manifest.cbor",
+      "gitBlob": "77e56c7525f0e64ab191f0adfeac12b540c87848"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/manifest.sha256",
+      "gitBlob": "8316978e68565f29a30a6978d33d907710185857"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/reconciliation-law.cbor",
+      "gitBlob": "0736b75f81913fca7ac95c56ec45f66b95aea4cf"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/reconciliation-law.sha256",
+      "gitBlob": "de31fc9fda59fa3c29397e5fc48db224e8e1fee7"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/request-profile-configuration.cbor",
+      "gitBlob": "5e2870b2f562bafaa73a91a3fc192f5ed39257c7"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/request-profile-configuration.sha256",
+      "gitBlob": "4345ae2e39ce3f4d9cfa6b0dddf4ce56d56c035c"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/settlement-schema.cbor",
+      "gitBlob": "0a93ac19c51b341602eeba524769147e962d5d60"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-patch/settlement-schema.sha256",
+      "gitBlob": "f1bb3fb0313dd6815b4184345194949ec40fe9e1"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/README.md",
+      "gitBlob": "996bd1d29b28769fff477084d9118d0833ca2970"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/adapter.cbor",
+      "gitBlob": "9be4ea568b602b56269af505deb809989a3fa8b5"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/adapter.sha256",
+      "gitBlob": "1e287be0a322e5444dea15fa14bcfc7cf12975c4"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/exports.cbor",
+      "gitBlob": "33fe04db74775c191d4b7400e1fb2b6393c5a010"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/exports.sha256",
+      "gitBlob": "e057cac7fc360e6599b7ddab88508aaf0f2f55f8"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/input-schema.cbor",
+      "gitBlob": "49c849169946e44c8b5f300279dd085bd6b63aeb"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/input-schema.sha256",
+      "gitBlob": "9dd7bb6e48192e90d19fc346d1705f736b1d85d7"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/manifest.cbor",
+      "gitBlob": "d4e58e3d4646ca967170a6882f2a617cb8d81390"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/manifest.sha256",
+      "gitBlob": "0edb311125a89a5816ee3fa0c9b700c9b3bcff3d"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/observe-workspace.core.cbor",
+      "gitBlob": "a4b249dfb197f1a6b4adc06855f16e4305a1c798"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/observe-workspace.core.sha256",
+      "gitBlob": "ea6b914d14907d9fd915058e579aff33c954da2c"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/observe-workspace.edict",
+      "gitBlob": "c2c10f1ef1009796d67061b9722c4db9bb4e031b"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/observe-workspace.target-ir.cbor",
+      "gitBlob": "bdab1b0c55a34360c7e9ab304af91fe2b1e4afce"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/observe-workspace.target-ir.sha256",
+      "gitBlob": "7342aaa96221d6c8efa75ead2af5563791ccfeff"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/reconciliation-law.cbor",
+      "gitBlob": "df55572b350002a3df98ccb3e72dd60c86b9aead"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/reconciliation-law.sha256",
+      "gitBlob": "957cd04c78c130b07d2cad2fd7e07ae69978be57"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/request-profile-configuration.cbor",
+      "gitBlob": "708f18918ee1703491a910df82e129e711a4cc46"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/request-profile-configuration.sha256",
+      "gitBlob": "d9953d9dcaa41c98387226d1980f40b24d2bc3cb"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/settlement-schema.cbor",
+      "gitBlob": "f01ad68531267666e6bf93bf30a37d5b311c1676"
+    },
+    {
+      "path": "fixtures/lawpack/workspace-snapshot/settlement-schema.sha256",
+      "gitBlob": "06fcc0ee2b976a09b3017bd93132a3c51eb1317e"
+    },
+    {
+      "path": "fixtures/obstruction-strands/v0/stale-basis/README.md",
+      "gitBlob": "25efbfa04e2e6104c5434f329128333e895e2b0a"
+    },
+    {
+      "path": "fixtures/obstruction-strands/v0/stale-basis/source.edict",
+      "gitBlob": "e487b46e81220c50e6f928922dada29f3a21ca6a"
+    },
+    {
+      "path": "fixtures/provider-contracts/v1/README.md",
+      "gitBlob": "447692907f9268ce3b6b78c43b7cbbb0417aeadf"
+    },
+    {
+      "path": "fixtures/provider-contracts/v1/edict-provider-contracts.cddl",
+      "gitBlob": "07048aeeadb5062eabb89e995713cbc0893b7d7e"
+    },
+    {
+      "path": "fixtures/provider-contracts/v1/manifest.json",
+      "gitBlob": "d2c8de5d61049e9f4182c630bf82b138f0f96792"
+    },
+    {
+      "path": "fixtures/providers/README.md",
+      "gitBlob": "c26ee60a4930e3e0784c76cb855e48234a5c6b58"
+    },
+    {
+      "path": "fixtures/providers/components/guests/Cargo.lock",
+      "gitBlob": "d7858ce7bc67deabb5ff352a24c85a7caa0ef4b0"
+    },
+    {
+      "path": "fixtures/providers/components/guests/Cargo.toml",
+      "gitBlob": "450a24aed25dc73661b0ae8adfe2630dfecc9b07"
+    },
+    {
+      "path": "fixtures/providers/components/guests/lowerer/Cargo.toml",
+      "gitBlob": "568aa137fa215b6b973fe31e12322530b393b9dc"
+    },
+    {
+      "path": "fixtures/providers/components/guests/lowerer/src/lib.rs",
+      "gitBlob": "b39a8a0b18fe9ed7cb90277f793056434afa1318"
+    },
+    {
+      "path": "fixtures/providers/components/guests/verifier/Cargo.toml",
+      "gitBlob": "f814f2c8c248bbf03389f5a0936f80cd4dada5b6"
+    },
+    {
+      "path": "fixtures/providers/components/guests/verifier/src/lib.rs",
+      "gitBlob": "3f07ffdfd808ff95b206a2c08c2d481ccaf0e165"
+    },
+    {
+      "path": "fixtures/providers/components/instantiation-failure-lowerer.component.wasm",
+      "gitBlob": "bd2d7c0d31798d7676aedab0bd0d289fc2053bef"
+    },
+    {
+      "path": "fixtures/providers/components/instantiation-failure-lowerer.wat",
+      "gitBlob": "f6f5a70edb80d3a7fa1dee13b34ab5b8b44274d7"
+    },
+    {
+      "path": "fixtures/providers/components/instantiation-fuel-lowerer.component.wasm",
+      "gitBlob": "0804d26d3ddb428682ca87ecad03cf0e05ef64af"
+    },
+    {
+      "path": "fixtures/providers/components/instantiation-fuel-lowerer.wat",
+      "gitBlob": "80e972463ef593602d27c7d7cec78d87d22ff727"
+    },
+    {
+      "path": "fixtures/providers/components/inventory.json",
+      "gitBlob": "45cf2e8e937a17a8ee05dfa8d68e94dcc155e129"
+    },
+    {
+      "path": "fixtures/providers/components/lowerer.component.wasm",
+      "gitBlob": "6c1cf123a44284d15b7b1e90f1905ae94e65c158"
+    },
+    {
+      "path": "fixtures/providers/components/malformed-lowerer.component.wasm",
+      "gitBlob": "be873af81100dc76ed1f3f1f818a41da45a38e4c"
+    },
+    {
+      "path": "fixtures/providers/components/malformed-lowerer.wat",
+      "gitBlob": "1e7bfffe0a0baf230d9fb5766083f82198f4029c"
+    },
+    {
+      "path": "fixtures/providers/components/verifier.component.wasm",
+      "gitBlob": "671adbe7931d0a9a5e0c78d459c244d37a135a69"
+    },
+    {
+      "path": "fixtures/providers/echo-generated/provider-manifest.json",
+      "gitBlob": "22c8560e7ddecacd5da388e52d3935d7fc1474b9"
+    },
+    {
+      "path": "fixtures/providers/echo-target-profile/README.md",
+      "gitBlob": "350c33dcda2d66d2d50e589c58db7c6d7b14a80b"
+    },
+    {
+      "path": "fixtures/providers/echo-target-profile/generated/primary/target-profile.echo-dpo.cbor",
+      "gitBlob": "9fa43529b1021dfd8e3a33256c832d4eee6f4a47"
+    },
+    {
+      "path": "fixtures/providers/wit/legacy-target-profile.wit",
+      "gitBlob": "ae7d6af764012b16bf06bfa260ccba98a7f04868"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/echo-effectful.target-ir.cbor",
+      "gitBlob": "727a80eb37319dbdbea40d7d9b4e37f0d93d8d84"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/echo-effectful.target-ir.sha256",
+      "gitBlob": "6d050bb46ac8981ea8e47c7a52371027b941fd89"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/gitwarp-append.target-ir.cbor",
+      "gitBlob": "89b46b138a7b90252a4397c0e8b622bceff10a33"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/gitwarp-append.target-ir.sha256",
+      "gitBlob": "a59a4ab9d46095d5be1797ed9e60fe841f821bce"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/workspace-snapshot.target-ir.cbor",
+      "gitBlob": "1854eeb549b3719fa2b0114867dbece6db1819d4"
+    },
+    {
+      "path": "fixtures/target-ir/canonical/workspace-snapshot.target-ir.sha256",
+      "gitBlob": "4d0e501323d415ef9e64c0a3d25bdd57dabfc998"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/README.md",
+      "gitBlob": "32dcab1dd9376a4eed2c73bb1b1a29255fe3ea05"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/canonical-cbor.cbor",
+      "gitBlob": "4a95ba3bd9dff190ca5ec9c83262bfa6254a91d3"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/canonical-cbor.sha256",
+      "gitBlob": "2168df5d4bf77ed2347139dd7c45fd808df8ec7e"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/determinism.cbor",
+      "gitBlob": "09cd11c36048939961408550763c04fad8241557"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/determinism.sha256",
+      "gitBlob": "5376d6bfe23bea659463a7e3c56ad1e8afd4095f"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/diagnostics.cbor",
+      "gitBlob": "c47fa05f463e0da745fbcdf8daf94d70e134eb8d"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/diagnostics.sha256",
+      "gitBlob": "69613ec4014f27b23245e23fbf7c9447566516b2"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/fuel.cbor",
+      "gitBlob": "b5a3484ec5b2bf7343c2fcedc67bcb2b63a37104"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/fuel.sha256",
+      "gitBlob": "6ec1c830358ee35bb12bd04cc1a6edf47fb20997"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/wasm-component.cbor",
+      "gitBlob": "6344996c283e0d1c332ea3ce597ad4593882a3c5"
+    },
+    {
+      "path": "fixtures/target-profile/contract-resources/wasm-component.sha256",
+      "gitBlob": "24bf3e552e4216d8258d2b85c8878af46a176c52"
+    },
+    {
+      "path": "grammars/textmate/README.md",
+      "gitBlob": "fc116a669725d4e965d658234d32d779955d5dc8"
+    },
+    {
+      "path": "grammars/textmate/edict.tmLanguage.json",
+      "gitBlob": "5847d8edfdb32d822f0f3950f41d00c947982185"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/README.md",
+      "gitBlob": "e2992a839d6719f1461db78c4e3f33d2e5ab0c09"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/grammar.js",
+      "gitBlob": "a82f5b9d9b78525f17a59272543fdcddd7a0da40"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/queries/highlights.scm",
+      "gitBlob": "0f46530b36996d13449901aed4e376a126577cba"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/grammar.json",
+      "gitBlob": "55df730a06b83c9f622e3ec17845fc9897c7d8c0"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/node-types.json",
+      "gitBlob": "520f6c4f7b30cd6892dd60faf6d76f3fbaa6a5c7"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/parser.c",
+      "gitBlob": "81cc4713cb5e05f9aa8dac16da202a864faefee6"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/tree_sitter/alloc.h",
+      "gitBlob": "1abdd1201578605b8d05a3001f01ebc0d58826d9"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/tree_sitter/array.h",
+      "gitBlob": "56fc8cd470996ded64a5452be25e26dbd2aa682a"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/src/tree_sitter/parser.h",
+      "gitBlob": "858107deb9e4a1ffcd2ed5e6ffe98a5fcab3e1f6"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/test/corpus/current-subset.txt",
+      "gitBlob": "732c5eda8e1bf95eef799476296a6ee061eb58eb"
+    },
+    {
+      "path": "grammars/tree-sitter-edict/tree-sitter.json",
+      "gitBlob": "97d3fdd498a3bef509c8615d98b9560b527c03cb"
+    },
+    {
+      "path": "scripts/consumer-witnesses/README.md",
+      "gitBlob": "2b7d2b9d81f9598fd8df232b3a76bef106ff7ef2"
+    },
+    {
+      "path": "scripts/consumer-witnesses/jedit-state-read.Dockerfile",
+      "gitBlob": "7462059be67686090d0097b24b9d14bfbbd4c6f7"
+    },
+    {
+      "path": "scripts/consumer-witnesses/jedit-state-read.Dockerfile.dockerignore",
+      "gitBlob": "ee41b3ca0a68fd5eb20e1b777b4b368fd8b44e63"
+    },
+    {
+      "path": "scripts/consumer-witnesses/jedit-state-read.py",
+      "gitBlob": "26db295d4eabfc4e57813fc9bf17314c23350777"
+    },
+    {
+      "path": "scripts/consumer-witnesses/run-jedit-state-read.sh",
+      "gitBlob": "18cd72bbbdfb17a5ea30a7821d47035071556d10"
+    },
+    {
+      "path": "spec.lock.json",
+      "gitBlob": "ef8b02386e0f269a99c1d2121764f70b76e67620"
+    },
+    {
+      "path": "xtask/Cargo.toml",
+      "gitBlob": "795c70a5172363bfcd55174b1bc76c9c131d21a3"
+    },
+    {
+      "path": "xtask/src/contract_check.rs",
+      "gitBlob": "9e80393accf79936033972fde0f2aa2cf40f1be3"
+    },
+    {
+      "path": "xtask/src/goldens.rs",
+      "gitBlob": "713f1f8266d9f6993684ae86db105fcd7d69ee2a"
+    },
+    {
+      "path": "xtask/src/lawpack_goldens.rs",
+      "gitBlob": "c499e8581c73313794b83c261937144b3917850a"
+    },
+    {
+      "path": "xtask/src/main.rs",
+      "gitBlob": "6c2c06038bb5ecdde60620071b200d8191dc116c"
+    },
+    {
+      "path": "xtask/src/provider_components.rs",
+      "gitBlob": "ee9d6a1028f9fbfad879faab4b15a94b996ef6d4"
+    },
+    {
+      "path": "xtask/src/provider_contract_pack.rs",
+      "gitBlob": "cf60d89892b7a57cc33300f273d2522a6e8f43f9"
+    },
+    {
+      "path": "xtask/src/provider_dependencies.rs",
+      "gitBlob": "c4b0539ed593d2a2777d294090d2a891b13ae628"
+    },
+    {
+      "path": "xtask/src/release_dates.rs",
+      "gitBlob": "1c6d7acb872f6d820eab3a30ca580e9c5cfba2ee"
+    },
+    {
+      "path": "xtask/src/release_prep.rs",
+      "gitBlob": "01ed64ccbb28c9d1e908b7b800ff58076e5e1a2b"
+    },
+    {
+      "path": "xtask/src/tests.rs",
+      "gitBlob": "9a3f6543c2dbae31d53e93d56f781e5d54f74f41"
+    },
+    {
+      "path": "xtask/src/util.rs",
+      "gitBlob": "c1bf39e93460c43ffdcfd9a76e0424750cbb9dfd"
+    }
+  ]
+}

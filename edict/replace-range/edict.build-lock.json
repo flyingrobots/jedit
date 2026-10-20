@@ -1,0 +1,144 @@
+{
+  "schema": "jedit.edict-build-lock/v1",
+  "applicationCoordinate": "jedit.text.replace_range@1",
+  "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
+  "toolchainLockSha256": "db54615c1294bd128401715630421e49b2633776ace7ede1bfb0c3c198a11d2a",
+  "sourceClosure": {
+    "schema": "jedit.edict-source-closure/v1",
+    "digest": "sha256:c692181d166000e86e2bc2564e60814435f7ae7202b057fc9e7fb62974fee12b",
+    "files": [
+      {
+        "path": "application/edict.application.json",
+        "sha256": "3182577627cd1f88bf590f3a8481ef53476c83d783aa142182e7c65eb1f72f8b"
+      },
+      {
+        "path": "application/edict.lawpack.json",
+        "sha256": "ce13d5993e9b80517538e85bad39ed825ecaf466692063ffd99d17248a68cc66"
+      },
+      {
+        "path": "application/edict.toolchain-lock.json",
+        "sha256": "db54615c1294bd128401715630421e49b2633776ace7ede1bfb0c3c198a11d2a"
+      },
+      {
+        "path": "application/src/ReplaceRange.edict",
+        "sha256": "61978fd2b7463da772c52a121891523b1669816440a25111af5834d121b86b60"
+      },
+      {
+        "path": "application/tests/assert-build-output.mjs",
+        "sha256": "a0c7f290269edca53e639ac26b1f0cfc749d85285a2c025ce32d361ffed45009"
+      },
+      {
+        "path": "application/tests/build.sh",
+        "sha256": "b5827a1e2a4b64b214406ee3d0cdc9499059922f9878649946c0358fbbd6ea6d"
+      },
+      {
+        "path": "application/tests/package-chain.mjs",
+        "sha256": "7df3a8f2fd74e9e4719a8c0afce40ce8aa29bec66230607538c0ad1f82dbe0bc"
+      },
+      {
+        "path": "application/tests/proof-harness.spec.mjs",
+        "sha256": "1a7c6f3433437d25196d89dc41a35c844ec52e423cf396aed93c80b422f28717"
+      },
+      {
+        "path": "application/tests/runtime/Cargo.toml",
+        "sha256": "17b7943ca35ed8485ce8b6d3660b79486a655604b5098a7c5ee8a98f230f8790"
+      },
+      {
+        "path": "application/tests/runtime/Cargo.lock",
+        "sha256": "597f102c65285960e80d22277adfa903f67e84fb54ae33ccb2578981e4f7cfb2"
+      },
+      {
+        "path": "application/tests/runtime/compiled_boundary.rs",
+        "sha256": "eb8c482f5d0205843248580f4d21bf8bbcf14a185fa3b35f0a95af3879f34b91"
+      },
+      {
+        "path": "application/tests/runtime/flat_text.rs",
+        "sha256": "24b63c5dbbc8b5863a30aa88cfc38a0dfb0fb0a0e41b97c3cf584ecc3dcb65e6"
+      },
+      {
+        "path": "application/tests/verification-evidence.mjs",
+        "sha256": "3022f86f5c96d61f32ced3bec211d08ef7bbcdbc6e772cc61e2019eba0e42218"
+      },
+      {
+        "path": "application/vendor/jedit-text/edict.lawpack-output.json",
+        "sha256": "81a65d2569a3d8513fcefb2de87c816c7364c280205aec42c83f64377f9755f4"
+      },
+      {
+        "path": "application/vendor/jedit-text/exports.cbor",
+        "sha256": "3a4438fc0a6faed371c5aebfe512299b464fc08f70b4640454538772750644e1"
+      },
+      {
+        "path": "application/vendor/jedit-text/exports.sha256",
+        "sha256": "42f20048fdedb25fdb8700790bae1dd009de8a0f677da300d93016abee8ab7ac"
+      },
+      {
+        "path": "application/vendor/jedit-text/manifest.cbor",
+        "sha256": "4f05a239948e6e7a7efd08f6b20a9249319769eaeac1e67bd8902206299d71bc"
+      },
+      {
+        "path": "application/vendor/jedit-text/manifest.sha256",
+        "sha256": "e0cacb05c16d70f33f2381c5785e906f1763aa555b667b6e52b84f43b709a842"
+      },
+      {
+        "path": "project/.github/workflows/ci.yml",
+        "sha256": "b85f2e43552dab43dd9d8f87daacc0c73b437fc2bde341eb3fb21fd6e2394c12"
+      },
+      {
+        "path": "project/package.json",
+        "sha256": "26144daea8201730b87ffb37419f35961d52fa6549373f15b42b81a19fd3a8c3"
+      },
+      {
+        "path": "project/package-lock.json",
+        "sha256": "80e8a8fa15b61deead5c79388757ff74629d66a4b42ac38f5c3de21248f713d7"
+      }
+    ]
+  },
+  "lawpackRelease": {
+    "coordinate": "jedit.text@1",
+    "digest": "sha256:f385072314ea57af5b66cad9eb4119b51e456df2050ea0c9a6302c7693212dc1"
+  },
+  "provider": {
+    "coordinate": "echo.edict-provider@1",
+    "digest": "sha256:cba96816605f54dc5e675ab6f473adf858bdaebdceae985f955e930711c8a4f9"
+  },
+  "artifacts": {
+    "core": {
+      "coordinate": "jedit.text.replace_range@1",
+      "domain": "edict.core.module/v1",
+      "digest": "sha256:f878c563d3e22720366faba02c1c964ecf2fb8250acf346e6454d7cd340068ef"
+    },
+    "targetIr": {
+      "coordinate": "echo.span-ir/v1",
+      "domain": "edict.target-ir.artifact/v1",
+      "digest": "sha256:4b4049ae9730091d9450a489a22c88519fd8f84c5b74895f07cf86a250afcf86"
+    },
+    "resultProjection": {
+      "coordinate": "jedit.text.replace_range@1.replaceRange",
+      "domain": "edict.result-projection.artifact/v1",
+      "digest": "sha256:80d1580fac6effe2d4001364ba2d554db5317e2c324ec30965fe866f79ab6348"
+    },
+    "executablePackage": {
+      "coordinate": "executable-operation-package.echo",
+      "domain": "echo.operation-package/v1",
+      "digest": "sha256:4c2b7859f291e97b6b38fb265086e6cb0581ed030d54d38152b0585152120397",
+      "rawSha256": "31ed2bf3121d8ada879e2f1dee15e793a0106cd8c034beaad4dd3c4995e9629a"
+    },
+    "verificationReportArtifact": {
+      "coordinate": "verifier-report.echo-operation",
+      "domain": "echo.operation-package-verifier-report/v1",
+      "digest": "sha256:fc4452e6aa91f541641cf4c070317ec7f24b05b48aeb1c6d8911a7f20a547c04",
+      "rawSha256": "3dab6a7de887acb0422a881c58130932819d16ecf8577a503d33031036732c86"
+    },
+    "verificationReport": {
+      "coordinate": "jedit.edict-verification-evidence/v1",
+      "domain": "jedit.edict-verification-evidence/v1",
+      "digest": "sha256:4005c65e03fdc960883fff68b2eea292cb1a50bd78d95eb4ced41b0d03bf471d",
+      "rawSha256": "70e100bfd97fc2c09ac45582b01297dddace8cf07b67c79ae5a205d7b3f0b906"
+    },
+    "executableSubject": {
+      "coordinate": "echo.executable-subject/v1",
+      "domain": "echo.executable-subject/v1",
+      "digest": "sha256:ea65a7bfa2055644c99783ef5097bdaa84c03245866f20126816b4c33f75d8cf"
+    }
+  }
+}

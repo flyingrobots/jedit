@@ -1,0 +1,38 @@
+{
+  "worker": "echo-read-runtime",
+  "image": "echo-read-runtime:red",
+  "lock": "/tmp/echo-validation-host.lock",
+  "inner_lock": "/tmp/echo-validation.lock",
+  "source": "/echo-audit",
+  "outputs": [
+    "/lease-target",
+    "/usr/local/cargo",
+    "/tmp/echo-726-runtime",
+    "all container writable-layer paths",
+    "/dev/shm",
+    "/private/tmp/echo-739-resume/jim-buffer-public.log"
+  ],
+  "measurements": {
+    "build": 6792403497,
+    "data": 2956552745,
+    "logs": 9643305,
+    "host_free": 715318206464,
+    "vm_free": 679804174336
+  },
+  "build_limit": 21474836480,
+  "data_limit": 4294967296,
+  "log_limit": 134217728,
+  "cpus": 4.0,
+  "memory": 6442450944,
+  "logging": {
+    "Type": "json-file",
+    "Config": {
+      "max-file": "5",
+      "max-size": "20m"
+    }
+  },
+  "timeout_seconds": 600,
+  "guard": "2-second fail-closed monitor; freeze owned process group across the entire size measurement, including cache du; pause container for snapshotter; accept an absent process group only after confirmed owned docker-exec completion; of aggregate writable layers, shared memory, host scratch and logs; no host binds or volumes",
+  "termination": "docker stop/kill owned worker and host docker-exec process group on monitoring failure or limit/timeout",
+  "command": "test ! -e /tmp/echo-726-runtime/jim-buffer-decoder-input\nmkdir /tmp/echo-726-runtime/jim-buffer-decoder-input\ntar -xf /tmp/echo-726-runtime/jim-buffer-decoder-input.tar -C /tmp/echo-726-runtime/jim-buffer-decoder-input\npython3 - <<'INNER'\nfrom pathlib import Path\nimport runpy,subprocess\nroot=Path('/tmp/echo-726-runtime/jim-buffer-decoder-input')\ncommon=runpy.run_path(str(root/'edict/replace-range-probes/leaf-slice/run.py'))\nprint(common['verify_compiler_source'](Path('/edict-207'),root/'compiler-source.json','17397e2aad18a83ffc617d1afd628764501f49cd'),flush=True)\nassert subprocess.check_output(['git','-C','/edict-207','rev-parse','HEAD'],text=True).strip()=='17397e2aad18a83ffc617d1afd628764501f49cd'\nassert not subprocess.check_output(['git','-C','/edict-207','status','--porcelain'],text=True).strip()\nINNER\ncd /edict-207\nexport CARGO_TARGET_DIR=/lease-target CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=4 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0\ncargo +1.95.0 clean -p edict-cli -p edict-syntax\ncargo +1.95.0 build --locked -p edict-cli\nsha256sum /lease-target/debug/edict\npython3 /tmp/echo-726-runtime/jim-buffer-decoder-input/edict/replace-range-probes/buffer-decoder/run.py --compiler /lease-target/debug/edict --compiler-source /edict-207 --compiler-manifest /tmp/echo-726-runtime/jim-buffer-decoder-input/compiler-source.json --application-source /read-evidence/single --provider-package /read-provider --work-root /tmp/echo-726-runtime/jim-buffer-decoder-results\n"
+}

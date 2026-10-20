@@ -129,6 +129,8 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly hostAbsenceBasisHeadId?: string;
   readonly hostFingerprint?: EditorFileFingerprint;
+  /** The head anchored to the opened file bytes, when the open established one. */
+  readonly importHeadId?: string;
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
   readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
@@ -192,6 +194,7 @@ export function openedWorkspaceTextAuthority(
     hostBasis,
     materialization,
     hostFingerprint: options.hostFingerprint,
+    importHeadId: options.importHeadId,
   });
   return {
     kind: AUTHORITY_OPENED,

@@ -1,0 +1,20 @@
+{'commit': '17397e2aad18a83ffc617d1afd628764501f49cd', 'tree': 'bcfd3112cd8b3d4630738a88761860679b45714b', 'fileCount': 449, 'manifestSha256': '625592ab9dd715349255bece0133378c64b3d4539fb50e437d116c2a4296f016'}
+rustc 1.96.0 (ac68faa20 2026-05-25)
+binary: rustc
+commit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96
+commit-date: 2026-05-25
+host: aarch64-unknown-linux-gnu
+release: 1.96.0
+LLVM version: 22.1.2
+
+     Removed 140 files, 343.4MiB total
+   Compiling edict-syntax v0.11.0-alpha.1 (/edict-207/crates/edict-syntax)
+   Compiling edict-provider-schema v0.11.0-alpha.1 (/edict-207/crates/edict-provider-schema)
+   Compiling edict-provider-host-wasmtime v0.11.0-alpha.1 (/edict-207/crates/edict-provider-host-wasmtime)
+   Compiling edict-cli v0.11.0-alpha.1 (/edict-207/crates/edict-cli)
+    Finished `dev` profile [unoptimized] target(s) in 7.44s
+ACTUAL_COMPILER_BINARY 83c70b3fdbb42ac43f0967a0c559c0cc8b66599987774a40412bda4fbc028d36
+{"artifactSha256": {"executable-operation-package.cbor": "afd931700018312d6c0d1e249871313d2c21c0ece1ae41d1f17f2be7af9e5284", "verification-report.cbor": "9114fdd983d456eb83f69969475f558b6e608be23520212a5db5f26bb095d04b"}, "artifacts": ["executable-operation-package.cbor", "verification-report.cbor"], "case": "read-control", "diagnostics": [], "exitCode": 0, "sourceSha256": "4ec3cbf32fd5d98987cbeeaff95d7c9c5ab734dac555e443aac52e8ab02bfbc5", "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61"}
+{"artifactSha256": {}, "artifacts": [], "case": "fn-control", "diagnostics": [{"command": "build", "input": {"kind": "stdin"}, "kind": "InvalidApplicationSource", "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-reproduction196/fn-control/src/ReplaceRange.edict` did not parse: ParseError { kind: ExpectedToken, message: \"expected `type`, `enum`, or `intent` declaration, found Ident(\\\"fn\\\")\", span: Span { start: 151, end: 153 } }", "schema": "edict.cli.diagnostic/v1", "severity": "error", "stage": "cli", "type": "diagnostic"}], "exitCode": 2, "sourceSha256": "97475b0e6aaf24d3268736efa3312df377b9153b89c8e59f0e2ceb25ce691218", "stderrSha256": "8ce5808f7da7f7457b8cdca7ad00e080f3358a4a35d502d6ac9aee5c83255090", "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+{"artifactSha256": {}, "artifacts": [], "case": "decimal", "diagnostics": [{"command": "build", "input": {"kind": "stdin"}, "kind": "InvalidApplicationSource", "message": "Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-reproduction196/decimal/src/ReplaceRange.edict` did not parse: ParseError { kind: Lex, message: \"invalid string escape\", span: Span { start: 861, end: 862 } }", "schema": "edict.cli.diagnostic/v1", "severity": "error", "stage": "cli", "type": "diagnostic"}], "exitCode": 2, "sourceSha256": "860712eaae8fad67499967e2475d9a2bef9d072762b3eab1004a3ddf4dba2b94", "stderrSha256": "2c45c51317aa6dffbcd96684a6b288ac9a429c2a19f3672e09c8b85b6ed1adb8", "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+JIM_BUFFER_DECIMAL_DISTINCT_SOURCE_BOUNDARIES_CONFIRMED

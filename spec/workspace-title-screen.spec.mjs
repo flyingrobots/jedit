@@ -15,10 +15,11 @@ const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
 test("tab skips startup intro without opening the file browser", async () => {
-  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
+  const [keyBindings, titleScreen, viewerContent, surfaceFill] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "surface-fill.js"),
   ]);
   const base = mockTitleScreenModel(titleScreen, {
     startupIntroComplete: false,
@@ -29,8 +30,7 @@ test("tab skips startup intro without opening the file browser", async () => {
     base,
     startupFileDrawerAnimationContext(),
   );
-  const rendered = viewerContent.renderViewer(opened, 80, 24);
-  assert.ok(rendered.width > 0);
+  assert.equal(surfaceText(viewerContent.renderViewer(opened, 80, 24)), surfaceText(surfaceFill.renderJimLogoScreen(80, 24, opened.jeditTheme)));
 
   assert.equal(opened.startupIntroComplete, true);
   assert.equal(opened.startupFileModalOpen, false);
