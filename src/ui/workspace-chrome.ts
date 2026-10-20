@@ -84,6 +84,8 @@ const FooterHintKeys = Object.freeze({
   EscCancel: 'esc_cancel',
 });
 
+const LEADER_CAPTURE_FOOTER_KEY = 'settings.rows.leader.capture';
+
 type FooterHintTranslator = (key: string) => string;
 
 export interface WorkspaceTitleState {
@@ -94,6 +96,7 @@ export interface WorkspaceTitleState {
 }
 
 export interface WorkspaceFooterState {
+  readonly leaderCaptureActive?: boolean;
   readonly i18n: I18nPort;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
@@ -234,6 +237,9 @@ function editorModeKey(state: WorkspaceFooterState): string {
 function footerDetail(state: WorkspaceFooterState): string {
   const t = footerHintTranslator(state);
 
+  if (state.settingsOpen && state.leaderCaptureActive) {
+    return state.i18n.t(LEADER_CAPTURE_FOOTER_KEY);
+  }
   if (state.settingsOpen) {
     return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterChange), t(FooterHintKeys.F2Close), t(FooterHintKeys.EscClose)]);
   }

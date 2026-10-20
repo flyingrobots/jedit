@@ -140,6 +140,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         editorCursorPosition: workspaceFooterCursorPosition(model),
         pendingNormal: model.editor?.pendingNormal,
         settingsOpen: model.settingsOpen,
+        leaderCaptureActive: model.leaderCaptureActive,
         cwd: model.cwd,
         selectedEntry: model.entries[model.selectedIndex],
         editorPath: model.editor?.path,

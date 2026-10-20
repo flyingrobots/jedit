@@ -111,7 +111,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Keybindings"
           },
           "rows": {
             "theme": {
@@ -145,6 +146,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter to change; saved in ~/.jimrc.",
+              "capture": "Press one key; Esc cancels.",
+              "capturing_value": "Press a key",
+              "space": "Space",
+              "backslash": "Backslash",
+              "invalid_key": "Use one printable key; Esc cancels.",
+              "invalid": ".jimrc is invalid; fix it and retry.",
+              "read_error": "Could not read .jimrc.",
+              "write_error": "Could not save .jimrc; retry.",
+              "unavailable": "Settings cannot be saved in this host.",
+              "capture_hint": "Esc cancels; F2 closes"
             }
           },
           "values": {
@@ -298,7 +313,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Raccourcis clavier"
           },
           "rows": {
             "theme": {
@@ -332,6 +348,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Entrée : modifier; fichier ~/.jimrc.",
+              "capture": "Appuyez sur une touche; Échap annule.",
+              "capturing_value": "Appuyez sur une touche",
+              "space": "Espace",
+              "backslash": "Barre oblique inverse",
+              "invalid_key": "Une touche imprimable; Échap annule.",
+              "invalid": ".jimrc invalide; corrigez et réessayez.",
+              "read_error": "Lecture de .jimrc impossible.",
+              "write_error": "Enregistrement de .jimrc impossible.",
+              "unavailable": "Ce mode ne peut pas enregistrer.",
+              "capture_hint": "Échap annule; F2 ferme"
             }
           },
           "values": {
@@ -485,7 +515,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Scorciatoie da tastiera"
           },
           "rows": {
             "theme": {
@@ -519,6 +550,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Invio per cambiare; file ~/.jimrc.",
+              "capture": "Premi un tasto; Esc annulla.",
+              "capturing_value": "Premi un tasto",
+              "space": "Spazio",
+              "backslash": "Barra inversa",
+              "invalid_key": "Un tasto stampabile; Esc annulla.",
+              "invalid": ".jimrc non valido; correggi e riprova.",
+              "read_error": "Impossibile leggere .jimrc.",
+              "write_error": "Impossibile salvare .jimrc; riprova.",
+              "unavailable": "Questo ambiente non salva le impostazioni.",
+              "capture_hint": "Esc annulla; F2 chiude"
             }
           },
           "values": {
@@ -672,7 +717,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Tastenkürzel"
           },
           "rows": {
             "theme": {
@@ -706,6 +752,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter zum Ändern; Datei ~/.jimrc.",
+              "capture": "Taste drücken; Esc bricht ab.",
+              "capturing_value": "Taste drücken",
+              "space": "Leertaste",
+              "backslash": "Rückstrich",
+              "invalid_key": "Ein druckbares Zeichen; Esc bricht ab.",
+              "invalid": ".jimrc ungültig; korrigieren und erneut versuchen.",
+              "read_error": ".jimrc konnte nicht gelesen werden.",
+              "write_error": ".jimrc konnte nicht gespeichert werden.",
+              "unavailable": "Diese Umgebung speichert keine Einstellungen.",
+              "capture_hint": "Esc bricht ab; F2 schließt"
             }
           },
           "values": {
@@ -859,7 +919,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Atajos de teclado"
           },
           "rows": {
             "theme": {
@@ -893,6 +954,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter para cambiar; archivo ~/.jimrc.",
+              "capture": "Pulsa una tecla; Esc cancela.",
+              "capturing_value": "Pulsa una tecla",
+              "space": "Espacio",
+              "backslash": "Barra inversa",
+              "invalid_key": "Una tecla imprimible; Esc cancela.",
+              "invalid": ".jimrc no válido; corrige y reintenta.",
+              "read_error": "No se pudo leer .jimrc.",
+              "write_error": "No se pudo guardar .jimrc; reintenta.",
+              "unavailable": "Este entorno no guarda ajustes.",
+              "capture_hint": "Esc cancela; F2 cierra"
             }
           },
           "values": {
@@ -1046,7 +1121,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "키 바인딩"
           },
           "rows": {
             "theme": {
@@ -1080,6 +1156,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter로 변경; ~/.jimrc에 저장.",
+              "capture": "키를 누르세요; Esc로 취소.",
+              "capturing_value": "키를 누르세요",
+              "space": "스페이스",
+              "backslash": "백슬래시",
+              "invalid_key": "출력 가능한 키 하나; Esc로 취소.",
+              "invalid": ".jimrc가 잘못되었습니다. 수정 후 재시도하세요.",
+              "read_error": ".jimrc를 읽을 수 없습니다.",
+              "write_error": ".jimrc를 저장할 수 없습니다. 재시도하세요.",
+              "unavailable": "이 환경에서는 설정을 저장할 수 없습니다.",
+              "capture_hint": "Esc 취소; F2 닫기"
             }
           },
           "values": {
@@ -1233,7 +1323,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "キーバインド"
           },
           "rows": {
             "theme": {
@@ -1267,6 +1358,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enterで変更、~/.jimrcに保存。",
+              "capture": "キーを押してください。Escで取消。",
+              "capturing_value": "キーを押す",
+              "space": "スペース",
+              "backslash": "バックスラッシュ",
+              "invalid_key": "表示可能なキー1つ。Escで取消。",
+              "invalid": ".jimrcが無効です。修正して再試行。",
+              "read_error": ".jimrcを読み込めません。",
+              "write_error": ".jimrcを保存できません。再試行。",
+              "unavailable": "この環境では設定を保存できません。",
+              "capture_hint": "Escで取消、F2で閉じる"
             }
           },
           "values": {
@@ -1420,7 +1525,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "按键绑定"
           },
           "rows": {
             "theme": {
@@ -1454,6 +1560,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "按 Enter 修改；保存到 ~/.jimrc。",
+              "capture": "按一个键；Esc 取消。",
+              "capturing_value": "按一个键",
+              "space": "空格",
+              "backslash": "反斜杠",
+              "invalid_key": "使用一个可打印字符；Esc 取消。",
+              "invalid": ".jimrc 无效；修正后重试。",
+              "read_error": "无法读取 .jimrc。",
+              "write_error": "无法保存 .jimrc；请重试。",
+              "unavailable": "此环境无法保存设置。",
+              "capture_hint": "Esc 取消；F2 关闭"
             }
           },
           "values": {
@@ -1607,7 +1727,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Atalhos de teclado"
           },
           "rows": {
             "theme": {
@@ -1641,6 +1762,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter para alterar; arquivo ~/.jimrc.",
+              "capture": "Pressione uma tecla; Esc cancela.",
+              "capturing_value": "Pressione uma tecla",
+              "space": "Espaço",
+              "backslash": "Barra invertida",
+              "invalid_key": "Uma tecla imprimível; Esc cancela.",
+              "invalid": ".jimrc inválido; corrija e tente novamente.",
+              "read_error": "Não foi possível ler .jimrc.",
+              "write_error": "Não foi possível salvar .jimrc.",
+              "unavailable": "Este ambiente não salva configurações.",
+              "capture_hint": "Esc cancela; F2 fecha"
             }
           },
           "values": {
@@ -1794,7 +1929,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Сочетания клавиш"
           },
           "rows": {
             "theme": {
@@ -1828,6 +1964,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter: изменить; файл ~/.jimrc.",
+              "capture": "Нажмите клавишу; Esc отменяет.",
+              "capturing_value": "Нажмите клавишу",
+              "space": "Пробел",
+              "backslash": "Обратная косая черта",
+              "invalid_key": "Один печатный символ; Esc отменяет.",
+              "invalid": ".jimrc некорректен; исправьте и повторите.",
+              "read_error": "Не удалось прочитать .jimrc.",
+              "write_error": "Не удалось сохранить .jimrc; повторите.",
+              "unavailable": "В этой среде нельзя сохранять настройки.",
+              "capture_hint": "Esc отмена; F2 закрыть"
             }
           },
           "values": {
@@ -1981,7 +2131,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "اختصارات لوحة المفاتيح"
           },
           "rows": {
             "theme": {
@@ -2015,6 +2166,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter للتغيير؛ الحفظ في ~/.jimrc.",
+              "capture": "اضغط مفتاحًا؛ Esc للإلغاء.",
+              "capturing_value": "اضغط مفتاحًا",
+              "space": "مسافة",
+              "backslash": "شرطة مائلة عكسية",
+              "invalid_key": "حرف واحد قابل للطباعة؛ Esc للإلغاء.",
+              "invalid": "ملف .jimrc غير صالح؛ أصلحه وأعد المحاولة.",
+              "read_error": "تعذرت قراءة .jimrc.",
+              "write_error": "تعذر حفظ .jimrc؛ أعد المحاولة.",
+              "unavailable": "لا يمكن حفظ الإعدادات في هذه البيئة.",
+              "capture_hint": "Esc للإلغاء؛ F2 للإغلاق"
             }
           },
           "values": {
@@ -2168,7 +2333,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Pintasan papan ketik"
           },
           "rows": {
             "theme": {
@@ -2202,6 +2368,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter untuk ubah; simpan ~/.jimrc.",
+              "capture": "Tekan satu tombol; Esc batal.",
+              "capturing_value": "Tekan tombol",
+              "space": "Spasi",
+              "backslash": "Garis miring terbalik",
+              "invalid_key": "Satu karakter tercetak; Esc batal.",
+              "invalid": ".jimrc tidak valid; perbaiki dan coba lagi.",
+              "read_error": "Tidak dapat membaca .jimrc.",
+              "write_error": "Tidak dapat menyimpan .jimrc; coba lagi.",
+              "unavailable": "Lingkungan ini tidak menyimpan pengaturan.",
+              "capture_hint": "Esc batal; F2 tutup"
             }
           },
           "values": {
@@ -2355,7 +2535,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Tuş atamaları"
           },
           "rows": {
             "theme": {
@@ -2389,6 +2570,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter ile değiştir; dosya ~/.jimrc.",
+              "capture": "Bir tuşa basın; Esc iptal eder.",
+              "capturing_value": "Bir tuşa basın",
+              "space": "Boşluk",
+              "backslash": "Ters eğik çizgi",
+              "invalid_key": "Yazdırılabilir tek tuş; Esc iptal eder.",
+              "invalid": ".jimrc geçersiz; düzeltip yeniden deneyin.",
+              "read_error": ".jimrc okunamadı.",
+              "write_error": ".jimrc kaydedilemedi; yeniden deneyin.",
+              "unavailable": "Bu ortamda ayarlar kaydedilemez.",
+              "capture_hint": "Esc iptal; F2 kapat"
             }
           },
           "values": {
@@ -2542,7 +2737,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "की बाइंडिंग"
           },
           "rows": {
             "theme": {
@@ -2576,6 +2772,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter से बदलें; ~/.jimrc में सहेजें।",
+              "capture": "एक कुंजी दबाएँ; Esc से रद्द करें।",
+              "capturing_value": "कुंजी दबाएँ",
+              "space": "स्पेस",
+              "backslash": "बैकस्लैश",
+              "invalid_key": "एक मुद्रण योग्य कुंजी; Esc से रद्द करें।",
+              "invalid": ".jimrc अमान्य है; सुधारकर फिर कोशिश करें।",
+              "read_error": ".jimrc पढ़ा नहीं जा सका।",
+              "write_error": ".jimrc सहेजा नहीं जा सका; फिर कोशिश करें।",
+              "unavailable": "इस परिवेश में सेटिंग सहेजी नहीं जा सकती।",
+              "capture_hint": "Esc रद्द; F2 बंद"
             }
           },
           "values": {
@@ -2729,7 +2939,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Sneltoetsen"
           },
           "rows": {
             "theme": {
@@ -2763,6 +2974,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter om te wijzigen; ~/.jimrc.",
+              "capture": "Druk op een toets; Esc annuleert.",
+              "capturing_value": "Druk op een toets",
+              "space": "Spatie",
+              "backslash": "Backslash",
+              "invalid_key": "Eén afdrukbare toets; Esc annuleert.",
+              "invalid": ".jimrc ongeldig; herstel en probeer opnieuw.",
+              "read_error": ".jimrc kon niet worden gelezen.",
+              "write_error": ".jimrc kon niet worden opgeslagen.",
+              "unavailable": "Deze omgeving kan instellingen niet opslaan.",
+              "capture_hint": "Esc annuleert; F2 sluit"
             }
           },
           "values": {
@@ -2916,7 +3141,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Skróty klawiszowe"
           },
           "rows": {
             "theme": {
@@ -2950,6 +3176,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter zmienia; zapis w ~/.jimrc.",
+              "capture": "Naciśnij klawisz; Esc anuluje.",
+              "capturing_value": "Naciśnij klawisz",
+              "space": "Spacja",
+              "backslash": "Ukośnik odwrotny",
+              "invalid_key": "Jeden drukowalny znak; Esc anuluje.",
+              "invalid": ".jimrc niepoprawny; popraw i spróbuj ponownie.",
+              "read_error": "Nie można odczytać .jimrc.",
+              "write_error": "Nie można zapisać .jimrc; spróbuj ponownie.",
+              "unavailable": "To środowisko nie zapisuje ustawień.",
+              "capture_hint": "Esc anuluje; F2 zamyka"
             }
           },
           "values": {
@@ -3103,7 +3343,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "Phím tắt"
           },
           "rows": {
             "theme": {
@@ -3137,6 +3378,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter để đổi; lưu vào ~/.jimrc.",
+              "capture": "Nhấn một phím; Esc để hủy.",
+              "capturing_value": "Nhấn một phím",
+              "space": "Dấu cách",
+              "backslash": "Dấu gạch chéo ngược",
+              "invalid_key": "Một ký tự in được; Esc để hủy.",
+              "invalid": ".jimrc không hợp lệ; sửa rồi thử lại.",
+              "read_error": "Không đọc được .jimrc.",
+              "write_error": "Không lưu được .jimrc; thử lại.",
+              "unavailable": "Môi trường này không lưu được cài đặt.",
+              "capture_hint": "Esc hủy; F2 đóng"
             }
           },
           "values": {
@@ -3290,7 +3545,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "การผูกปุ่ม"
           },
           "rows": {
             "theme": {
@@ -3324,6 +3580,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter เพื่อเปลี่ยน; บันทึก ~/.jimrc.",
+              "capture": "กดหนึ่งปุ่ม; Esc เพื่อยกเลิก.",
+              "capturing_value": "กดหนึ่งปุ่ม",
+              "space": "เว้นวรรค",
+              "backslash": "แบ็กสแลช",
+              "invalid_key": "ใช้อักขระที่พิมพ์ได้หนึ่งตัว; Esc ยกเลิก.",
+              "invalid": ".jimrc ไม่ถูกต้อง; แก้ไขแล้วลองใหม่.",
+              "read_error": "อ่าน .jimrc ไม่ได้.",
+              "write_error": "บันทึก .jimrc ไม่ได้; ลองใหม่.",
+              "unavailable": "สภาพแวดล้อมนี้บันทึกการตั้งค่าไม่ได้.",
+              "capture_hint": "Esc ยกเลิก; F2 ปิด"
             }
           },
           "values": {
@@ -3477,7 +3747,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "میانبرهای صفحه‌کلید"
           },
           "rows": {
             "theme": {
@@ -3511,6 +3782,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter برای تغییر؛ ذخیره در ~/.jimrc.",
+              "capture": "یک کلید بزنید؛ Esc برای لغو.",
+              "capturing_value": "یک کلید بزنید",
+              "space": "فاصله",
+              "backslash": "بک‌اسلش",
+              "invalid_key": "یک نویسه قابل چاپ؛ Esc برای لغو.",
+              "invalid": ".jimrc نامعتبر است؛ اصلاح و دوباره تلاش کنید.",
+              "read_error": "خواندن .jimrc ممکن نیست.",
+              "write_error": "ذخیره .jimrc ممکن نیست؛ دوباره تلاش کنید.",
+              "unavailable": "در این محیط تنظیمات ذخیره نمی‌شوند.",
+              "capture_hint": "Esc لغو؛ F2 بستن"
             }
           },
           "values": {
@@ -3664,7 +3949,8 @@
           "sections": {
             "appearance": "Appearance",
             "editor": "Editor",
-            "runtime": "Runtime"
+            "runtime": "Runtime",
+            "keybindings": "קיצורי מקשים"
           },
           "rows": {
             "theme": {
@@ -3698,6 +3984,20 @@
             "causal_gutter_basis": {
               "label": "Causal markers",
               "description": "Choose the causal basis used by gutter change markers."
+            },
+            "leader": {
+              "label": "Leader",
+              "description": "Enter לשינוי; שמירה ב־~/.jimrc.",
+              "capture": "לחצו על מקש; Esc לביטול.",
+              "capturing_value": "לחצו על מקש",
+              "space": "רווח",
+              "backslash": "לוכסן הפוך",
+              "invalid_key": "תו אחד הניתן להדפסה; Esc לביטול.",
+              "invalid": ".jimrc אינו תקין; תקנו ונסו שוב.",
+              "read_error": "לא ניתן לקרוא את .jimrc.",
+              "write_error": "לא ניתן לשמור את .jimrc; נסו שוב.",
+              "unavailable": "לא ניתן לשמור הגדרות בסביבה זו.",
+              "capture_hint": "Esc לביטול; F2 לסגירה"
             }
           },
           "values": {

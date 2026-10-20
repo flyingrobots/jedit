@@ -10,6 +10,8 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
 import { settingsRows, workspaceSettingsHandlers } from './settings.js';
+import { updateLeaderKeyCapture } from './leader-key-capture.js';
+import { LEADER_SETTING_ROW_ID } from '../leader-settings-row.js';
 import {
   NotificationPlacements,
   NotificationTones,
@@ -31,6 +33,10 @@ export function updateSettingsKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
+  const captured = updateLeaderKeyCapture(msg, model, context);
+  if (captured != null) {
+    return withSettingsChangeToast(model, settingsRows(model), captured, context);
+  }
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
     return [{
       ...model,
@@ -38,6 +44,7 @@ export function updateSettingsKey(
       fileSearchEditing: false,
       settingsFocusIndex: 0,
       settingsDiagnosticsOpen: false,
+      leaderCaptureActive: false,
     }, []];
   }
 
@@ -101,13 +108,19 @@ function settingsChangeMessage(
     return undefined;
   }
   const afterRow = settingsRows(after).find((row) => row.id === beforeRow.id);
-  const beforeValue = settingRowValue(beforeRow, before.i18n);
+  const beforeValue = settingRowValue(uncapturedLeaderRow(before, beforeRow), before.i18n);
   const afterValue = afterRow == null
     ? beforeValue
-    : settingRowValue(afterRow, after.i18n);
+    : settingRowValue(uncapturedLeaderRow(after, afterRow), after.i18n);
   return beforeValue === afterValue
     ? undefined
     : `${beforeRow.label}: ${beforeValue}${SETTINGS_TOAST_SEPARATOR}${afterValue}`;
+}
+
+function uncapturedLeaderRow(model: WorkspaceModel, row: JeditSettingsRow): JeditSettingsRow {
+  return row.id === LEADER_SETTING_ROW_ID
+    ? settingsRows({ ...model, leaderCaptureActive: false }).find((candidate) => candidate.id === row.id) ?? row
+    : row;
 }
 
 function settingRowValue(row: JeditSettingsRow, i18n: WorkspaceModel['i18n']): string {

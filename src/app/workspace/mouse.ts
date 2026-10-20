@@ -117,6 +117,8 @@ function updateFileDrawerHover(msg: MouseMsg, model: WorkspaceModel): WorkspaceM
 
 function updateScrollableDrawerFromMouse(model: WorkspaceModel, deltaRows: number): WorkspaceModel | undefined {
   if (model.settingsOpen) {
+    // Capture saves the next key to the Leader row, so focus must stay on it.
+    if (model.leaderCaptureActive) return model;
     return {
       ...model,
       settingsFocusIndex: moveSettingsFocusIndex(model.settingsFocusIndex, deltaRows, settingsRows(model).length),

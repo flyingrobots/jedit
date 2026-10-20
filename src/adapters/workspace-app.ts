@@ -17,8 +17,11 @@ import {
   createWorkspaceNotificationTickCmd,
   createWorkspaceTimeTickCmd,
 } from './workspace-animation-commands.js';
+import { createJimSettingsPort } from './jim-settings.js';
+import type { JimSettingsPort } from '../ports/jim-settings.js';
 
 export interface WorkspaceAppOptions {
+  jimSettings?: JimSettingsPort;
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
@@ -53,6 +56,7 @@ function workspaceRuntimeDependencies(
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   return {
+    jimSettings: options.jimSettings ?? createJimSettingsPort(),
     filePreviewSource,
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
