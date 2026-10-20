@@ -1,13 +1,13 @@
 use echo_wasm_abi::codec::{Decode as _, Encode as _};
 use serde::{Deserialize, Serialize};
-pub const SCHEMA_SHA256: &str = "3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8";
+pub const SCHEMA_SHA256: &str = "20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a";
 pub const ECHO_CONTRACT_ABI_VERSION: u32 = 1;
 pub const CODEC_ID: &str = "le-binary-v1";
 pub const REGISTRY_VERSION: u32 = 1u32;
 pub const WESLEY_GENERATOR_VERSION: &str = "echo-wesley-gen/0.1.0";
 pub const CONTRACT_HOST_HELPER_API_VERSION: u32 = 1;
 pub const GENERATED_RUST_ARTIFACT_HASH: &str =
-    "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6";
+    "4a186faf1bc9e58bd7a61227b61e7e1220161e590ecd9e77db95fe220e7848cf";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BufferWorldline {
     pub bufferId: String,
@@ -20,6 +20,9 @@ pub struct CreateBufferWorldlineInput {
     pub bufferKey: String,
     pub initialText: String,
     pub projectionPath: Option<String>,
+    pub importHostBasis: String,
+    pub importSha256: Option<String>,
+    pub importByteLength: Option<i32>,
 }
 impl echo_wasm_abi::codec::Encode for CreateBufferWorldlineInput {
     fn encode(
@@ -30,6 +33,14 @@ impl echo_wasm_abi::codec::Encode for CreateBufferWorldlineInput {
         w.write_string(&self.initialText, usize::MAX)?;
         w.write_option(self.projectionPath.as_deref(), |w, v| {
             w.write_string(v, usize::MAX)
+        })?;
+        w.write_string(&self.importHostBasis, usize::MAX)?;
+        w.write_option(self.importSha256.as_deref(), |w, v| {
+            w.write_string(v, usize::MAX)
+        })?;
+        w.write_option(self.importByteLength, |w, v| {
+            w.write_i32_le(v);
+            Ok(())
         })?;
         Ok(())
     }
@@ -42,6 +53,9 @@ impl echo_wasm_abi::codec::Decode for CreateBufferWorldlineInput {
             bufferKey: r.read_string(usize::MAX)?,
             initialText: r.read_string(usize::MAX)?,
             projectionPath: r.read_option(|r| r.read_string(usize::MAX))?,
+            importHostBasis: r.read_string(usize::MAX)?,
+            importSha256: r.read_option(|r| r.read_string(usize::MAX))?,
+            importByteLength: r.read_option(|r| r.read_i32_le())?,
         })
     }
 }
@@ -522,9 +536,9 @@ pub mod __echo_wesley_generated {
         })
     }
     /// Stable command-rule name for this generated contract mutation.
-    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/24174910/declareCheckpoint";
+    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME: &str = "cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/24174910/declareCheckpoint";
     /// Stable rule-id label for this generated contract mutation.
-    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/24174910/declareCheckpoint";
+    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/24174910/declareCheckpoint";
     /// Return true when a scheduler-materialized runtime ingress event
     /// carries this mutation's EINT operation id.
     pub fn declare_checkpoint_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
@@ -679,43 +693,43 @@ pub mod __echo_wesley_generated {
         }
     }
     /// Stable authored observer plan-id label for this generated query.
-    pub const OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL: &str = "observer:query/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2414231278/textWindow";
+    pub const OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL: &str = "observer:query/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/2414231278/textWindow";
     /// Stable artifact hash for this generated query observer helper.
     pub const OP_TEXT_WINDOW_OBSERVER_ARTIFACT_HASH: &str =
-        "57e1313343b34de667127241dfb7dfbb1dad98e9792c37358ff967c38ee62cde";
+        "fcae36a141d5df5546e2fbfd4229ed30408ccf98cd24b11b019c9a5f6bf563dd";
     /// Build the authored observer plan stamped onto readings emitted
     /// by this generated query observer.
     pub fn text_window_observer_plan() -> warp_core::AuthoredObserverPlan {
         warp_core::AuthoredObserverPlan {
             plan_id: warp_core::ObserverPlanId::from_bytes([
-                49u8, 120u8, 43u8, 156u8, 2u8, 8u8, 160u8, 166u8, 104u8, 42u8, 19u8, 180u8, 93u8,
-                63u8, 83u8, 254u8, 223u8, 237u8, 153u8, 39u8, 210u8, 115u8, 105u8, 69u8, 108u8,
-                222u8, 210u8, 159u8, 77u8, 143u8, 230u8, 142u8,
+                152u8, 97u8, 85u8, 146u8, 136u8, 252u8, 107u8, 240u8, 40u8, 169u8, 81u8, 135u8,
+                133u8, 205u8, 62u8, 183u8, 74u8, 251u8, 61u8, 14u8, 0u8, 181u8, 102u8, 6u8, 146u8,
+                249u8, 105u8, 202u8, 137u8, 16u8, 126u8, 58u8,
             ]),
             artifact_hash: [
-                87u8, 225u8, 49u8, 51u8, 67u8, 179u8, 77u8, 230u8, 103u8, 18u8, 114u8, 65u8, 223u8,
-                183u8, 223u8, 187u8, 29u8, 173u8, 152u8, 233u8, 121u8, 44u8, 55u8, 53u8, 143u8,
-                249u8, 103u8, 195u8, 142u8, 230u8, 44u8, 222u8,
+                252u8, 174u8, 54u8, 161u8, 65u8, 213u8, 223u8, 85u8, 70u8, 226u8, 251u8, 253u8,
+                66u8, 41u8, 237u8, 48u8, 64u8, 140u8, 207u8, 152u8, 205u8, 36u8, 177u8, 27u8, 1u8,
+                156u8, 154u8, 95u8, 107u8, 245u8, 99u8, 221u8,
             ],
             schema_hash: [
-                58u8, 191u8, 62u8, 28u8, 205u8, 241u8, 154u8, 60u8, 15u8, 210u8, 203u8, 11u8,
-                164u8, 90u8, 217u8, 143u8, 148u8, 143u8, 146u8, 165u8, 127u8, 63u8, 101u8, 181u8,
-                156u8, 49u8, 224u8, 21u8, 144u8, 64u8, 47u8, 232u8,
+                32u8, 187u8, 199u8, 183u8, 4u8, 67u8, 127u8, 41u8, 225u8, 249u8, 126u8, 106u8,
+                108u8, 172u8, 68u8, 209u8, 47u8, 136u8, 140u8, 15u8, 81u8, 85u8, 41u8, 139u8,
+                189u8, 191u8, 232u8, 216u8, 60u8, 152u8, 54u8, 42u8,
             ],
             state_schema_hash: [
-                251u8, 100u8, 48u8, 72u8, 71u8, 212u8, 63u8, 100u8, 10u8, 171u8, 33u8, 165u8, 23u8,
-                86u8, 206u8, 204u8, 23u8, 5u8, 133u8, 180u8, 76u8, 175u8, 24u8, 80u8, 191u8, 218u8,
-                139u8, 59u8, 215u8, 175u8, 66u8, 10u8,
+                181u8, 57u8, 244u8, 87u8, 247u8, 182u8, 128u8, 145u8, 170u8, 197u8, 172u8, 178u8,
+                16u8, 90u8, 96u8, 95u8, 113u8, 167u8, 130u8, 113u8, 31u8, 113u8, 22u8, 112u8, 32u8,
+                14u8, 247u8, 94u8, 66u8, 38u8, 15u8, 197u8,
             ],
             update_law_hash: [
-                101u8, 48u8, 135u8, 155u8, 142u8, 156u8, 46u8, 42u8, 201u8, 28u8, 1u8, 189u8, 60u8,
-                81u8, 8u8, 211u8, 147u8, 205u8, 15u8, 105u8, 170u8, 82u8, 124u8, 93u8, 100u8,
-                206u8, 67u8, 196u8, 246u8, 238u8, 37u8, 113u8,
+                130u8, 131u8, 177u8, 92u8, 197u8, 28u8, 141u8, 223u8, 30u8, 113u8, 23u8, 164u8,
+                171u8, 228u8, 134u8, 223u8, 239u8, 87u8, 232u8, 210u8, 243u8, 241u8, 47u8, 125u8,
+                173u8, 142u8, 41u8, 69u8, 38u8, 108u8, 221u8, 204u8,
             ],
             emission_law_hash: [
-                19u8, 136u8, 131u8, 113u8, 97u8, 253u8, 251u8, 142u8, 131u8, 175u8, 16u8, 45u8,
-                3u8, 200u8, 171u8, 222u8, 137u8, 230u8, 186u8, 208u8, 126u8, 35u8, 3u8, 137u8,
-                185u8, 65u8, 167u8, 23u8, 63u8, 246u8, 22u8, 3u8,
+                209u8, 183u8, 38u8, 154u8, 154u8, 225u8, 226u8, 170u8, 111u8, 8u8, 34u8, 144u8,
+                252u8, 132u8, 254u8, 81u8, 206u8, 53u8, 223u8, 208u8, 16u8, 64u8, 144u8, 77u8,
+                114u8, 145u8, 121u8, 206u8, 30u8, 66u8, 148u8, 152u8,
             ],
         }
     }
@@ -847,9 +861,9 @@ pub mod __echo_wesley_generated {
         })
     }
     /// Stable command-rule name for this generated contract mutation.
-    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2519122874/createBufferWorldline";
+    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME: &str = "cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/2519122874/createBufferWorldline";
     /// Stable rule-id label for this generated contract mutation.
-    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2519122874/createBufferWorldline";
+    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/2519122874/createBufferWorldline";
     /// Return true when a scheduler-materialized runtime ingress event
     /// carries this mutation's EINT operation id.
     pub fn create_buffer_worldline_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
@@ -987,9 +1001,9 @@ pub mod __echo_wesley_generated {
         })
     }
     /// Stable command-rule name for this generated contract mutation.
-    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/3329158538/replaceRangeAsTick";
+    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME: &str = "cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/3329158538/replaceRangeAsTick";
     /// Stable rule-id label for this generated contract mutation.
-    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/3329158538/replaceRangeAsTick";
+    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/3329158538/replaceRangeAsTick";
     /// Return true when a scheduler-materialized runtime ingress event
     /// carries this mutation's EINT operation id.
     pub fn replace_range_as_tick_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
