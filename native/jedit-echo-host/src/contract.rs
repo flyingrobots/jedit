@@ -1,8 +1,12 @@
 use echo_registry_api::ContractArtifactVerificationPolicy;
+use std::cell::RefCell;
+
+use echo_wasm_abi::codec::Decode;
 use warp_core::{
-    ContractMutationHandler, ContractPackageIdentity, ContractQueryObserverContext,
-    ContractQueryObserverError, ContractQueryObserverResult, Footprint, GraphView,
-    InstalledContractPackage, NodeId, TickDelta,
+    AttachmentValue, ContractMutationHandler, ContractPackageIdentity,
+    ContractQueryObserverContext, ContractQueryObserverError, ContractQueryObserverResult,
+    ExecutionGraphView, Footprint, GraphView, InstalledContractPackage, NodeId, NodeRecord,
+    TickDelta, WarpId,
 };
 
 use crate::generated::contract::__echo_wesley_generated::{
@@ -22,7 +26,7 @@ use crate::generated::contract::{
 use crate::identity::parse_node_id;
 use crate::import_anchor::{plan_import_anchor, AnchorPlan, ImportHostBasis};
 use crate::records::CheckpointReason;
-use crate::rope::{plan_checkpoint, plan_create, plan_replace, read_window};
+use crate::rope::{plan_checkpoint, plan_create, plan_replace, read_window, GraphFacts};
 
 const PACKAGE_NAME: &str = "jedit-echo-text";
 const PACKAGE_VERSION: &str = "0.1.0-wesley-compat";
@@ -80,11 +84,15 @@ pub fn installed_package() -> InstalledContractPackage<'static> {
     }
 }
 
-fn create_buffer_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickDelta) {
+fn create_buffer_executor(
+    view: &mut ExecutionGraphView<'_, '_>,
+    scope: &NodeId,
+    delta: &mut TickDelta,
+) {
     let Some(vars) = create_buffer_worldline_contract_vars(view, scope) else {
         return;
     };
-    if let Ok((plan, anchor)) = create_plan(view, vars) {
+    if let Ok((plan, anchor)) = create_plan(&ObservedGraph::new(view), vars) {
         plan.emit(delta);
         anchor.emit(delta);
     }
@@ -92,8 +100,10 @@ fn create_buffer_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickD
 
 fn create_buffer_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
     let mut footprint = create_buffer_worldline_contract_runtime_ingress_footprint(view, scope);
-    if let Some(vars) = create_buffer_worldline_contract_vars(view, scope) {
-        if let Ok((plan, anchor)) = create_plan(view, vars) {
+    if let Some(vars) =
+        footprint_vars::<CreateBufferWorldlineVars>(view, scope, OP_CREATE_BUFFER_WORLDLINE)
+    {
+        if let Ok((plan, anchor)) = create_plan(&view, vars) {
             plan.extend_footprint(&mut footprint);
             anchor.extend_footprint(&mut footprint);
         }
@@ -101,8 +111,8 @@ fn create_buffer_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
     footprint
 }
 
-fn create_plan(
-    view: GraphView<'_>,
+fn create_plan<T: GraphFacts>(
+    view: &T,
     vars: CreateBufferWorldlineVars,
 ) -> crate::error::HostResult<(crate::rope::MutationPlan, AnchorPlan)> {
     let host_basis = import_host_basis(
@@ -112,13 +122,13 @@ fn create_plan(
     )?;
     let projection_path = vars.input.projectionPath;
     let plan = plan_create(
-        &view,
+        view,
         &vars.input.bufferKey,
         &vars.input.initialText,
         projection_path.clone(),
     )?;
     let anchor = plan_import_anchor(
-        &view,
+        view,
         plan.buffer_id,
         plan.head_id,
         projection_path,
@@ -167,31 +177,37 @@ pub fn generated_import_host_basis(
     }
 }
 
-fn replace_range_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickDelta) {
+fn replace_range_executor(
+    view: &mut ExecutionGraphView<'_, '_>,
+    scope: &NodeId,
+    delta: &mut TickDelta,
+) {
     let Some(vars) = replace_range_as_tick_contract_vars(view, scope) else {
         return;
     };
-    if let Ok(plan) = replace_plan(view, vars) {
+    if let Ok(plan) = replace_plan(&ObservedGraph::new(view), vars) {
         plan.emit(delta);
     }
 }
 
 fn replace_range_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
     let mut footprint = replace_range_as_tick_contract_runtime_ingress_footprint(view, scope);
-    if let Some(vars) = replace_range_as_tick_contract_vars(view, scope) {
-        if let Ok(plan) = replace_plan(view, vars) {
+    if let Some(vars) =
+        footprint_vars::<ReplaceRangeAsTickVars>(view, scope, OP_REPLACE_RANGE_AS_TICK)
+    {
+        if let Ok(plan) = replace_plan(&view, vars) {
             plan.extend_footprint(&mut footprint);
         }
     }
     footprint
 }
 
-fn replace_plan(
-    view: GraphView<'_>,
+fn replace_plan<T: GraphFacts>(
+    view: &T,
     vars: ReplaceRangeAsTickVars,
 ) -> crate::error::HostResult<crate::rope::MutationPlan> {
     plan_replace(
-        &view,
+        view,
         parse_node_id(&vars.input.bufferId)?,
         parse_node_id(&vars.input.basisHeadId)?,
         non_negative(vars.input.startByte, "startByte")?,
@@ -200,35 +216,71 @@ fn replace_plan(
     )
 }
 
-fn declare_checkpoint_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickDelta) {
+fn declare_checkpoint_executor(
+    view: &mut ExecutionGraphView<'_, '_>,
+    scope: &NodeId,
+    delta: &mut TickDelta,
+) {
     let Some(vars) = declare_checkpoint_contract_vars(view, scope) else {
         return;
     };
-    if let Ok(plan) = declare_checkpoint_plan(view, vars) {
+    if let Ok(plan) = declare_checkpoint_plan(&ObservedGraph::new(view), vars) {
         plan.emit(delta);
     }
 }
 
 fn declare_checkpoint_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
     let mut footprint = declare_checkpoint_contract_runtime_ingress_footprint(view, scope);
-    if let Some(vars) = declare_checkpoint_contract_vars(view, scope) {
-        if let Ok(plan) = declare_checkpoint_plan(view, vars) {
+    if let Some(vars) = footprint_vars::<DeclareCheckpointVars>(view, scope, OP_DECLARE_CHECKPOINT)
+    {
+        if let Ok(plan) = declare_checkpoint_plan(&view, vars) {
             plan.extend_footprint(&mut footprint);
         }
     }
     footprint
 }
 
-fn declare_checkpoint_plan(
-    view: GraphView<'_>,
+fn declare_checkpoint_plan<T: GraphFacts>(
+    view: &T,
     vars: DeclareCheckpointVars,
 ) -> crate::error::HostResult<crate::rope::CheckpointPlan> {
     plan_checkpoint(
-        &view,
+        view,
         parse_node_id(&vars.input.bufferId)?,
         parse_node_id(&vars.input.basisHeadId)?,
         checkpoint_reason(&vars.input.reason)?,
     )
+}
+
+/// Decodes a mutation's generated vars for footprint computation, which runs
+/// over Echo's unrecorded `GraphView` before execution.
+fn footprint_vars<T: Decode>(view: GraphView<'_>, scope: &NodeId, op_id: u32) -> Option<T> {
+    let vars = warp_core::eint_vars_for_op(view, scope, op_id)?;
+    echo_wasm_abi::codec::decode_from_bytes(vars).ok()
+}
+
+/// Graph facts read through Echo's recording execution view, so every fact an
+/// executor's plan reads is part of that execution's observed footprint.
+struct ObservedGraph<'view, 'store, 'frame>(RefCell<&'view mut ExecutionGraphView<'store, 'frame>>);
+
+impl<'view, 'store, 'frame> ObservedGraph<'view, 'store, 'frame> {
+    fn new(view: &'view mut ExecutionGraphView<'store, 'frame>) -> Self {
+        Self(RefCell::new(view))
+    }
+}
+
+impl GraphFacts for ObservedGraph<'_, '_, '_> {
+    fn warp_id(&self) -> WarpId {
+        self.0.borrow().warp_id()
+    }
+
+    fn node(&self, id: &NodeId) -> Option<&NodeRecord> {
+        self.0.borrow_mut().node(id)
+    }
+
+    fn attachment(&self, id: &NodeId) -> Option<&AttachmentValue> {
+        self.0.borrow_mut().node_attachment(id)
+    }
 }
 
 fn checkpoint_reason(reason: &str) -> crate::error::HostResult<CheckpointReason> {

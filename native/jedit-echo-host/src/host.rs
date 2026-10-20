@@ -3,8 +3,8 @@ use std::path::Path;
 use warp_core::{
     make_head_id, make_intent_kind, make_node_id, make_type_id, ContractOperationKind,
     EngineBuilder, GraphStore, InboxPolicy, IngressEnvelope, IngressTarget,
-    InstalledContractPackage, IntentOutcome, IntentOutcomeReceipt, NodeId, NodeRecord,
-    ObservationAt, ObservationCoordinate, ObservationFrame, ObservationPayload,
+    InstalledContractPackage, InstalledInvocationEvidence, IntentOutcome, IntentOutcomeReceipt,
+    NodeId, NodeRecord, ObservationAt, ObservationCoordinate, ObservationFrame, ObservationPayload,
     ObservationProjection, ObservationReadBudget, PlaybackMode, SchedulerKind, TrustedRuntimeHost,
     TrustedRuntimeWalConfig, WorldlineId, WorldlineRuntime, WorldlineState, WriterHead,
     WriterHeadKey,
@@ -368,11 +368,15 @@ impl JeditEchoHost {
             .observe_intent_outcome(&submission.submission_id)
         {
             IntentOutcome::Applied { receipt, .. } => {
-                let contract = receipt.contract.as_ref().ok_or_else(|| {
-                    HostError::IntentNotApplied(
-                        "receipt lacks installed-package evidence".to_owned(),
-                    )
-                })?;
+                let contract = receipt
+                    .contract
+                    .as_ref()
+                    .and_then(InstalledInvocationEvidence::legacy_contract)
+                    .ok_or_else(|| {
+                        HostError::IntentNotApplied(
+                            "receipt lacks generated-contract package evidence".to_owned(),
+                        )
+                    })?;
                 if contract.op_id != operation_id
                     || contract.op_kind != ContractOperationKind::Mutation
                 {

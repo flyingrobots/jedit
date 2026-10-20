@@ -436,7 +436,8 @@ pub mod __echo_wesley_generated {
         PackEnvelope(echo_wasm_abi::EnvelopeError),
     }
     use warp_core::{
-        ConflictPolicy, Footprint, GraphView, NodeId, PatternGraph, RewriteRule, TickDelta,
+        ConflictPolicy, ExecutionGraphView, Footprint, GraphView, NodeId, ObservedExecuteFn,
+        PatternGraph, RewriteRule, RuleExecutor,
     };
     fn generated_vars_digest(vars_bytes: &[u8]) -> Vec<u8> {
         echo_wasm_abi::query_vars_digest_v1(vars_bytes)
@@ -547,10 +548,10 @@ pub mod __echo_wesley_generated {
     /// Decode this mutation's generated vars from a scheduler-materialized
     /// EINT runtime ingress event.
     pub fn declare_checkpoint_contract_vars(
-        view: GraphView<'_>,
+        view: &mut ExecutionGraphView<'_, '_>,
         scope: &NodeId,
     ) -> Option<DeclareCheckpointVars> {
-        let vars = warp_core::eint_vars_for_op(view, scope, super::OP_DECLARE_CHECKPOINT)?;
+        let vars = warp_core::observed_eint_vars_for_op(view, scope, super::OP_DECLARE_CHECKPOINT)?;
         echo_wasm_abi::codec::decode_from_bytes(vars).ok()
     }
     /// Base footprint for reading this mutation's runtime ingress event.
@@ -566,7 +567,7 @@ pub mod __echo_wesley_generated {
     /// Build a `warp-core` command rule for this generated contract
     /// mutation using a host-supplied executor and footprint function.
     pub fn declare_checkpoint_contract_rule(
-        executor: for<'a> fn(GraphView<'a>, &NodeId, &mut TickDelta),
+        executor: ObservedExecuteFn,
         compute_footprint: for<'a> fn(GraphView<'a>, &NodeId) -> Footprint,
     ) -> RewriteRule {
         RewriteRule {
@@ -574,7 +575,7 @@ pub mod __echo_wesley_generated {
             name: OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME,
             left: PatternGraph { nodes: Vec::new() },
             matcher: declare_checkpoint_contract_matches,
-            executor,
+            executor: RuleExecutor::observed(executor),
             compute_footprint,
             factor_mask: 0,
             conflict_policy: ConflictPolicy::Abort,
@@ -872,10 +873,11 @@ pub mod __echo_wesley_generated {
     /// Decode this mutation's generated vars from a scheduler-materialized
     /// EINT runtime ingress event.
     pub fn create_buffer_worldline_contract_vars(
-        view: GraphView<'_>,
+        view: &mut ExecutionGraphView<'_, '_>,
         scope: &NodeId,
     ) -> Option<CreateBufferWorldlineVars> {
-        let vars = warp_core::eint_vars_for_op(view, scope, super::OP_CREATE_BUFFER_WORLDLINE)?;
+        let vars =
+            warp_core::observed_eint_vars_for_op(view, scope, super::OP_CREATE_BUFFER_WORLDLINE)?;
         echo_wasm_abi::codec::decode_from_bytes(vars).ok()
     }
     /// Base footprint for reading this mutation's runtime ingress event.
@@ -891,7 +893,7 @@ pub mod __echo_wesley_generated {
     /// Build a `warp-core` command rule for this generated contract
     /// mutation using a host-supplied executor and footprint function.
     pub fn create_buffer_worldline_contract_rule(
-        executor: for<'a> fn(GraphView<'a>, &NodeId, &mut TickDelta),
+        executor: ObservedExecuteFn,
         compute_footprint: for<'a> fn(GraphView<'a>, &NodeId) -> Footprint,
     ) -> RewriteRule {
         RewriteRule {
@@ -899,7 +901,7 @@ pub mod __echo_wesley_generated {
             name: OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME,
             left: PatternGraph { nodes: Vec::new() },
             matcher: create_buffer_worldline_contract_matches,
-            executor,
+            executor: RuleExecutor::observed(executor),
             compute_footprint,
             factor_mask: 0,
             conflict_policy: ConflictPolicy::Abort,
@@ -1012,10 +1014,11 @@ pub mod __echo_wesley_generated {
     /// Decode this mutation's generated vars from a scheduler-materialized
     /// EINT runtime ingress event.
     pub fn replace_range_as_tick_contract_vars(
-        view: GraphView<'_>,
+        view: &mut ExecutionGraphView<'_, '_>,
         scope: &NodeId,
     ) -> Option<ReplaceRangeAsTickVars> {
-        let vars = warp_core::eint_vars_for_op(view, scope, super::OP_REPLACE_RANGE_AS_TICK)?;
+        let vars =
+            warp_core::observed_eint_vars_for_op(view, scope, super::OP_REPLACE_RANGE_AS_TICK)?;
         echo_wasm_abi::codec::decode_from_bytes(vars).ok()
     }
     /// Base footprint for reading this mutation's runtime ingress event.
@@ -1031,7 +1034,7 @@ pub mod __echo_wesley_generated {
     /// Build a `warp-core` command rule for this generated contract
     /// mutation using a host-supplied executor and footprint function.
     pub fn replace_range_as_tick_contract_rule(
-        executor: for<'a> fn(GraphView<'a>, &NodeId, &mut TickDelta),
+        executor: ObservedExecuteFn,
         compute_footprint: for<'a> fn(GraphView<'a>, &NodeId) -> Footprint,
     ) -> RewriteRule {
         RewriteRule {
@@ -1039,7 +1042,7 @@ pub mod __echo_wesley_generated {
             name: OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME,
             left: PatternGraph { nodes: Vec::new() },
             matcher: replace_range_as_tick_contract_matches,
-            executor,
+            executor: RuleExecutor::observed(executor),
             compute_footprint,
             factor_mask: 0,
             conflict_policy: ConflictPolicy::Abort,
