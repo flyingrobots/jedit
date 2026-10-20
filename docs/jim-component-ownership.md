@@ -686,8 +686,10 @@ no anchor, which includes every buffer recovered from a WAL written before
 anchors existed. The file layer of buffer durability is clean only against the
 anchored head. Explicit reconciliation (re-import, keep-buffer, discard) and
 re-anchoring on save are not implemented
-([#357](https://github.com/flyingrobots/jedit/issues/357)); until they are, a
-refused path stays refused. The target moves this decision into `jim.external-policy`.
+([#357](https://github.com/flyingrobots/jedit/issues/357)). Until they are, an open
+is refused for as long as the path's basis differs from the anchor, or the buffer
+has no anchor; restoring the anchored bytes makes the buffer reusable again.
+The target moves this decision into `jim.external-policy`.
 
 In summary, Jim sees source files as external coordinates and import/export
 surfaces. Jim edits an Echo-backed buffer worldline; the path is not the buffer,
