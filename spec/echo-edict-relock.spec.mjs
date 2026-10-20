@@ -1,14 +1,18 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { encode } from 'cbor-x';
 
+import { git } from './git-fixture-helpers.mjs';
 import {
+  adapterTargets,
   lawpackManifestDigest,
   providerPins,
+  restoringOnFailure,
+  withAdapterTargets,
   withGitRev,
   withImportDigest,
   withOracleDigests,
@@ -151,4 +155,88 @@ test('providerPins refuses a component whose bytes disagree with the provider ma
   }));
 
   assert.throws(() => providerPins(root), /lowerer\.echo-dpo component bytes disagree/);
+});
+
+function providerWithProfile(t, profile, artifacts) {
+  const root = temporaryDirectory(t);
+  mkdirSync(path.join(root, 'generated', 'primary'), { recursive: true });
+  writeFileSync(path.join(root, 'generated', 'primary', 'target-profile.echo-dpo.cbor'), encode(profile));
+  writeFileSync(path.join(root, 'provider-manifest.echo.json'), JSON.stringify({ provider: {}, artifacts }));
+  return root;
+}
+
+test('adapterTargets reads the target profile and target IR the provider publishes', (t) => {
+  const irDigest = Buffer.alloc(32, 9);
+  const root = providerWithProfile(
+    t,
+    { targetIr: { id: 'echo.span-ir/v2', digest: ['sha256', irDigest] } },
+    [{ role: 'target-profile.echo-dpo', resource: { coordinate: 'echo.dpo@2', digest: 'sha256:profile2' } }],
+  );
+
+  assert.deepEqual(adapterTargets(root), {
+    acceptedTargetProfile: { id: 'echo.dpo@2', digest: 'sha256:profile2' },
+    acceptedTargetIr: { id: 'echo.span-ir/v2', digest: `sha256:${irDigest.toString('hex')}` },
+  });
+});
+
+test('withAdapterTargets rebinds every target adapter and leaves the input unchanged', () => {
+  const stale = { id: 'echo.dpo@1', digest: 'sha256:old' };
+  const lawpack = {
+    lawpack: {
+      targetAdapters: [
+        { coordinate: 'a', acceptedTargetProfile: stale, acceptedTargetIr: stale },
+        { coordinate: 'b', acceptedTargetProfile: stale, acceptedTargetIr: stale },
+      ],
+    },
+  };
+  const targets = {
+    acceptedTargetProfile: { id: 'echo.dpo@2', digest: 'sha256:new' },
+    acceptedTargetIr: { id: 'echo.span-ir/v2', digest: 'sha256:ir' },
+  };
+
+  const bound = withAdapterTargets(lawpack, targets);
+
+  for (const adapter of bound.lawpack.targetAdapters) {
+    assert.deepEqual(adapter.acceptedTargetProfile, targets.acceptedTargetProfile);
+    assert.deepEqual(adapter.acceptedTargetIr, targets.acceptedTargetIr);
+  }
+  assert.equal(lawpack.lawpack.targetAdapters[0].acceptedTargetProfile.digest, 'sha256:old');
+});
+
+function fixtureRepository(t) {
+  const repo = temporaryDirectory(t);
+  mkdirSync(path.join(repo, 'managed'));
+  writeFileSync(path.join(repo, 'managed', 'pinned.txt'), 'original\n');
+  writeFileSync(path.join(repo, 'outside.txt'), 'outside\n');
+  git(repo, 'init', '-q');
+  git(repo, 'add', '-A');
+  git(repo, '-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-qm', 'fixture');
+  return repo;
+}
+
+test('restoringOnFailure restores managed paths and removes files the failed run created', (t) => {
+  const repo = fixtureRepository(t);
+
+  assert.throws(() => restoringOnFailure(repo, ['managed'], () => {
+    writeFileSync(path.join(repo, 'managed', 'pinned.txt'), 'regenerated\n');
+    writeFileSync(path.join(repo, 'managed', 'fresh.txt'), 'new\n');
+    throw new Error('host failed to compile');
+  }), /host failed to compile/);
+
+  assert.equal(readFileSync(path.join(repo, 'managed', 'pinned.txt'), 'utf8'), 'original\n');
+  assert.equal(git(repo, 'status', '--porcelain=v1', '--untracked-files=all'), '');
+});
+
+test('restoringOnFailure keeps a successful run and refuses dirty managed paths up front', (t) => {
+  const repo = fixtureRepository(t);
+
+  restoringOnFailure(repo, ['managed'], () => {
+    writeFileSync(path.join(repo, 'managed', 'pinned.txt'), 'relocked\n');
+  });
+  assert.equal(readFileSync(path.join(repo, 'managed', 'pinned.txt'), 'utf8'), 'relocked\n');
+
+  assert.throws(() => restoringOnFailure(repo, ['managed'], () => {}), /managed paths must be clean/);
+  writeFileSync(path.join(repo, 'outside.txt'), 'edited\n');
+  git(repo, 'checkout', '--', 'managed');
+  assert.doesNotThrow(() => restoringOnFailure(repo, ['managed'], () => {}));
 });

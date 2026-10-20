@@ -6,8 +6,9 @@
 //
 // Run it with the Node, npm, and Rust releases pinned in
 // edict/replace-range/edict.toolchain-lock.json; the package chain refuses
-// anything else. A host that no longer compiles against the new Echo stops the
-// run before any generated artifact is rewritten.
+// anything else. Any failure (a host that no longer compiles against the new
+// Echo, a refused build, a broken package chain) restores every file the run
+// manages, so a failed relock leaves the tree as it found it.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -24,6 +25,20 @@ const ORACLE_PATH = path.join(
   PROJECT_ROOT, 'contracts', 'jedit', 'lawpacks', 'replace-range-v1', 'replace-range-v1.oracle.json',
 );
 const PROVIDER_PACKAGE = path.join('schemas', 'edict-provider', 'package', 'v1');
+const MANAGED_PATHS = Object.freeze([
+  'native/jedit-echo-host/Cargo.toml',
+  'native/jedit-echo-host/Cargo.lock',
+  'native/jedit-echo-host/src/generated',
+  'contracts/jedit/lawpacks/replace-range-v1',
+  'edict/replace-range/edict.lawpack.json',
+  'edict/replace-range/edict.toolchain-lock.json',
+  'edict/replace-range/edict.build-lock.json',
+  'edict/replace-range/edict.executable-subject-lock.json',
+  'edict/replace-range/src',
+  'edict/replace-range/vendor',
+  'edict/replace-range/tests/runtime/Cargo.toml',
+  'edict/replace-range/tests/runtime/Cargo.lock',
+]);
 const PROVIDER_COMPONENTS = Object.freeze([
   ['lowerer', 'lowerer.echo-dpo', 'lowerer.echo-dpo.component.wasm'],
   ['verifier', 'verifier.echo-dpo', 'verifier.echo-dpo.component.wasm'],
@@ -93,6 +108,48 @@ function componentPin(root, manifest, [role, fileName]) {
     throw new Error(`${role} component bytes disagree with the provider manifest`);
   }
   return { coordinate: resource.coordinate, sha256 };
+}
+
+/** Reads the target profile and target IR identities a provider publishes. */
+export function adapterTargets(root) {
+  const manifest = JSON.parse(readFileSync(path.join(root, 'provider-manifest.echo.json')));
+  const profileResource = providerResource(manifest, 'target-profile.echo-dpo');
+  const profile = decode(readFileSync(path.join(root, 'generated', 'primary', 'target-profile.echo-dpo.cbor')));
+  return {
+    acceptedTargetProfile: { id: profileResource.coordinate, digest: profileResource.digest },
+    acceptedTargetIr: {
+      id: profile.targetIr.id,
+      digest: `sha256:${Buffer.from(profile.targetIr.digest[1]).toString('hex')}`,
+    },
+  };
+}
+
+/** Rebinds every target adapter to the given target profile and target IR. */
+export function withAdapterTargets(lawpack, { acceptedTargetProfile, acceptedTargetIr }) {
+  const bound = structuredClone(lawpack);
+  for (const adapter of bound.lawpack.targetAdapters) {
+    adapter.acceptedTargetProfile = structuredClone(acceptedTargetProfile);
+    adapter.acceptedTargetIr = structuredClone(acceptedTargetIr);
+  }
+  return bound;
+}
+
+/**
+ * Runs `action` over managed paths that must start clean, and restores them
+ * (removing anything the run created there) if it throws.
+ */
+export function restoringOnFailure(repository, paths, action) {
+  const dirty = run('git', ['-C', repository, 'status', '--porcelain=v1', '--untracked-files=all', '--', ...paths]);
+  if (dirty !== '') {
+    throw new Error(`managed paths must be clean before relocking:\n${dirty}`);
+  }
+  try {
+    return action();
+  } catch (error) {
+    run('git', ['-C', repository, 'checkout', '--', ...paths]);
+    run('git', ['-C', repository, 'clean', '-fdq', '--', ...paths]);
+    throw error;
+  }
 }
 
 /** Derives the toolchain-lock provider entry from Echo's checked provider package. */
@@ -227,6 +284,12 @@ function main(argv) {
   const { echoRepository, edictRepository } = parseArguments(argv);
   const echoCommit = cleanCommit(echoRepository, 'Echo');
   const edictCommit = cleanCommit(edictRepository, 'Edict');
+  restoringOnFailure(PROJECT_ROOT, MANAGED_PATHS, () =>
+    relock({ echoRepository, edictRepository, echoCommit, edictCommit }));
+  process.stdout.write(`Jedit now builds against Echo ${echoCommit} and Edict ${edictCommit}.\n`);
+}
+
+function relock({ echoRepository, edictRepository, echoCommit, edictCommit }) {
   const lockPath = path.join(APPLICATION_ROOT, 'edict.toolchain-lock.json');
   const toolchain = readJson(lockPath).rust.toolchain;
 
@@ -236,10 +299,11 @@ function main(argv) {
   run('npm', ['run', '-s', 'lawpack:replace-range:update'], { cwd: PROJECT_ROOT });
 
   const lawpackPath = path.join(APPLICATION_ROOT, 'edict.lawpack.json');
-  writeJson(lawpackPath, withOracleDigests(readJson(lawpackPath), {
+  const withOracle = withOracleDigests(readJson(lawpackPath), {
     sourceSetHex: readJson(ORACLE_PATH).sourceSet.digestHex,
     oracleSha256Hex: sha256Hex(readFileSync(ORACLE_PATH)),
-  }));
+  });
+  writeJson(lawpackPath, withAdapterTargets(withOracle, adapterTargets(path.join(echoRepository, PROVIDER_PACKAGE))));
   const cliVersion = republishApplication({ echoRepository, edictRepository, toolchain });
   relockToolchain(lockPath, { echoRepository, echoCommit, edictCommit, cliVersion });
   run(process.execPath, [path.join(APPLICATION_ROOT, 'tests', 'assert-build-output.mjs'),
@@ -249,7 +313,6 @@ function main(argv) {
     stdio: 'inherit',
     env: { ...process.env, ECHO_REPO: echoRepository, EDICT_REPO: edictRepository },
   });
-  process.stdout.write(`Jedit now builds against Echo ${echoCommit} and Edict ${edictCommit}.\n`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
