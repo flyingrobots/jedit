@@ -261,12 +261,20 @@ fn created(t: Tree) -> Created
 
 // The proposal Echo receives may not name one target twice (DL-0159, effect
 // normalization). Equal text yields equal content ids, so keep the first of
-// each id, refuse an id whose two occurrences differ, and sort by id.
-fn normalized(c: Created) -> Created fails ConflictingContent {
+// each id, refuse an id whose two occurrences have different stored
+// definitions, and sort by id. A branch's stored definition is its fact and its
+// child ids, never its view, expansion state, or `fresh` flag.
+fn normalized(c: Created) -> Created fails ConflictingContent, ClosureTooSmall {
   return {
     leaves: expect dedupeById(c.leaves, _.id, _.fact),          // PROPOSED generic list helper
-    branches: expect dedupeById(c.branches, _.id, _.fact),
+    branches: expect dedupeById(c.branches, _.id, branchDefinition(_)),
   };
+}
+
+type BranchDefinition = { fact: v2.BranchFact, left: NodeId, right: NodeId };
+
+fn branchDefinition(b: BranchView) -> BranchDefinition fails ClosureTooSmall {
+  return { fact: b.fact, left: expect idOf(b.left), right: expect idOf(b.right) };
 }
 
 // The bytes in [start, end), for the no-op check. Leaves in the range must be

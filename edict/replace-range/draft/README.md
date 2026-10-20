@@ -48,7 +48,7 @@ source on main, not by running it.
 
 | Construct | Used by | Status on main |
 | --- | --- | --- |
-| Integer `+` on `U64` | both | refused, **confirmed** (`TypeMismatch`) |
+| Integer `+` on `U64` | both | unsigned addition landed after the measured run (edict#259); checked overflow [edict#263](https://github.com/flyingrobots/edict/issues/263) |
 | Variant types and `match` | target 2 | refused, **confirmed** (`only record type declarations`); [edict#261](https://github.com/flyingrobots/edict/issues/261) |
 | Recursive types with a depth bound | target 2 | refused, **confirmed** (`UnresolvedType`) |
 | Recursive functions with a termination measure | target 2 | refused, **confirmed** (`ReferenceCycle`); [edict#262](https://github.com/flyingrobots/edict/issues/262) |
@@ -58,12 +58,12 @@ source on main, not by running it.
 | Bytes literals `b"…"` | both | landed after the measured run (`6e6a0fa`, edict#249); not re-measured |
 | `\r` and explicit byte escapes | decoder only | landed after the measured run (`6e6a0fa`); not re-measured |
 | `Option`, `some`/`none`/`isSome`/`unwrap` | target 2 | refused, read; [edict#261](https://github.com/flyingrobots/edict/issues/261) |
-| `List` construction, `++`, `len(list)` | target 2 | refused, read |
-| `enum` declarations | target 2 | refused, read |
-| Record spread `{ ...x, f: v }` | both | refused, read |
-| Function preconditions and flow-sensitive proofs for `-` and `slice` | both | refused inside functions, read |
-| Typed failure in pure functions (`fails`, `expect`) | target 2 | not in the spec; proposed |
-| `U64` division, `min`/`max`, checked `+` | target 2 | refused, read; [edict#263](https://github.com/flyingrobots/edict/issues/263) |
+| `List` construction, `++`, `len(list)` | target 2 | refused, read; [edict#262](https://github.com/flyingrobots/edict/issues/262) |
+| `enum` declarations | target 2 | refused, read; payload-free variants, [edict#261](https://github.com/flyingrobots/edict/issues/261) |
+| Record spread `{ ...x, f: v }` | none | removed from the drafts: records are built explicitly |
+| Function preconditions and flow-sensitive proofs for `-` and `slice` | both | refused inside functions, read; [edict#264](https://github.com/flyingrobots/edict/issues/264) |
+| Typed failure in pure functions (`fails`, `expect`) | target 2 | not in the spec; proposed; [edict#265](https://github.com/flyingrobots/edict/issues/265) |
+| `U64` division, `min`/`max`, checked `+` and `-` | target 2 | refused, read; [edict#263](https://github.com/flyingrobots/edict/issues/263) |
 | `ContentAddressV1` inputs (type id, attachment digest, ordered edges) | both | absent; [edict#260](https://github.com/flyingrobots/edict/issues/260) |
 
 ### Generic data-structure primitives
@@ -76,6 +76,8 @@ source on main, not by running it.
 | `echo.attachmentDigest(value)`, `echo.contentAddress(type, digest, edges)` | both | `ContentAddressV1` inputs, Echo's exact codec profile (edict#260) |
 
 None of these knows about text editing. They are byte and codec utilities.
+The byte primitives are [edict#266](https://github.com/flyingrobots/edict/issues/266);
+the identity inputs are [edict#260](https://github.com/flyingrobots/edict/issues/260).
 
 ### Runtime realization (Echo)
 
@@ -85,22 +87,26 @@ whose implementation is [echo#921](https://github.com/flyingrobots/echo/pull/921
 
 | Need | Used by | Status on main |
 | --- | --- | --- |
-| Evaluated operation → proposed effects → atomic commit | both | absent (read) |
-| `ensure` node: create, or require identical | both | absent; create obstructs on existing (read) |
+| Evaluated operation → proposed effects → atomic commit | both | absent (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
+| `ensure` node: create, or require identical | both | absent; create obstructs on existing (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
 | Edge read by type, edge `ensure`, edge compare-and-retarget | both | absent (read); edge reads [echo#926](https://github.com/flyingrobots/echo/issues/926) |
-| Atom compare-and-replace from evaluation | both | only with caller-supplied bytes (read) |
+| Atom compare-and-replace from evaluation | both | only with caller-supplied bytes (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
 | Guided closure read with a pure Edict selector | target 2 | absent (read); [echo#926](https://github.com/flyingrobots/echo/issues/926) |
 | Buffers reachable from the worldline root | both | absent (read); [echo#927](https://github.com/flyingrobots/echo/issues/927) |
-| `for` with effects lowered to Target IR | target 2 | Target refuses `For` (read) |
+| `for` with effects lowered to Target IR | target 2 | Target refuses `For` (read); [edict#267](https://github.com/flyingrobots/edict/issues/267), runtime [echo#921](https://github.com/flyingrobots/echo/pull/921) |
 
 ### Performance and resources
 
 - Closure size: two boundary paths plus their inner spines, `O(h²)` nodes,
   with `h ≤ 1.44 log2(leaves)`. Bounded by `text.maxClosureNodes`.
-- Patch size: about `(h + 1)` new branches, up to 2 new leaves plus
-  `ceil(replacement / 4096)` fresh leaves, two edges per branch, one head with
-  its `root` and `anchor` edges, and one retargeted `canonicalHead` edge. Echo
-  caps one Action batch at 128 patch operations; a 1 MiB replacement (256 fresh
+- Patch size has three parts (DL-0159, Resource Envelope): the replacement tree,
+  K leaves and K − 1 branches where K is `fromBytes`'s actual leaf count (8,194
+  ASCII bytes give four leaves and three branches, not `ceil(8194 / 4096) = 3`
+  leaves); boundary and join reconstruction, about `O(h)` path-copied branches
+  and up to two split boundary leaves; and publication, one head with its `root`
+  and `anchor` edges and one retargeted `canonicalHead` edge. Normalization can
+  reduce emitted effects but not construction work. Echo caps one Action batch
+  at 128 patch operations; a 1 MiB replacement (256 fresh
   leaves and 255 branches) is far outside it. The v1 operation supports an
   explicit envelope and refuses atomically outside it (DL-0159, Resource
   Envelope).

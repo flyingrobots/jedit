@@ -47,12 +47,15 @@ intent replaceRange(input: Input) returns Result
 
   let headRef = echo.ref<v2.HeadFact>(input.basisHeadId);
   let head = headRef.read() else text.FactMissing;
-  let textId = echo.edge<v2.HeadFact, TextFact, v2.Root>(headRef)
-    .target() else text.FactMissing;
   let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
     .target() else text.FactMissing;
-  let old = echo.ref<TextFact>(textId).read() else text.FactMissing;
-  require len(old.bytes) == head.byteLength else text.MalformedRope;
+  // An empty head has no Root edge (DL-0159, Identity law).
+  let oldBytes = if head.byteLength == 0u64 then b""
+    else (echo.ref<TextFact>(
+      echo.edge<v2.HeadFact, TextFact, v2.Root>(headRef).target() else text.MalformedRope,
+    ).read() else text.FactMissing).bytes;
+  require len(oldBytes) == head.byteLength else text.MalformedRope;
+  let old = { bytes: oldBytes };
 
   require input.endByte <= len(old.bytes) else text.RangeOutOfBounds;
   require v2.isCharBoundary(old.bytes, input.startByte) else text.Utf8BoundaryInvalid;
@@ -64,30 +67,36 @@ intent replaceRange(input: Input) returns Result
   let bytes = slice(old.bytes, 0u64, input.startByte)
     + input.replacement
     + slice(old.bytes, input.endByte, len(old.bytes));
-  require len(bytes) <= 1048576u64 else text.RangeOutOfBounds;   // needs a bound proof
+  // The reference's own declared profile; the oracle compares outcomes only
+  // inside the domain both implementations support (DL-0159, slice 5).
+  require len(bytes) <= text.maxReferenceBufferBytes else text.ResourceLimitExceeded;
   let fact = { bytes, lineBreaks: v2.lineBreaks(bytes) };
   let newTextId = v2.contentId(fact, []);
-  echo.ref<TextFact>(newTextId).ensure(fact) else text.ContentIdentityMismatch;
 
   let newHead = {
     byteLength: len(bytes),
     lineCount: fact.lineBreaks + 1u64,                       // needs checked +
     sequence: head.sequence + 1u64,
   };
-  let newHeadId = v2.contentId(newHead, [
-    { edgeType: typeId<v2.Root>(), to: newTextId },
-    { edgeType: typeId<v2.Anchor>(), to: importId },
-  ]);
+  let anchorEdge = { edgeType: typeId<v2.Anchor>(), to: importId };
+  let headEdges = if len(bytes) == 0u64
+    then [anchorEdge]
+    else [{ edgeType: typeId<v2.Root>(), to: newTextId }, anchorEdge];
+  let newHeadId = v2.contentId(newHead, headEdges);
   let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
   newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
-  echo.edge<v2.HeadFact, TextFact, v2.Root>(newHeadRef)
-    .ensure(newTextId) else text.ContentIdentityMismatch;   // PROPOSED: edge ensure
+  if len(bytes) != 0u64 {
+    echo.ref<TextFact>(newTextId).ensure(fact) else text.ContentIdentityMismatch;
+    echo.edge<v2.HeadFact, TextFact, v2.Root>(newHeadRef)
+      .ensure(newTextId) else text.ContentIdentityMismatch;   // PROPOSED: edge ensure
+  }
   echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(newHeadRef)
     .ensure(importId) else text.ContentIdentityMismatch;
 
   echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
     .replace(input.basisHeadId, newHeadId) else text.BasisNotCanonical;  // PROPOSED: compare-and-retarget
-  bufferRef.replace({ ...buffer, version: buffer.version + 1u64 }) else text.BasisNotCanonical;
+  bufferRef.replace({ bufferKey: buffer.bufferKey, version: buffer.version + 1u64 })
+    else text.BasisNotCanonical;
 
   return {
     headId: newHeadId,

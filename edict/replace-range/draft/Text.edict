@@ -62,7 +62,11 @@ type ExportFact = {
 
 // ---- Edge types (no payload; one edge per source node and type) ----
 
-type BufferSlot = Unit;      // worldline root -> Buffer, one per buffer (echo#927)
+// Conceptual relation only. One fixed slot type from the mutable worldline root
+// admits one edge under ContentAddressV1, so this declaration cannot attach two
+// buffers. The concrete layout (a root-owned index, investigated first, or a
+// per-key slot type) is pending echo#927 (DL-0159, Reachability).
+type BufferSlot = Unit;      // worldline root -> Buffer: layout pending echo#927
 type CanonicalHead = Unit;   // Buffer -> Head
 type AcceptedHostBasis = Unit; // Buffer -> HostBasis, retargeted by basis transitions
 type Root = Unit;            // Head -> Branch | Leaf

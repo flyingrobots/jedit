@@ -168,7 +168,7 @@ contains the node itself, so no identity is circular.
 
 | Edge type | From → to | Meaning |
 | --- | --- | --- |
-| `jedit.text.buffer` (per buffer, see Reachability) | worldline root → Buffer | attaches the buffer to the committed state |
+| `jedit.text.buffer` (conceptual; layout pending echo#927) | worldline root → Buffer | attaches each buffer to the committed state |
 | `jedit.text.canonicalHead` | Buffer → Head | current head; retargeted by each edit |
 | `jedit.text.acceptedHostBasis` | Buffer → HostBasis | the host version Jim currently works against; retargeted by the transitions below |
 | `jedit.text.lastExport` | Buffer → Export | what Jim last exported; never the synchronization basis |
@@ -249,14 +249,22 @@ witnessed per-node metric.
 ### Reachability
 
 A worldline holds many buffers, so the Buffer is not the worldline root. Each
-Buffer is reached from the worldline root by its own typed edge, created in the
-same proposal as the Buffer (echo#927). The committed current state is then:
+Buffer must be reached from the worldline root, in the same proposal that
+creates it. The relation is conceptual: its concrete layout is unresolved.
+Under `ContentAddressV1` a mutable source has one slot edge per source and
+type, so one fixed `jedit.text.buffer` type from the root admits only one
+buffer. echo#927 owns the choice between a per-key slot type and a root-owned
+index; the index is investigated first, because a derived per-buffer type id
+must also satisfy the bridge's admitted schema and type allowlists. The
+committed current state is then:
 the Buffer, its canonical Head and rope, the Head's Import, the
 `acceptedHostBasis` and `lastExport` targets, and declared current metadata,
 with no edge from any head to the head it replaced.
 
 The reachability fixture starts at the **actual worldline root**, never at a
-conveniently chosen Buffer.
+conveniently chosen Buffer, and attaches at least two buffers: both stay
+reachable and committed, and editing one neither replaces nor disconnects the
+other. A one-buffer fixture would pass while missing the problem.
 
 ### History, current state, and retained material
 
@@ -285,17 +293,31 @@ it. Each limit is a lawpack constant:
 | Generated nodes and effects | `text.maxCreatedLeaves`, `text.maxCreatedBranches`, `text.maxEffects` | the proposal |
 | Evaluation work and allocation | `text.replaceRangeBudget` | the evaluator meter |
 
-A proposal costs about `(h + 1)` path-copied branches plus
-`ceil(replacement / 4096) + 2` fresh leaves, one head, and one Buffer update,
-where `h ≤ 1.44 log2(leaves)`; each content node is one node, one atom, and up
-to two edges. The equal-length no-op check reads the replaced range, so its
-reads grow with the replacement, not only with boundary paths and spines; the
-replacement bound bounds it.
+A proposal's construction is three parts, where `h ≤ 1.44 log2(leaves)`:
+
+- **Replacement tree.** `fromBytes` produces K leaves for a non-empty
+  replacement and K − 1 internal branches. K is the constructor's actual leaf
+  count, not `ceil(replacement / 4096)`: it splits at character boundaries
+  near the midpoint, so 8,194 ASCII bytes split into two 4,097-byte halves and
+  then into four leaves and three branches, where `ceil(8194 / 4096) = 3`.
+- **Boundary and join reconstruction.** Up to two split boundary leaves and
+  the branches the splits and joins path-copy, about `O(h)` per boundary and
+  per join spine.
+- **Publication.** One head with its `root` and `anchor` edges and one Buffer
+  update.
+
+Each content node is one node, one atom, and up to two edges. Construction work
+and emitted effects differ: normalization can merge equal-content targets, so
+fewer effects may be emitted, but the work to build and recognize that content
+is still spent and metered. The equal-length no-op check reads the replaced
+range, so its reads grow with the replacement, not only with boundary paths and
+spines; the replacement bound bounds it.
 
 Under Echo's current 128 patch operations per Action batch, a 1 MiB replacement
 (256 fresh leaves and 255 branches) is far outside any envelope. The v1 values
-are chosen from a measurement fixture over generated trees and recorded with
-their cost model before the representation gate; raising a cap without that
+are chosen from a measurement fixture over generated trees, including sizes
+just above split thresholds (4,097, 8,193, and 8,194 bytes, not only powers of
+two), and recorded with their cost model before the representation gate; raising a cap without that
 model is out of scope. Larger edits are a separate operation family (#382).
 
 Three failures stay distinct, and none accuses valid data of corruption:
@@ -332,7 +354,11 @@ Generic capabilities the representation gate needs:
 | `ContentAddressV1` inputs in Edict source | edict#260 |
 | Variant and `Option` types | edict#261 |
 | Bounded recursion over depth-bounded variants | edict#262 |
-| Checked arithmetic, `min`, `max` | edict#263 |
+| Checked arithmetic, `min`, `max`, division | edict#263 |
+| Function preconditions for subtraction and slice | edict#264 |
+| Typed failures in pure functions | edict#265 |
+| Byte primitives (`at`, `count`, `isUtf8`) | edict#266 |
+| Bounded effect-emitting loops lowered to Target IR | edict#267 |
 
 ## File-Crossing Contract
 
@@ -386,8 +412,11 @@ its mapping.
 | Confirm an applicable export of S | the witnessed exported host version S |
 
 Each `HostBasis` names the evidence that made it current and a `generation`
-that increases with every transition, so a stale evidence item can never be
-mistaken for the current one by digest equality alone.
+that increases with every transition. The generation orders Jim's own
+transitions; it does not make an observation newer. Adopting a delayed older
+observation would advance the generation while the accepted external version
+went backward, so applicability is a separate rule (requirement 5 under
+Observation, holding, and adoption).
 
 ### Versions and conditions
 
@@ -412,12 +441,18 @@ mistaken for the current one by digest equality alone.
   or fences writes per binding: each intent carries a fencing generation, and
   an effector holding a stale generation does not write.
 - **Each export captures** its stable intent identity, the exact head
-  exported, the expected accepted host basis, the file binding and its
-  authorization, and the observations and host-attempt evidence that belong to
-  it.
+  exported, the file binding and its authorization, the observations and
+  host-attempt evidence that belong to it, and two separate preconditions:
+  - `expectedAcceptedBasis`: the identity and generation of the accepted host
+    basis B when the export was admitted. It decides whether the outcome still
+    applies to Jim's current state.
+  - `expectedHostContents`: the host version the write expects to replace,
+    enforced as far as the export profile allows. For an ordinary export it is
+    B. Only Overwrite sets it to an observed H ≠ B, and then also carries
+    `overwriteAuthority`, the authorization bound to H's observation.
 - **Outcomes are evidence first.** An outcome advances the accepted host basis
-  only if its intent is the binding's current one and the basis it expected is
-  still accepted. Otherwise it is retained as historical evidence and changes
+  only if its intent is the binding's current one and its
+  `expectedAcceptedBasis` is still accepted. Otherwise it is retained as historical evidence and changes
   no current state. A delayed older outcome never regresses a newer basis.
 - **Observation identity.** The intent keeps one identity across retries. Each
   physical read is a new observation with a new identity; retransmitting an
@@ -465,6 +500,19 @@ turn a snapshot into an external editor's witnessed causal history.
 4. **Adoption is a separate admitted forward transition** that creates a head
    anchored to the new `Import` and sets the accepted host basis. Automatic
    adoption is allowed only under a declared policy, and is still witnessed.
+5. **Observation ordering and applicability.** This concerns the order of
+   Jim's own observations, not external writers' histories:
+   - An observation names its file binding and the receiving basis it was
+     captured against (the accepted host basis and its generation).
+   - Where the adapter can establish the order of its observations, it records
+     that order as epoch, sequence, or causal evidence.
+   - Historical observations may still enter history as evidence.
+   - An observation older than, or unordered with, the current host view
+     cannot automatically replace the current host view, the canonical head, or
+     a conflict judgment.
+   - Adoption and settlement revalidate the receiving basis and the
+     observation's applicability at admission. If applicability cannot be
+     established, Jim obtains a fresh observation instead.
 
 ### Path classification
 
@@ -502,8 +550,12 @@ Settlements, each an admitted forward operation:
 - **Reload:** adopt H. L stays recoverable only if its material was retained
   before the Reload; that retention is acquired first, or Reload refuses.
 - **Keep local:** keep editing L; export stays obstructed by the divergence.
-- **Overwrite:** an explicit export whose expected basis is H, recorded as
-  overwriting a known third-party change.
+- **Overwrite:** an explicit export whose `expectedAcceptedBasis` is B,
+  whose `expectedHostContents` is the observed H, and whose
+  `overwriteAuthority` is bound to H's observation, recorded as overwriting a
+  known third-party change. H is never accepted just to satisfy the
+  applicability check. A confirmed Overwrite of S advances the accepted host
+  basis from B to S.
 - **Reconcile:** build M from B, L, and H and submit it as a forward edit; the
   accepted host basis becomes H. The base may be an observed host version that
   was never a Jim head.
@@ -604,9 +656,13 @@ Representation gate:
 3. The persistent rope (persistence target), with effect normalization and
    the three failure classes.
 4. The resource-envelope measurement fixture and its recorded v1 values.
-5. The schema 2 oracle: reference and persistent rope agree on text semantics;
-   representation invariants and admission/effect behavior are validated
-   separately.
+5. The schema 2 oracle: reference and persistent rope agree on text semantics
+   within their shared supported domain; each implementation's resource
+   behavior is validated against its own declared profile, so a disagreement
+   between resource limits is never reported as an editing disagreement.
+   Representation invariants and admission/effect behavior are validated
+   separately. Stored-buffer size and the complete encoded invocation size are
+   separate limits.
 6. Cutover, then deletion of the native schema 1 law.
 
 File-crossing gate:
@@ -628,7 +684,8 @@ Representation gate:
 | Two equal-content leaves | the proposal has no duplicate targets; both text positions still exist |
 | `aa` as one shared leaf, edit the second `a` | the edit addresses the second position |
 | Exhaust a closure or effect budget, or fail the final effect | correctly classified outcome; no partial application |
-| Traverse from the actual worldline root | all current representation is committed; no historical-head chain |
+| Traverse from the actual worldline root with two buffers attached | both reachable and committed; editing one leaves the other attached; no historical-head chain |
+| Replacements of 4,097, 8,193, and 8,194 bytes | leaf and branch counts match the constructor, not `ceil(n / 4096)` |
 | Restart after edits | recovered state equals the pre-restart state |
 
 File-crossing gate:
@@ -638,6 +695,8 @@ File-crossing gate:
 | Read B → external write X → Jim writes L → read L | no claim that interference was detected or prevented |
 | Crash with final bytes equal to the intended or the prior bytes | recovery preserves uncertainty about the original write |
 | Adopt an external version after an earlier export | the next save uses the newly accepted basis |
+| B ≠ H; authorize Overwrite against H; export S | the accepted basis advances to S; the next ordinary save does not rediscover the settled divergence |
+| Two observations captured against the same B, delivered in reverse order | the older one cannot be adopted over the newer; adoption revalidates applicability or asks for a fresh observation |
 | H = L ≠ B | agreement accepted; no Export fabricated |
 | Reconcile to M, then save | the accepted basis is H; the same divergence is not rediscovered |
 | An older export outcome arrives after a newer one | evidence retained; current basis not regressed |
@@ -652,7 +711,9 @@ File-crossing gate:
   implementations and the envelope recorded with its cost model.
 - File-crossing gate: slices 7–9 green, with every claim recorded at the
   strength its evidence supports.
-- Every needed generic capability has an owner issue (listed above).
+- Every needed generic capability has an owner issue (listed above and in the
+  draft README), or the first witness stops needing it. This stays a gate
+  criterion until the mapping is complete.
 
 ## Validation Plan
 
