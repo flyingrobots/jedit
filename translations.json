@@ -765,7 +765,7 @@
               "read_error": ".jimrc konnte nicht gelesen werden.",
               "write_error": ".jimrc konnte nicht gespeichert werden.",
               "unavailable": "Diese Umgebung speichert keine Einstellungen.",
-              "capture_hint": "Esc abbricht; F2 schließt"
+              "capture_hint": "Esc bricht ab; F2 schließt"
             }
           },
           "values": {
