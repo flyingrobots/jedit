@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { fileHostBasis } from "./host-basis-helpers.mjs";
 import { createNotificationState } from "@flyingrobots/bijou-tui";
 import {
   fixtureProjectionBasis,
@@ -137,6 +138,7 @@ test("file open routes through production text session and applies initial bound
       bufferKey: filePath,
       initialText: "stale\ndisk",
       projectionPath: filePath,
+      hostBasis: fileHostBasis("stale\ndisk"),
       atMs: 123,
     },
   ]);
@@ -329,7 +331,7 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     bufferId: "buffer:notes",
     readOnly: false,
     dirty: false,
-    cache,
+    cache, importHeadId: cache.textBasis.basisHeadId,
   });
   const model = {
     ...textWorkspaceModel(modeModule, authority, profile, {
@@ -1877,7 +1879,7 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
       filePath: "/repo/notes.txt",
       bufferId: "buffer:notes",
       readOnly: false,
-      dirty: false,
+      dirty: false, importHeadId: "head:test",
       cache: workspaceReadingCache({
         bufferId: "buffer:notes",
         readingId: "reading:initial",
@@ -2030,11 +2032,7 @@ function openedTextOutcome(bufferId, text) {
       endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
     },
   };
-  return {
-    kind: "opened",
-    bufferId,
-    textBasis,
-  };
+  return { kind: "opened", bufferId, textBasis, importAnchor: { headId: textBasis.basisHeadId, hostBasis: fileHostBasis(text) } };
 }
 
 function byteOffsetAtLine(lines, targetLine) {

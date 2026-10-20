@@ -1,0 +1,84 @@
+// Draft: jedit.text.schema@2 shared definitions (DL-0159).
+// Not compiled by the application gate. See README.md for the status of each
+// construct. Lines marked PROPOSED use syntax the Edict spec does not define.
+package jedit.text.v2@1;
+
+use lawpack jedit.text@2 as text;
+use target echo.dpo@1 as echo;
+
+// ---- Stored facts (alpha atoms, canonical CBOR v1) ----
+
+type BufferFact = {
+  bufferKey: String<max=4096>,
+  version: U64,
+};
+
+type HeadFact = {
+  byteLength: U64,
+  lineCount: U64,
+  sequence: U64,
+};
+
+type BranchFact = {
+  byteLength: U64,
+  lineBreaks: U64,
+  height: U8,
+};
+
+type LeafFact = {
+  bytes: Bytes<max=4096>,
+  lineBreaks: U64,
+};
+
+// Provenance only: the bytes a head's lineage was imported from. Copying the
+// anchor forward never claims the rope still matches the file.
+type ImportFact = {
+  fileCoordinate: String<max=4096>,
+  hostDigest: Bytes<exact=32>,
+};
+
+// Synchronization: one witnessed write of a buffer's bytes to its file.
+// Evidence of the crossing, not file authority. `exportEvent` names the causal
+// event that witnessed the write; the exported head is not reachable from it.
+type ExportFact = {
+  fileCoordinate: String<max=4096>,
+  logicalDigest: Bytes<exact=32>,
+  hostDigest: Bytes<exact=32>,
+  exportEvent: Bytes<exact=32>,
+};
+
+// ---- Edge types (no payload; one edge per source node and type) ----
+
+type CanonicalHead = Unit;   // Buffer -> Head
+type Root = Unit;            // Head -> Branch | Leaf
+type Anchor = Unit;          // Head -> Import, copied to every new head
+type LastExport = Unit;      // Buffer -> Export, retargeted by each save
+// No head-to-predecessor edge: Echo's ticks and receipts own history (DL-0159).
+type Left = Unit;            // Branch -> Branch | Leaf
+type Right = Unit;           // Branch -> Branch | Leaf
+
+// ---- Identity law ----
+
+fn nodeId(kind: String<max=32>, atom: Bytes<max=8192>, children: List<NodeId, max=2>) -> NodeId {
+  return hash("jedit.text.node.v2", { kind, atom, children });
+}
+
+fn edgeId(from: NodeId, edgeType: String<max=64>) -> EdgeId {
+  return hash("jedit.text.edge.v2", { from, edgeType });
+}
+
+// ---- Text metrics ----
+
+fn lineBreaks(bytes: Bytes<max=1048576>) -> U64 {
+  return core.bytes.count(bytes, b"\n");                    // PROPOSED generic primitive
+}
+
+// A position is a character boundary when it is an end of the text or the
+// byte there is not a UTF-8 continuation byte (10xxxxxx).
+fn isCharBoundary(bytes: Bytes<max=1048576>, at: U64) -> Bool
+  where at <= len(bytes)
+{
+  return at == 0u64 || at == len(bytes)
+    || core.bytes.at(bytes, at) < 0x80u8                   // PROPOSED generic primitive
+    || core.bytes.at(bytes, at) >= 0xC0u8;
+}

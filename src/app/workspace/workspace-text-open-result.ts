@@ -12,6 +12,7 @@ export function openedWorkspaceTextResult(
   basis: WorkspaceTextOpenBasis,
   bufferId: string,
   reading: WorkspaceTextObservedReading,
+  importHeadId: string,
 ): WorkspaceTextOpenResult {
   const cache = readingCache(bufferId, reading);
   return {
@@ -22,6 +23,7 @@ export function openedWorkspaceTextResult(
     materialization: basis.materialization,
     hostBasis: basis.hostBasis,
     hostFingerprint: basis.hostFingerprint,
+    importHeadId,
     initialLines: cache.lines,
     cache,
   };

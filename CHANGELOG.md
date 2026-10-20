@@ -2,6 +2,108 @@
 
 ## Unreleased
 
+- CI now runs ShellCheck (`scripts/ci/shellcheck.sh`, in the `quality` job) over
+  every tracked shell script and over the pre-commit and pre-push launchers that
+  `scripts/install-hooks.sh` generates, installed into a throwaway repository.
+  The ReplaceRange proof locks were refreshed for the changed workflow bytes.
+
+- Removed the unused direct `@modelcontextprotocol/sdk` dependency declaration.
+  No Jedit code imports it; the SDK remains installed as a dependency of
+  `@flyingrobots/graft`, at the version (1.32.1) the security update selected.
+  The ReplaceRange proof locks were refreshed for the changed package bytes.
+
+- Fixed reopening a file silently reusing a stale rope (#350). Opening a file
+  now sends the SHA-256 digest and length of its raw bytes (or its absence) to
+  the native Echo host, which records a `jedit.text.ImportAnchor.v1` fact in the
+  same admitted Tick that creates the buffer: the file path, that basis, and
+  the head built from those bytes. A later open reuses the buffer only when the
+  anchor names the file's current basis; otherwise it is refused with a typed
+  obstruction (`file-changed-since-import`,
+  `file-and-buffer-changed-since-import`, or `import-anchor-missing`) and
+  nothing is written, so unsaved edits survive and the disk never replaces the
+  rope. File durability is clean only against the anchored head, so a reused
+  buffer with edits stays dirty, and a buffer without an anchor is never
+  assumed to match its file. The `createBufferWorldline` contract gains the
+  import basis fields and was regenerated with `echo-wesley-gen`. Echo WALs
+  written before this change still recover, but their buffers have no anchor, so
+  reopening one is refused with `import-anchor-missing` (verified against a WAL
+  written by the previous host). The anchor lives beside the
+  rope facts, so their bytes and the ReplaceRange oracle corpus are unchanged.
+  Rust tests cover unchanged reopen, external modification, unsaved edits, both
+  sides changing, file appearance and disappearance across restart, and a
+  missing anchor; a real-binary spec covers reopen across a host restart.
+
+- Replaced the leftover Husky hook path with plain shell hooks in
+  `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
+  typecheck, and pre-push runs the full test suite. Both share
+  `scripts/hooks/lib/enter-repository.sh`, which clears git's
+  repository-local variables before running tools, with specs covering a
+  normal clone and a linked worktree. Both hooks run in a temporary detached
+  worktree of exactly the commit being recorded: pre-commit checks out the
+  tree `git write-tree` builds (so intent-to-add files are absent,
+  skip-worktree files present, and attributes staged), and pre-push tests the
+  commit each pushed ref will point to, whatever the checkout contains; it
+  does not test intermediate commits, so it says nothing about bisectability.
+  The temporary worktree ignores the caller's sparse checkout and local
+  replacement objects, and installs its own dependencies with `npm ci`,
+  which refuses a manifest its lockfile disagrees with. Specs run the real
+  hook entrypoints with `npm` and `npx` stubbed, isolated from global Git
+  configuration. Enable them with `scripts/install-hooks.sh`, which writes
+  launchers into the repository's own hooks directory (so they move with the
+  clone), refuses any `core.hooksPath` override in any scope or linked
+  worktree before changing anything, refuses when a registered worktree is
+  unavailable to check or a hook slot holds a symbolic link (even a dangling
+  one) or a hook it did not install, writes the launchers before removing a
+  legacy `core.hooksPath`, and restores that setting if any later step fails
+  or the result would not take effect. Each launcher decides from the commit
+  being recorded or the commits being pushed, not from the worktree's files
+  (pre-commit reads the tree `git write-tree` builds, so an intent-to-add
+  hook does not count as recorded):
+  a hook the recorded tree or a pushed tip contains must run and must be
+  recorded with executable mode `100755`, and deleting or unstaging a hook,
+  dropping its executable mode, or merging it away is refused because the
+  full history had it. A shallow clone cannot show that its history never
+  had a hook, so a launcher there refuses rather than skipping.
+- Corrected the canonical ownership document to describe the executable pure
+  flat-text reference separately from the unfinished stateful rope and installed
+  release. The historical basis-identity probe now supplies its own matching
+  frozen lawpack closure instead of copying the current application's closure.
+  Build-time and runtime checksum checks refuse historical input drift.
+
+- Added DL-0159, a draft representation for the Edict-authored rope: schema 2
+  with typed Echo edges for every structural relation, canonical CBOR facts,
+  content-addressed immutable nodes, and an import anchor tying every head to
+  its file. The graph holds only the current rope; Echo's ticks and receipts
+  own history, and retention of superseded nodes is Echo's policy.
+- Added complete, not-yet-compiling drafts of `ReplaceRange` in Edict source
+  under `edict/replace-range/draft/`: a flat-text semantic reference and the
+  persistent AVL rope. Their README classifies every blocker by owner and
+  states the evidence plan. They are not part of the application gate.
+- Repinned the ReplaceRange Edict application to Edict main `e60411fc` and
+  Echo main `9b3b9396` (provider and pure evaluator), with Rust 1.96.0 as Edict
+  now requires. The verified executable subject is byte-identical to the
+  earlier candidate pins; only the build closure changed. The leaf-slice and
+  range-assembly probe sources now build against Edict main; the Buffer decoder
+  still refuses at lexing.
+- Fixed the Edict package-chain harness to use Cargo's reported executable path
+  when CI redirects build output with `CARGO_TARGET_DIR`. The regression compiles
+  and executes the real pinned package without a default-path compiler binary;
+  compiler, provider, evaluator, and application artifact identities are unchanged.
+- Added a separate Docker-only state-read ordering probe for ReplaceRange. It
+  reproduces Edict's refusal of an effect-dependent basis guard and confirms
+  that removing the guard reaches an unsupported-provider refusal. This is
+  development evidence, not stateful execution; existing producer pins remain
+  unchanged. Ordered Target IR is tracked in flyingrobots/edict#218.
+- Added the Jedit-owned `ReplaceRange.edict` application root and canonical
+  `jedit.text@1` lawpack publication. With Edict #201, its executable integration
+  gate now proves that real source lowers into generic pure Target IR and reaches
+  Echo's checked lowerer through the exact generic pure target configuration.
+  Echo's generic pure-program lowerer now emits the exact compiler-produced
+  package, and its structurally separate verifier independently accepts the
+  package relation. The integration gate pins clean Edict and Echo revisions,
+  verifies the committed lawpack closure without repairing it, and rejects
+  authoritative-input mutation outside its disposable build root. Runtime
+  evaluation and rope mutation remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.
