@@ -16,7 +16,6 @@
   Specs that only asserted the wording of deleted documents were removed with
   them; behavioural checks were kept.
 
-
 - Replaced the leftover Husky hook path with plain shell hooks in
   `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
   typecheck, and pre-push runs the full test suite. Both share
