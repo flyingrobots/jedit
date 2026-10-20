@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { importDist, REPO_ROOT } from './workspace-helpers.mjs';
+
+// The basis of a file whose raw bytes are exactly `text`.
+function fileBasis(text) {
+  const bytes = Buffer.from(text, 'utf8');
+  return {
+    kind: 'file',
+    fingerprint: { algorithm: 'sha256', digest: createHash('sha256').update(bytes).digest('hex'), byteLength: bytes.byteLength },
+  };
+}
 
 test('workspace production text session invokes the Echo-owned generated operation corridor', async () => {
   const adapter = await importDist('adapters', 'workspace-production-text-session.js');
@@ -16,6 +26,7 @@ test('workspace production text session invokes the Echo-owned generated operati
         bufferId: 'buffer:echo',
         headId: 'head:initial',
         byteLength: 0,
+        importAnchor: { headId: 'head:initial', hostBasis: { kind: 'missing' } },
       };
     },
     async replaceRange(request) {
@@ -56,6 +67,7 @@ test('workspace production text session invokes the Echo-owned generated operati
   const outcome = await session.openBuffer({
     bufferKey: 'witness.txt',
     initialText: '',
+    hostBasis: { kind: 'missing' },
     atMs: 7,
   });
 
@@ -69,6 +81,7 @@ test('workspace production text session invokes the Echo-owned generated operati
         endByte: { kind: 'utf8-byte-offset', value: 0 },
       },
     },
+    importAnchor: { headId: 'head:initial', hostBasis: { kind: 'missing' } },
   });
   assert.deepEqual(calls, [{
     kind: 'open',
@@ -76,6 +89,7 @@ test('workspace production text session invokes the Echo-owned generated operati
       bufferKey: 'witness.txt',
       initialText: '',
       projectionPath: null,
+      hostBasis: { kind: 'missing' },
     },
   }]);
 });
@@ -299,9 +313,11 @@ test('the production process adapter executes generated operations in Echo and r
       bufferKey: 'real-echo.txt',
       initialText: 'hello',
       projectionPath: '/tmp/real-echo.txt',
+      hostBasis: fileBasis('hello'),
       atMs: 1,
     });
     assert.equal(opened.kind, 'opened');
+    assert.deepEqual(opened.importAnchor, { headId: opened.textBasis.basisHeadId, hostBasis: fileBasis('hello') });
     const edited = await session.insertText({
       bufferId: opened.bufferId,
       startByte: { kind: 'utf8-byte-offset', value: 5 },
@@ -348,14 +364,18 @@ test('the production process adapter executes generated operations in Echo and r
 
     host = processAdapter.createEchoTextContractHostProcess({ cwd: REPO_ROOT, walDirectory });
     const recoveredSession = sessionAdapter.createWorkspaceProductionTextSession(host);
+    // The file still holds the imported bytes, so the recovered buffer and its
+    // unsaved edit are reused; the anchor still names the imported head.
     const recovered = await recoveredSession.openBuffer({
       bufferKey: 'real-echo.txt',
       initialText: 'must not replace recovered authority',
       projectionPath: '/tmp/real-echo.txt',
+      hostBasis: fileBasis('hello'),
       atMs: 5,
     });
     assert.equal(recovered.kind, 'opened');
     assert.equal(recovered.textBasis.basisHeadId, edited.result.textBasis.basisHeadId);
+    assert.equal(recovered.importAnchor.headId, opened.textBasis.basisHeadId);
     const recoveredCheckpoint = await recoveredSession.checkpointBuffer({
       bufferId: recovered.bufferId,
       basisHeadId: recovered.textBasis.basisHeadId,
@@ -364,6 +384,38 @@ test('the production process adapter executes generated operations in Echo and r
     });
     assert.equal(recoveredCheckpoint.kind, 'checkpointed');
     assert.equal(recoveredCheckpoint.result.checkpointId, checkpointed.result.checkpointId);
+  } finally {
+    await host?.close();
+    rmSync(walDirectory, { recursive: true, force: true });
+  }
+});
+
+test('a file changed while the host was down is refused on reopen and the buffer is kept', async () => {
+  const processAdapter = await importDist('adapters', 'echo-text-contract-host-process.js');
+  const sessionAdapter = await importDist('adapters', 'workspace-production-text-session.js');
+  const walDirectory = mkdtempSync(path.join(tmpdir(), 'jedit-echo-host-'));
+  const open = (session, text, atMs) => session.openBuffer({
+    bufferKey: 'reopened.txt',
+    initialText: text,
+    projectionPath: '/tmp/reopened.txt',
+    hostBasis: fileBasis(text),
+    atMs,
+  });
+  let host;
+  try {
+    host = processAdapter.createEchoTextContractHostProcess({ cwd: REPO_ROOT, walDirectory });
+    const opened = await open(sessionAdapter.createWorkspaceProductionTextSession(host), 'X', 1);
+    assert.equal(opened.kind, 'opened');
+    await host.close();
+
+    host = processAdapter.createEchoTextContractHostProcess({ cwd: REPO_ROOT, walDirectory });
+    const session = sessionAdapter.createWorkspaceProductionTextSession(host);
+    const changed = await open(session, 'Y', 2);
+    assert.equal(changed.kind, 'obstructed');
+    assert.equal(changed.obstruction.code, 'text-buffer-file-changed-since-import');
+    const unchanged = await open(session, 'X', 3);
+    assert.equal(unchanged.kind, 'opened');
+    assert.equal(unchanged.textBasis.basisHeadId, opened.textBasis.basisHeadId);
   } finally {
     await host?.close();
     rmSync(walDirectory, { recursive: true, force: true });

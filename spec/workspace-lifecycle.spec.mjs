@@ -199,6 +199,7 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
   const [initialModel] = runtime.init();
   const openedDurability = durability.openedWorkspaceBufferDurability({
     basisHeadId: 'head:import',
+    importHeadId: 'head:import',
     hostBasis: 'file',
     materialization: 'materialized',
   });

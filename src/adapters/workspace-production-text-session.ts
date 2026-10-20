@@ -36,6 +36,12 @@ import {
   CheckpointKinds,
   type CheckpointDeclarationKind,
 } from '../ports/text-authority-evidence.js';
+import {
+  echoTextHostBasis,
+  openObstructionCode,
+  productionTextImportAnchor,
+  sameEchoTextHostBasis,
+} from './production-text-import-anchor.js';
 
 const UNSUPPORTED_CORRIDOR_MESSAGE =
   'The current generated Wesley compatibility corridor does not implement this operation. Edict migration will add it explicitly.';
@@ -84,22 +90,28 @@ function deleteRange(host: EchoTextContractHostPort, request: ProductionTextDele
 }
 
 async function openBuffer(host: EchoTextContractHostPort, request: ProductionTextOpenRequest) {
+  const hostBasis = echoTextHostBasis(request.hostBasis);
   const outcome = await host.openBuffer({
     bufferKey: request.bufferKey,
     initialText: request.initialText,
     projectionPath: request.projectionPath ?? null,
+    hostBasis,
   });
   if (outcome.kind === EchoTextHostOutcomeKinds.Obstructed) {
+    return createProductionTextObstruction(openObstructionCode(outcome.code), request.atMs, outcome.message);
+  }
+  if (!sameEchoTextHostBasis(outcome.importAnchor.hostBasis, hostBasis)) {
     return createProductionTextObstruction(
       ProductionTextObstructionCodes.Open,
       request.atMs,
-      outcome.message,
+      `Echo host anchored ${request.bufferKey} to bytes other than the opened file's`,
     );
   }
   return {
     kind: ProductionTextSessionOutcomeKinds.Opened,
     bufferId: outcome.bufferId,
     textBasis: fullTextBasis(outcome.headId, outcome.byteLength),
+    importAnchor: productionTextImportAnchor(outcome.importAnchor),
   };
 }
 
