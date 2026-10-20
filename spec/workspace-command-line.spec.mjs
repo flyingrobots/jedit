@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { fileHostBasis, MISSING_HOST_BASIS } from "./host-basis-helpers.mjs";
 import {
   fakeProductionTextSession,
   importDist,
@@ -382,14 +383,12 @@ test("enter dispatches edit commands through production file open", async () => 
   assert.equal(pendingOpen.textAuthority.filePath, "/repo/README.md");
   assert.equal(pendingOpen.textAuthority.requestId, 1);
   assert.deepEqual(loadedFiles, ["/repo/README.md"]);
-  assert.deepEqual(openCalls, [
-    {
+  assert.deepEqual(openCalls, [{
       bufferKey: "/repo/README.md",
       initialText: "hello world",
       projectionPath: "/repo/README.md",
-      atMs: 77,
-    },
-  ]);
+      atMs: 77, hostBasis: fileHostBasis("hello world"),
+  }]);
   assert.equal(message.type, "text-open-result");
   assert.equal(message.result.kind, "opened");
 });
@@ -454,14 +453,12 @@ test("enter dispatches edit commands outside the cwd hierarchy", async () => {
   assert.equal(pendingOpen.textAuthority.kind, "pending-open");
   assert.equal(pendingOpen.textAuthority.filePath, "/repo/shared.md");
   assert.deepEqual(loadedFiles, ["/repo/shared.md"]);
-  assert.deepEqual(openCalls, [
-    {
+  assert.deepEqual(openCalls, [{
       bufferKey: "/repo/shared.md",
       initialText: "shared",
       projectionPath: "/repo/shared.md",
-      atMs: 79,
-    },
-  ]);
+      atMs: 79, hostBasis: fileHostBasis("shared"),
+  }]);
   assert.equal(message.type, "text-open-result");
   assert.equal(message.result.kind, "opened");
 });
@@ -533,14 +530,12 @@ test("enter dispatches edit for missing paths as unmaterialized buffers", async 
   const rendered = surfaceText(viewer.renderWorkspace(opened));
 
   assert.deepEqual(loadedFiles, ["/repo/foo.txt"]);
-  assert.deepEqual(openCalls, [
-    {
+  assert.deepEqual(openCalls, [{
       bufferKey: "/repo/foo.txt",
       initialText: "",
       projectionPath: "/repo/foo.txt",
-      atMs: 80,
-    },
-  ]);
+      atMs: 80, hostBasis: MISSING_HOST_BASIS,
+  }]);
   assert.deepEqual(savedFiles, []);
   assert.equal(opened.textAuthority.kind, "opened");
   assert.equal(opened.textAuthority.materialization, "unmaterialized");

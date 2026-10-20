@@ -59,6 +59,12 @@ text in `EditorState`. The current production session creates or reopens the
 buffer through the trusted native Echo host, then requests a bounded text-window
 observation from the admitted head.
 
+A buffer is reused for a file only when its import anchor names the file's
+current bytes; otherwise the open is refused with a typed obstruction and
+nothing is written. The canonical statement of this policy, its obstruction
+codes, and what is not yet implemented is
+[How Jim sees source files](docs/jim-component-ownership.md#how-jim-sees-source-files).
+
 ## Mutating A Buffer
 
 The workspace retains `EditorState` as a visible projection, but user text

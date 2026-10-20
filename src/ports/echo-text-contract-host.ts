@@ -31,10 +31,38 @@ export const EchoTextHostCheckpointReasons = Object.freeze({
 export type EchoTextHostCheckpointReason =
   typeof EchoTextHostCheckpointReasons[keyof typeof EchoTextHostCheckpointReasons];
 
+export const EchoTextHostBasisKinds = Object.freeze({
+  File: 'file',
+  Missing: 'missing',
+} as const);
+
+/** What a host coordinate holds: a file's raw-byte SHA-256 and length, or nothing. */
+export type EchoTextHostBasis =
+  | {
+      readonly kind: typeof EchoTextHostBasisKinds.File;
+      readonly sha256: string;
+      readonly byteLength: number;
+    }
+  | { readonly kind: typeof EchoTextHostBasisKinds.Missing };
+
+/** The import a buffer was anchored to when it was created. */
+export interface EchoTextHostImportAnchor {
+  readonly headId: string;
+  readonly hostBasis: EchoTextHostBasis;
+}
+
+/** Why the host refused to reuse an existing buffer for an open. */
+export const EchoTextHostReopenObstructionCodes = Object.freeze({
+  ImportAnchorMissing: 'import-anchor-missing',
+  FileChangedSinceImport: 'file-changed-since-import',
+  FileAndBufferChangedSinceImport: 'file-and-buffer-changed-since-import',
+} as const);
+
 export interface EchoTextHostOpenRequest {
   readonly bufferKey: string;
   readonly initialText: string;
   readonly projectionPath: string | null;
+  readonly hostBasis: EchoTextHostBasis;
 }
 
 export interface EchoTextHostReplaceRequest {
@@ -71,6 +99,7 @@ export interface EchoTextHostBufferEvidence {
 
 export interface EchoTextHostOpened extends EchoTextHostBufferEvidence {
   readonly kind: typeof EchoTextHostOutcomeKinds.Opened;
+  readonly importAnchor: EchoTextHostImportAnchor;
   readonly receiptId?: string;
   readonly admittedTickId?: string;
 }
