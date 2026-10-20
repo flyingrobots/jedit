@@ -33,7 +33,7 @@ import type {
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
-import type { LeaderKey } from '../leader-key.js';
+import type { LeaderKey } from '../../domain/leader-key.js';
 import type { JimSettingsIssue } from '../../ports/jim-settings.js';
 
 export interface WorkspaceModel

@@ -1,4 +1,4 @@
-import type { LeaderKey } from '../app/leader-key.js';
+import type { LeaderKey } from '../domain/leader-key.js';
 
 export const JimSettingsIssueKinds = Object.freeze({
   Invalid: Symbol('jim.settings.invalid'),

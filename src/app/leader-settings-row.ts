@@ -1,4 +1,5 @@
-import { LeaderKey, LEADER_INPUT_KEYS } from './leader-key.js';
+import { LeaderKey } from '../domain/leader-key.js';
+import { LEADER_INPUT_KEYS } from './leader-input-keys.js';
 import { JimSettingsIssueKinds, type JimSettingsIssue } from '../ports/jim-settings.js';
 import {
   JEDIT_SETTING_ACTION,

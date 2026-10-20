@@ -1,5 +1,6 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { LeaderKey, LEADER_INPUT_KEYS } from '../leader-key.js';
+import { LeaderKey } from '../../domain/leader-key.js';
+import { LEADER_INPUT_KEYS } from '../leader-input-keys.js';
 import { JEDIT_SETTINGS_TOGGLE_KEY } from '../keybindings.js';
 import { JimSettingsIssueKinds } from '../../ports/jim-settings.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
@@ -59,5 +60,7 @@ function isForceQuit(msg: KeyMsg): boolean {
 }
 
 function captureKey(msg: KeyMsg, value: string): LeaderKey | undefined {
-  return msg.ctrl || msg.alt ? undefined : LeaderKey.from(value);
+  // Terminals report Shift+A as `a` with shift set; saving `a` would record a
+  // different key than the one pressed, so modified keys are rejected.
+  return msg.ctrl || msg.alt || msg.shift ? undefined : LeaderKey.from(value);
 }
