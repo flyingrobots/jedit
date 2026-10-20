@@ -3,33 +3,14 @@
 # scripts/install-hooks.sh generates. The launchers exist only inside an
 # installed hooks directory, so they are installed into a throwaway
 # repository and checked there.
+# shellcheck source-path=SCRIPTDIR
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-# Prints the interpreter a file's shebang names, looking through `env` and its
-# options (`env -S bash -e`, `env NAME=value sh`). Fails for a file with no
-# shebang or no interpreter.
-shebang_interpreter() {
-  local line word
-  local -a words
-  IFS= read -r line <"$1" || [[ -n "$line" ]] || return 1
-  [[ "$line" == "#!"* ]] || return 1
-  read -r -a words <<<"${line#\#!}"
-  ((${#words[@]})) || return 1
-  if [[ "${words[0]##*/}" != env ]]; then
-    printf "%s\n" "${words[0]##*/}"
-    return 0
-  fi
-  for word in "${words[@]:1}"; do
-    if [[ "$word" != -* && "$word" != *=* ]]; then
-      printf "%s\n" "${word##*/}"
-      return 0
-    fi
-  done
-  return 1
-}
+# shellcheck source=lib/shebang.sh
+source "$root/scripts/ci/lib/shebang.sh"
 
 scripts=()
 while IFS= read -r -d '' path; do
