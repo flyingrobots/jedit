@@ -80,10 +80,10 @@ test("a click maps through the scroll offset to the right entry", async () => {
     rows: model.rows,
     footerVisible: model.footerVisible,
   });
-  const listHeight = bodyHeight - (viewport.DRAWER_INNER_PAD * 2);
+  const listHeight = viewport.fileSearchListHeight(bodyHeight);
   const offset = viewport.listScrollOffset(60, entries.length, listHeight);
   const firstRow =
-    viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD;
+    viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.FILE_SEARCH_LIST_TOP;
 
   const [next] = mouse.updateFromMouse(
     {
@@ -103,7 +103,7 @@ test("a click maps through the scroll offset to the right entry", async () => {
   assert.equal(next.selectedIndex, offset);
 });
 
-test("clicking a file opens it, not just selects it", async () => {
+test("clicking a file selects it and leaves opening to Enter", async () => {
   const [mouse, viewport, panelFocus, titleScreen] = await Promise.all([
     importDist("app", "workspace", "mouse.js"),
     importDist("app", "workspace", "viewport.js"),
@@ -126,9 +126,9 @@ test("clicking a file opens it, not just selects it", async () => {
     columns: 100,
     rows: 30,
   });
-  const row = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 1;
+  const row = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.FILE_SEARCH_LIST_TOP + 1;
 
-  mouse.updateFromMouse(
+  const [selected] = mouse.updateFromMouse(
     { type: "mouse", button: "left", action: "press", col: 2, row, shift: false, alt: false, ctrl: false },
     model,
     { highlight: () => undefined },
@@ -141,5 +141,6 @@ test("clicking a file opens it, not just selects it", async () => {
     },
   );
 
-  assert.deepEqual(opened, ["/w/beta.txt"]);
+  assert.equal(selected.selectedIndex, 1);
+  assert.deepEqual(opened, []);
 });

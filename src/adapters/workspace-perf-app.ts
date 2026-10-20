@@ -1,7 +1,5 @@
 import {
   perfOverlaySurface,
-  statsPanelSurface,
-  type StatsPanelEntry,
   type Surface,
 } from "@flyingrobots/bijou";
 import {
@@ -11,11 +9,6 @@ import {
 } from "@flyingrobots/bijou-tui";
 import type { WorkspaceModel } from "../app/workspace/model.js";
 import type { WorkspaceMsg } from "../app/workspace/msg.js";
-import {
-  titleScenePerformanceStats,
-  type TitleScenePerformanceStats,
-} from "../app/workspace/title-scene-performance-stats.js";
-
 export interface PerfAppOptions {
   readonly initialPerfVisible: boolean;
 }
@@ -51,20 +44,7 @@ export function createPerfApp(
 
 function perfOverlays(model: WorkspaceModel, memory: NodeJS.MemoryUsage) {
   const perfSurface = jeditPerfSurface(model, memory);
-  const titleStats = titleScenePerformanceStats(model);
-  return [
-    { content: "", surface: perfSurface, row: 0, col: 0 },
-    ...(titleStats == null
-      ? []
-      : [
-          {
-            content: "",
-            surface: titleSceneStatsSurface(titleStats),
-            row: perfSurface.height,
-            col: 0,
-          },
-        ]),
-  ];
+  return [{ content: "", surface: perfSurface, row: 0, col: 0 }];
 }
 
 function jeditPerfSurface(
@@ -85,24 +65,6 @@ function jeditPerfSurface(
       title: "jedit perf",
     },
   );
-}
-
-function titleSceneStatsSurface(stats: TitleScenePerformanceStats): Surface {
-  return statsPanelSurface(titleSceneStatsEntries(stats), {
-    title: "title scene",
-    width: 32,
-  });
-}
-
-function titleSceneStatsEntries(
-  stats: TitleScenePerformanceStats,
-): readonly StatsPanelEntry[] {
-  return [
-    { label: "scene", value: stats.sceneName },
-    { label: "objects", value: String(stats.objectCount) },
-    { label: "triangles", value: String(stats.triangleCount) },
-    { label: "rays", value: String(stats.rayCount) },
-  ];
 }
 
 function bytesToMegabytes(bytes: number): number {

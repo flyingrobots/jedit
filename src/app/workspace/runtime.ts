@@ -1,3 +1,4 @@
+import { applyFileExplorerPreview, synchronizeFileExplorerPreview } from './file-explorer-preview.js';
 import { createInitialModel, workspaceAnimationIsActive } from "./init.js";
 import type { WorkspaceModel } from "./model.js";
 import {
@@ -9,10 +10,6 @@ import {
   reduceSourceHighlightMsg,
   SOURCE_HIGHLIGHT_MESSAGE,
 } from "../source-highlight-session.js";
-import {
-  reduceTitleCameraMotion,
-  TITLE_CAMERA_MESSAGE,
-} from "../title-camera-session.js";
 import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
 import { updateFromMouse } from "./mouse.js";
@@ -39,7 +36,6 @@ import {
   applyStartupIntroTime,
   applyWorkspaceCausalLineChangeResult,
   applyWorkspaceTextMessage,
-  applyWorkspaceTitleSceneLoadResult,
   applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
@@ -90,9 +86,9 @@ function updateWorkspaceRuntime(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  return syncWorkspaceRuntimeResult(
+  return synchronizeFileExplorerPreview(syncWorkspaceRuntimeResult(
     rebaseFrameClock(deps, model, updateWorkspaceRuntimeState(deps, msg, model)),
-  );
+  ), deps.filePreviewSource);
 }
 
 // While the workspace is idle the tick handler returns the model untouched, so
@@ -205,6 +201,7 @@ function updateWorkspaceStateMessage(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.FileExplorerPreviewResult) return [applyFileExplorerPreview(model, msg), []];
   const animation = updateAnimationStateMessage(msg, model);
   if (animation != null) {
     return animation;
@@ -225,15 +222,7 @@ function updateWorkspaceStateMessage(
   if (text != null) {
     return text;
   }
-  return msg.type === TITLE_CAMERA_MESSAGE.Frame
-    ? [
-        {
-          ...model,
-          titleCamera: reduceTitleCameraMotion(model.titleCamera, msg),
-        },
-        [],
-      ]
-    : undefined;
+  return undefined;
 }
 
 function updateGeneratedStateMessage(
@@ -242,9 +231,6 @@ function updateGeneratedStateMessage(
 ): WorkspaceRuntimeResult | undefined {
   if (msg.type === WorkspaceMessageTypes.CausalLineChangesResult) {
     return applyWorkspaceCausalLineChangeResult(msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
-    return [applyWorkspaceTitleSceneLoadResult(model, msg), []];
   }
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
@@ -417,9 +403,6 @@ function updateWorkspaceInputMessage(
       msg,
       model,
       deps.sourceHighlighter,
-      deps.openEntry == null
-        ? undefined
-        : { nowMs: deps.nowMs, openEntry: deps.openEntry },
     );
   }
   return msg.type === WorkspaceInputMessageTypes.Key
@@ -441,7 +424,6 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
       graftDiagnostics: deps.graftDiagnostics,
-      titleSceneLoader: deps.titleSceneLoader,
       productionTextSession: deps.productionTextSession,
     },
   };

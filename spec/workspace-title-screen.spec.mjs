@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { stringToSurface } from "@flyingrobots/bijou";
 import {
-  hasNotification,
   importDist,
   mockDeps,
   mockI18n,
   mockKeyBindingContext,
   mockTitleScreenModel,
-  notification,
   surfaceText,
 } from "./workspace-helpers.mjs";
 
@@ -17,76 +14,12 @@ const STARTUP_MODAL_SCROLL_SELECTED_INDEX = 8;
 const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
-test("title screen number keys switch to a visible legacy render mode", async () => {
-  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
-    importDist("app", "workspace", "key-bindings.js"),
-    importDist("ui", "title-screen.js"),
-    importDist("app", "workspace", "viewer-content.js"),
-  ]);
-  const base = mockTitleScreenModel(titleScreen, {
-    startupIntroComplete: true,
-    titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
-  });
-  const [asciiModel] = keyBindings.updateFromKey(
-    { key: "2" },
-    base,
-    mockKeyBindingContext(),
-  );
-  const [brailleModel] = keyBindings.updateFromKey(
-    { key: "1" },
-    mockTitleScreenModel(titleScreen, {
-      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
-    }),
-    mockKeyBindingContext(),
-  );
-
-  assert.equal(asciiModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Ascii);
-  assert.equal(
-    asciiModel.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.equal(
-    brailleModel.titleRenderMode,
-    titleScreen.TITLE_RENDER_MODE.Braille,
-  );
-  assert.equal(
-    brailleModel.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.equal(
-    hasNotification(asciiModel, "Title shader", "ASCII · Dense"),
-    true,
-  );
-  assert.equal(hasNotification(brailleModel, "Title shader", "Braille"), true);
-  assert.equal(
-    notification(asciiModel, "Title shader", "ASCII · Dense").placement,
-    "LOWER_RIGHT",
-  );
-  assert.deepEqual(
-    notification(asciiModel, "Title shader", "ASCII · Dense").bgToken,
-    {
-      hex: "#f0f6fc",
-      bg: "#0d1117",
-    },
-  );
-  assert.deepEqual(
-    notification(asciiModel, "Title shader", "ASCII · Dense").accentToken,
-    {
-      hex: "#58a6ff",
-      bg: "#0d1117",
-    },
-  );
-  const renderer = viewerContent.createViewerContentRenderer();
-  const staticTitle = renderer.renderViewer(base, 80, 24);
-  const legacyAsciiTitle = renderer.renderViewer(asciiModel, 80, 24);
-  assert.notEqual(surfaceText(legacyAsciiTitle), surfaceText(staticTitle));
-});
-
 test("tab skips startup intro without opening the file browser", async () => {
-  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
+  const [keyBindings, titleScreen, viewerContent, surfaceFill] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "surface-fill.js"),
   ]);
   const base = mockTitleScreenModel(titleScreen, {
     startupIntroComplete: false,
@@ -97,22 +30,11 @@ test("tab skips startup intro without opening the file browser", async () => {
     base,
     startupFileDrawerAnimationContext(),
   );
-  const renderOptions = [];
-
-  viewerContent.renderViewerWithTitleRenderer(
-    opened,
-    44,
-    8,
-    (width, height, _time, _theme, options) => {
-      renderOptions.push(options);
-      return stringToSurface("title trace", width, height);
-    },
-  );
+  assert.equal(surfaceText(viewerContent.renderViewer(opened, 80, 24)), surfaceText(surfaceFill.renderJimLogoScreen(80, 24, opened.jeditTheme)));
 
   assert.equal(opened.startupIntroComplete, true);
   assert.equal(opened.startupFileModalOpen, false);
   assert.equal(commands.length, 0);
-  assert.equal(renderOptions[0].suppressPresentation, true);
 });
 
 test("startup file modal shortcuts defer to the active title command line", async () => {
@@ -152,206 +74,12 @@ test("startup file modal shortcuts defer to the active title command line", asyn
   assert.deepEqual(enterCommands, []);
 });
 
-test("title screen m cycles title materials and reports the material name", async () => {
-  const [keyBindings, titleScreen, material, sceneLoader, meshes, port] =
-    await Promise.all([
-      importDist("app", "workspace", "key-bindings.js"),
-      importDist("ui", "title-screen.js"),
-      importDist("app", "workspace", "title-mesh-materials.js"),
-      importDist("adapters", "title-scene-loader.js"),
-      importDist("adapters", "workspace-title-meshes.js"),
-      importDist("ports", "title-scene-loader.js"),
-    ]);
-  const scene = await sceneLoader.loadBuiltInTitleScene(
-    port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-    meshes.loadStartupTitleMeshes(),
-  );
-  const [first] = keyBindings.updateFromKey(
-    { key: "m", ctrl: false, alt: false, shift: false },
-    mockTitleScreenModel(titleScreen, { sceneOverride: scene }),
-    mockKeyBindingContext(),
-  );
-  const [second] = keyBindings.updateFromKey(
-    { key: "M", ctrl: false, alt: false, shift: true },
-    first,
-    mockKeyBindingContext(),
-  );
-  const firstPreset = material.titleMeshMaterialPresetAt(1);
-  const secondPreset = material.titleMeshMaterialPresetAt(2);
-
-  assert.equal(first.titleMeshMaterialIndex, 1);
-  assert.equal(
-    first.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
-  assert.equal(
-    hasNotification(first, "Title material", firstPreset.name),
-    true,
-  );
-  assert.equal(second.titleMeshMaterialIndex, 2);
-  assert.equal(
-    second.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
-  assert.equal(
-    hasNotification(second, "Title material", secondPreset.name),
-    true,
-  );
-});
-
-test("title screen uses FPS-style camera keys without an editor", async () => {
-  const [keyBindings, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "key-bindings.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const base = mockTitleScreenModel(titleScreen, {
-    titleCamera: fpsTestCamera(),
-  });
-  const [forward] = keyBindings.updateFromKey(
-    { key: "w", ctrl: false, alt: false, shift: false },
-    base,
-    mockKeyBindingContext(),
-  );
-  const [left] = keyBindings.updateFromKey(
-    { key: "a", ctrl: false, alt: false, shift: false },
-    base,
-    mockKeyBindingContext(),
-  );
-  const [jumped] = keyBindings.updateFromKey(
-    { key: "space", ctrl: false, alt: false, shift: false },
-    base,
-    mockKeyBindingContext(),
-  );
-  const [crouched] = keyBindings.updateFromKey(
-    { key: "shift", ctrl: false, alt: false, shift: false },
-    base,
-    mockKeyBindingContext(),
-  );
-
-  assert.ok(forward.titleCamera.position[2] < base.titleCamera.position[2]);
-  assert.equal(
-    forward.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.ok(left.titleCamera.position[0] < base.titleCamera.position[0]);
-  assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
-  assert.equal(crouched.titleCamera.crouching, true);
-});
-
-test("title screen mouse movement drags the camera look vector", async () => {
-  const [mouse, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "mouse.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const base = mockTitleScreenModel(titleScreen, {
-    titleCamera: fpsTestCamera(),
-  });
-  const [anchored] = mouse.updateFromMouse(
-    titleMouse("press", 10, 10),
-    base,
-    mockDeps().sourceHighlighter,
-  );
-  const [rotated] = mouse.updateFromMouse(
-    titleMouse("drag", 14, 12),
-    anchored,
-    mockDeps().sourceHighlighter,
-  );
-
-  assert.deepEqual(anchored.titleCamera.position, base.titleCamera.position);
-  assert.equal(
-    anchored.titleBackdropKind,
-    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  );
-  assert.deepEqual(rotated.titleCamera.position, base.titleCamera.position);
-  assert.ok(rotated.titleCamera.target[0] > base.titleCamera.target[0]);
-  assert.ok(rotated.titleCamera.target[1] < base.titleCamera.target[1]);
-});
-
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 
   assert.equal(feedback.NotificationVariants.Toast, "TOAST");
   assert.equal(feedback.NotificationTones.Info, "INFO");
   assert.equal(feedback.NotificationPlacements.LowerRight, "LOWER_RIGHT");
-});
-
-test("title screen rejects unknown ASCII palettes instead of surfacing them in toast text", async () => {
-  const [keyBindings, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "key-bindings.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-
-  assert.throws(
-    () =>
-      keyBindings.updateFromKey(
-        { key: "2" },
-        mockTitleScreenModel(titleScreen, {
-          titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
-          titleAsciiPalette: "future-palette",
-        }),
-        mockKeyBindingContext(),
-      ),
-    (error) => error?.name === "InvalidTitleAsciiPaletteError",
-  );
-});
-
-test("period cycles title screen ASCII palettes only when ASCII mode is active without an editor", async () => {
-  const [keyBindings, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "key-bindings.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const [ignoredModel, ignoredCommands] = keyBindings.updateFromKey(
-    { key: "." },
-    mockTitleScreenModel(titleScreen, {
-      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
-      titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
-    }),
-    mockKeyBindingContext(),
-  );
-  const [firstModel] = keyBindings.updateFromKey(
-    { key: "." },
-    mockTitleScreenModel(titleScreen, {
-      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
-      titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
-    }),
-    mockKeyBindingContext(),
-  );
-  const [secondModel] = keyBindings.updateFromKey(
-    { key: "." },
-    firstModel,
-    mockKeyBindingContext(),
-  );
-
-  assert.equal(
-    ignoredModel.titleRenderMode,
-    titleScreen.TITLE_RENDER_MODE.Braille,
-  );
-  assert.equal(
-    ignoredModel.titleAsciiPalette,
-    titleScreen.TITLE_ASCII_PALETTE.Dense,
-  );
-  assert.equal(ignoredModel.notifications.items.length, 0);
-  assert.equal(ignoredCommands.length, 0);
-  assert.equal(firstModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Ascii);
-  assert.equal(
-    firstModel.titleAsciiPalette,
-    titleScreen.TITLE_ASCII_PALETTE.Minimal,
-  );
-  assert.equal(
-    secondModel.titleAsciiPalette,
-    titleScreen.TITLE_ASCII_PALETTE.Technical,
-  );
-  assert.equal(hasNotification(firstModel, "ASCII palette", "Minimal"), true);
-  assert.equal(
-    hasNotification(secondModel, "ASCII palette", "Technical"),
-    true,
-  );
-  assert.equal(
-    notification(firstModel, "ASCII palette", "Minimal").placement,
-    "LOWER_RIGHT",
-  );
 });
 
 test("enter skips title intro without opening the startup file browser", async () => {
@@ -414,149 +142,6 @@ test("escape dismisses open startup file browser with a drawer animation", async
   assert.equal(closed.startupFileDrawerProgress, 1);
   assert.equal(closed.quitConfirmOpen, false);
   assert.equal(commands.length, 1);
-});
-
-test("startup file browser keeps tracing the title scene while input changes", async () => {
-  const [viewerContent, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "viewer-content.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const tracedTimes = [];
-  const titleRenderer = (width, height, time) => {
-    tracedTimes.push(time);
-    return stringToSurface(
-      `trace ${tracedTimes.length} time ${time}`,
-      width,
-      height,
-    );
-  };
-  const base = mockTitleScreenModel(titleScreen, {
-    time: 1,
-    startupIntroComplete: false,
-    startupFileModalOpen: false,
-  });
-  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
-
-  const live = renderer.renderViewer(base, 44, 6);
-  const openModal = renderer.renderViewer(
-    {
-      ...base,
-      time: 7,
-      startupIntroComplete: true,
-      startupFileModalOpen: true,
-    },
-    44,
-    6,
-  );
-  const typed = renderer.renderViewer(
-    {
-      ...base,
-      time: 8,
-      startupIntroComplete: true,
-      startupFileModalOpen: true,
-      startupFileModalInput: "read",
-    },
-    44,
-    6,
-  );
-
-  assert.deepEqual(tracedTimes, [1, 7, 8]);
-  assert.notEqual(surfaceText(openModal), surfaceText(live));
-  assert.notEqual(surfaceText(typed), surfaceText(openModal));
-});
-
-test("startup file browser traces every frame when no title cache exists", async () => {
-  const [viewerContent, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "viewer-content.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const tracedTimes = [];
-  const titleRenderer = (width, height, time) => {
-    tracedTimes.push(time);
-    return stringToSurface(
-      `fallback ${tracedTimes.length} time ${time}`,
-      width,
-      height,
-    );
-  };
-  const model = mockTitleScreenModel(titleScreen, {
-    time: 7,
-    startupIntroComplete: true,
-    startupFileModalOpen: true,
-  });
-  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
-
-  const first = renderer.renderViewer(model, 44, 6);
-  const second = renderer.renderViewer(
-    {
-      ...model,
-      time: 8,
-      startupFileModalInput: "r",
-    },
-    44,
-    6,
-  );
-
-  assert.deepEqual(tracedTimes, [7, 8]);
-  assert.notEqual(surfaceText(second), surfaceText(first));
-});
-
-test("startup file browser title renderer state is isolated per renderer instance", async () => {
-  const [viewerContent, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "viewer-content.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const firstRenderer = viewerContent.createViewerContentRenderer(
-    (width, height) => stringToSurface("session one", width, height),
-  );
-  const secondRenderer = viewerContent.createViewerContentRenderer(
-    (width, height) => stringToSurface("session two", width, height),
-  );
-  const base = mockTitleScreenModel(titleScreen, {
-    time: 1,
-    startupIntroComplete: false,
-    startupFileModalOpen: false,
-  });
-
-  firstRenderer.renderViewer(base, 44, 6);
-  const second = secondRenderer.renderViewer(
-    {
-      ...base,
-      time: 7,
-      startupIntroComplete: true,
-      startupFileModalOpen: true,
-    },
-    44,
-    6,
-  );
-
-  assert.match(surfaceText(second), /session two/);
-  assert.doesNotMatch(surfaceText(second), /session one/);
-});
-
-test("title renderer receives wall-clock time for day-night sky", async () => {
-  const [viewerContent, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "viewer-content.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const renderOptions = [];
-  const titleRenderer = (width, height, _time, _theme, options) => {
-    renderOptions.push(options);
-    return stringToSurface("wall clock", width, height);
-  };
-  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
-
-  renderer.renderViewer(
-    mockTitleScreenModel(titleScreen, {
-      lastFrameMs: 123456789,
-      startupIntroComplete: false,
-      startupFileModalOpen: false,
-    }),
-    44,
-    6,
-  );
-
-  assert.equal(renderOptions[0].wallClockMs, 123456789);
 });
 
 test("startup intro skip does not interrupt focused file drawer open", async () => {
@@ -1090,45 +675,6 @@ function startupModalOverflowEntries(fileSystem) {
       path: `/repo/file-${String(index).padStart(2, "0")}.md`,
     }),
   );
-}
-
-function fpsTestCamera() {
-  return {
-    angle: 0,
-    angleTarget: 0,
-    angleMotionId: 0,
-    radius: 2,
-    radiusTarget: 2,
-    radiusMotionId: 0,
-    position: [0, 1, 0],
-    target: [0, 1, -2],
-    eyeY: 1,
-    crouching: false,
-  };
-}
-
-function titleBodyCells(surface) {
-  return positionedCells(surface).filter(
-    ({ y }) => y >= 2 && y < surface.height - 2,
-  );
-}
-
-function isBrailleCell(char) {
-  const codePoint = char.codePointAt(0) ?? 0;
-  return codePoint >= 0x2800 && codePoint <= 0x28ff;
-}
-
-function titleMouse(action, col, row) {
-  return {
-    type: "mouse",
-    action,
-    button: "none",
-    col,
-    row,
-    shift: false,
-    alt: false,
-    ctrl: false,
-  };
 }
 
 function startupModalScrollbarCells(surface) {

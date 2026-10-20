@@ -1,24 +1,8 @@
-import { createTitleCameraState } from "../title-camera-session.js";
 import { createFeedbackState } from "../../ui/feedback.js";
-import {
-  titleBunnySceneCameraPlacement,
-  titleSceneCameraPlacement,
-  type TitleScene,
-} from "../../ui/title-scene.js";
-import {
-  TITLE_ASCII_PALETTE,
-  TITLE_BACKDROP_KIND,
-  TITLE_RENDER_MODE,
-} from "../../ui/title-screen.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
-import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import type { I18nPort } from "../../ports/i18n.js";
-import {
-  BUILT_IN_TITLE_SCENE_NAMES,
-  type BuiltInTitleSceneName,
-} from "../../ports/title-scene-loader.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
 import type { FileEntry } from "../../ports/file-system.js";
 import { ViewModes } from "./view-mode.js";
@@ -26,6 +10,7 @@ import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from "../text-runtime-profile.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { emptyWorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
 import { LeaderKey } from '../../domain/leader-key.js';
+import { EMPTY_FILE_SEARCH } from './file-search.js';
 import {
   initialStartupFileModalState,
   INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,
@@ -39,14 +24,11 @@ const INITIAL_LINE_NUMBER_MODE: WorkspaceModel["lineNumberMode"] =
   INITIAL_WORKSPACE_LINE_NUMBER_MODE;
 
 export interface WorkspaceInitialModelSnapshot {
-  readonly titleSceneSeed: number;
   readonly jeditTheme: JeditTheme;
   readonly i18n: I18nPort;
   readonly entries: readonly FileEntry[];
-  readonly titleMeshes?: TitleMeshLibrary;
-  readonly sceneOverride?: TitleScene;
-  readonly sceneOverrideName?: BuiltInTitleSceneName;
   readonly nowMs: number;
+  readonly searchRoot?: string;
 }
 
 export function createInitialModel(
@@ -55,15 +37,18 @@ export function createInitialModel(
   rows: number,
   snapshot: WorkspaceInitialModelSnapshot,
 ): WorkspaceModel {
-  const { titleSceneSeed, jeditTheme, i18n, entries, nowMs } = snapshot;
-  const titleMeshes = snapshot.titleMeshes ?? {};
+  const { jeditTheme, i18n, entries, nowMs } = snapshot;
   const textRuntimeProfile = TEXT_RUNTIME_PROFILE_ECHO_HOSTED;
   return {
     i18n,
     workspaceRoot: cwd,
+    workspaceSearchRoot: snapshot.searchRoot,
     cwd,
     entries,
     selectedIndex: 0,
+    fileSearch: EMPTY_FILE_SEARCH,
+    fileSearchEditing: false,
+    fileExplorerPreviewRequestId: 0,
     editor: undefined,
     ...initialBufferRegistryState(),
     textRuntimeProfile,
@@ -81,11 +66,8 @@ export function createInitialModel(
     ...initialGraftState(),
     ...initialSourceHighlightState(),
     ...initialCommandLineFilePreviewState(),
-    titleSceneSeed,
-    titleMeshes,
     columns,
     rows,
-    ...initialSceneStateFromSnapshot(titleSceneSeed, titleMeshes, snapshot),
     ...initialRuntimeState(nowMs),
   };
 }
@@ -167,52 +149,12 @@ function initialRuntimeState(nowMs: number) {
   };
 }
 
-function initialSceneStateFromSnapshot(
-  titleSceneSeed: number,
-  titleMeshes: TitleMeshLibrary,
-  snapshot: WorkspaceInitialModelSnapshot,
-) {
-  return initialSceneState(
-    titleSceneSeed,
-    titleMeshes,
-    snapshot.sceneOverride,
-    snapshot.sceneOverrideName,
-  );
-}
-
-function initialSceneState(
-  titleSceneSeed: number,
-  titleMeshes: TitleMeshLibrary,
-  sceneOverride?: TitleScene,
-  sceneOverrideName?: BuiltInTitleSceneName,
-) {
-  const cameraPlacement =
-    sceneOverride?.camera ??
-    (titleMeshes.bunny == null
-      ? titleSceneCameraPlacement(titleSceneSeed)
-      : titleBunnySceneCameraPlacement());
-  return {
-    scenePickerOpen: false,
-    scenePickerFocusIndex: 0,
-    availableScenes: BUILT_IN_TITLE_SCENE_NAMES,
-    ...(sceneOverrideName == null ? {} : { titleSceneName: sceneOverrideName }),
-    ...(sceneOverride == null ? {} : { sceneOverride }),
-    titleCamera: createTitleCameraState(cameraPlacement),
-    titleMouseLook: undefined,
-    titleBackdropKind: TITLE_BACKDROP_KIND.StaticLogo,
-    titleRenderMode: TITLE_RENDER_MODE.Braille,
-    titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
-    titleMeshMaterialIndex: 0,
-  };
-}
-
 // Bijou re-renders only when update returns a different model reference, so an
 // idle tick must return the model it was given. Rebuilding it on every pulse
 // cost a full-surface render 60 times a second to produce identical output.
 export function workspaceAnimationIsActive(model: WorkspaceModel): boolean {
   return (
     !model.startupIntroComplete ||
-    model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene ||
     model.profiler.active ||
     model.perfVisible
   );

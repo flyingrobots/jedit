@@ -54,8 +54,6 @@
             "ctrl_t_theme": "ctrl+t theme",
             "tab_focus": "tab focus",
             "tab_indent": "tab indent",
-            "ctrl_l_scene_picker": "ctrl+l scene picker",
-            "scene_picker": "scene picker",
             "ctrl_b_files": "ctrl+b files",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h history",
@@ -84,7 +82,10 @@
             "y0_start": "y0 start",
             "y_end": "y$ end",
             "gg_top": "gg top",
-            "esc_cancel": "esc cancel"
+            "esc_cancel": "esc cancel",
+            "type_filter": "type filter",
+            "arrows_select": "↑/↓ select",
+            "slash_filter": "/ filter"
           },
           "evidence": {
             "head": "head",
@@ -188,6 +189,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Search",
+          "placeholder": "Filter files…",
+          "empty": "No matches",
+          "preview_label": "Preview",
+          "preview_loading": "Loading preview…",
+          "preview_binary": "Binary file — preview unavailable",
+          "preview_unavailable": "Preview unavailable",
+          "preview_truncated": "Preview truncated"
         }
       }
     },
@@ -245,8 +256,6 @@
             "ctrl_t_theme": "ctrl+t thème",
             "tab_focus": "tab focus",
             "tab_indent": "tab retrait",
-            "ctrl_l_scene_picker": "ctrl+l scène",
-            "scene_picker": "sélecteur de scène",
             "ctrl_b_files": "ctrl+b fichiers",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historique",
@@ -275,7 +284,10 @@
             "y0_start": "y0 début",
             "y_end": "y$ fin",
             "gg_top": "gg haut",
-            "esc_cancel": "esc annuler"
+            "esc_cancel": "esc annuler",
+            "type_filter": "saisir le filtre",
+            "arrows_select": "↑/↓ sélectionner",
+            "slash_filter": "/ filtrer"
           },
           "evidence": {
             "head": "tête",
@@ -379,6 +391,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Recherche",
+          "placeholder": "Filtrer les fichiers…",
+          "empty": "Aucun résultat",
+          "preview_label": "Aperçu",
+          "preview_loading": "Chargement de l’aperçu…",
+          "preview_binary": "Fichier binaire — aperçu indisponible",
+          "preview_unavailable": "Aperçu indisponible",
+          "preview_truncated": "Aperçu tronqué"
         }
       }
     },
@@ -436,8 +458,6 @@
             "ctrl_t_theme": "ctrl+t tema",
             "tab_focus": "tab focus",
             "tab_indent": "tab rientra",
-            "ctrl_l_scene_picker": "ctrl+l scena",
-            "scene_picker": "selettore scena",
             "ctrl_b_files": "ctrl+b file",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h cronologia",
@@ -466,7 +486,10 @@
             "y0_start": "y0 inizio",
             "y_end": "y$ fine",
             "gg_top": "gg cima",
-            "esc_cancel": "esc annulla"
+            "esc_cancel": "esc annulla",
+            "type_filter": "digita filtro",
+            "arrows_select": "↑/↓ seleziona",
+            "slash_filter": "/ filtra"
           },
           "evidence": {
             "head": "testa",
@@ -570,6 +593,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Cerca",
+          "placeholder": "Filtra file…",
+          "empty": "Nessun risultato",
+          "preview_label": "Anteprima",
+          "preview_loading": "Caricamento anteprima…",
+          "preview_binary": "File binario — anteprima non disponibile",
+          "preview_unavailable": "Anteprima non disponibile",
+          "preview_truncated": "Anteprima troncata"
         }
       }
     },
@@ -627,8 +660,6 @@
             "ctrl_t_theme": "ctrl+t theme",
             "tab_focus": "tab fokus",
             "tab_indent": "tab einrücken",
-            "ctrl_l_scene_picker": "ctrl+l szene",
-            "scene_picker": "szenenauswahl",
             "ctrl_b_files": "ctrl+b dateien",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h verlauf",
@@ -657,7 +688,10 @@
             "y0_start": "y0 anfang",
             "y_end": "y$ ende",
             "gg_top": "gg oben",
-            "esc_cancel": "esc abbrechen"
+            "esc_cancel": "esc abbrechen",
+            "type_filter": "Filter eingeben",
+            "arrows_select": "↑/↓ auswählen",
+            "slash_filter": "/ filtern"
           },
           "evidence": {
             "head": "Kopf",
@@ -761,6 +795,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Suche",
+          "placeholder": "Dateien filtern…",
+          "empty": "Keine Treffer",
+          "preview_label": "Vorschau",
+          "preview_loading": "Vorschau wird geladen…",
+          "preview_binary": "Binärdatei — keine Vorschau",
+          "preview_unavailable": "Vorschau nicht verfügbar",
+          "preview_truncated": "Vorschau gekürzt"
         }
       }
     },
@@ -818,8 +862,6 @@
             "ctrl_t_theme": "ctrl+t tema",
             "tab_focus": "tab foco",
             "tab_indent": "tab sangría",
-            "ctrl_l_scene_picker": "ctrl+l escena",
-            "scene_picker": "selector de escena",
             "ctrl_b_files": "ctrl+b archivos",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historial",
@@ -848,7 +890,10 @@
             "y0_start": "y0 inicio",
             "y_end": "y$ fin",
             "gg_top": "gg arriba",
-            "esc_cancel": "esc cancelar"
+            "esc_cancel": "esc cancelar",
+            "type_filter": "escribir filtro",
+            "arrows_select": "↑/↓ seleccionar",
+            "slash_filter": "/ filtrar"
           },
           "evidence": {
             "head": "cabeza",
@@ -952,6 +997,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Buscar",
+          "placeholder": "Filtrar archivos…",
+          "empty": "Sin resultados",
+          "preview_label": "Vista previa",
+          "preview_loading": "Cargando vista previa…",
+          "preview_binary": "Archivo binario — sin vista previa",
+          "preview_unavailable": "Vista previa no disponible",
+          "preview_truncated": "Vista previa truncada"
         }
       }
     },
@@ -1009,8 +1064,6 @@
             "ctrl_t_theme": "ctrl+t 테마",
             "tab_focus": "tab 포커스",
             "tab_indent": "tab 들여쓰기",
-            "ctrl_l_scene_picker": "ctrl+l 장면",
-            "scene_picker": "장면 선택",
             "ctrl_b_files": "ctrl+b 파일",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 기록",
@@ -1039,7 +1092,10 @@
             "y0_start": "y0 시작",
             "y_end": "y$ 끝",
             "gg_top": "gg 맨 위",
-            "esc_cancel": "esc 취소"
+            "esc_cancel": "esc 취소",
+            "type_filter": "필터 입력",
+            "arrows_select": "↑/↓ 선택",
+            "slash_filter": "/ 필터"
           },
           "evidence": {
             "head": "헤드",
@@ -1143,6 +1199,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "검색",
+          "placeholder": "파일 필터…",
+          "empty": "일치 항목 없음",
+          "preview_label": "미리 보기",
+          "preview_loading": "미리 보기 불러오는 중…",
+          "preview_binary": "바이너리 파일 — 미리 보기 불가",
+          "preview_unavailable": "미리 보기 불가",
+          "preview_truncated": "미리 보기 생략됨"
         }
       }
     },
@@ -1200,8 +1266,6 @@
             "ctrl_t_theme": "ctrl+t テーマ",
             "tab_focus": "tab フォーカス",
             "tab_indent": "tab インデント",
-            "ctrl_l_scene_picker": "ctrl+l シーン",
-            "scene_picker": "シーン選択",
             "ctrl_b_files": "ctrl+b ファイル",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 履歴",
@@ -1230,7 +1294,10 @@
             "y0_start": "y0 先頭",
             "y_end": "y$ 末尾",
             "gg_top": "gg 先頭",
-            "esc_cancel": "esc 取消"
+            "esc_cancel": "esc 取消",
+            "type_filter": "絞り込み入力",
+            "arrows_select": "↑/↓ 選択",
+            "slash_filter": "/ 絞り込み"
           },
           "evidence": {
             "head": "ヘッド",
@@ -1334,6 +1401,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "検索",
+          "placeholder": "ファイルを絞り込む…",
+          "empty": "一致なし",
+          "preview_label": "プレビュー",
+          "preview_loading": "プレビューを読み込み中…",
+          "preview_binary": "バイナリファイル — プレビュー不可",
+          "preview_unavailable": "プレビュー不可",
+          "preview_truncated": "プレビューを省略"
         }
       }
     },
@@ -1391,8 +1468,6 @@
             "ctrl_t_theme": "ctrl+t 主题",
             "tab_focus": "tab 焦点",
             "tab_indent": "tab 缩进",
-            "ctrl_l_scene_picker": "ctrl+l 场景",
-            "scene_picker": "场景选择",
             "ctrl_b_files": "ctrl+b 文件",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 历史",
@@ -1421,7 +1496,10 @@
             "y0_start": "y0 开头",
             "y_end": "y$ 结尾",
             "gg_top": "gg 顶部",
-            "esc_cancel": "esc 取消"
+            "esc_cancel": "esc 取消",
+            "type_filter": "输入筛选",
+            "arrows_select": "↑/↓ 选择",
+            "slash_filter": "/ 筛选"
           },
           "evidence": {
             "head": "头",
@@ -1525,6 +1603,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "搜索",
+          "placeholder": "筛选文件…",
+          "empty": "无匹配项",
+          "preview_label": "预览",
+          "preview_loading": "正在加载预览…",
+          "preview_binary": "二进制文件 — 无法预览",
+          "preview_unavailable": "无法预览",
+          "preview_truncated": "预览已截断"
         }
       }
     },
@@ -1582,8 +1670,6 @@
             "ctrl_t_theme": "ctrl+t tema",
             "tab_focus": "tab foco",
             "tab_indent": "tab recuo",
-            "ctrl_l_scene_picker": "ctrl+l cena",
-            "scene_picker": "seletor de cena",
             "ctrl_b_files": "ctrl+b arquivos",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h histórico",
@@ -1612,7 +1698,10 @@
             "y0_start": "y0 início",
             "y_end": "y$ fim",
             "gg_top": "gg topo",
-            "esc_cancel": "esc cancelar"
+            "esc_cancel": "esc cancelar",
+            "type_filter": "digitar filtro",
+            "arrows_select": "↑/↓ selecionar",
+            "slash_filter": "/ filtrar"
           },
           "evidence": {
             "head": "cabeça",
@@ -1716,6 +1805,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Buscar",
+          "placeholder": "Filtrar arquivos…",
+          "empty": "Nenhum resultado",
+          "preview_label": "Prévia",
+          "preview_loading": "Carregando prévia…",
+          "preview_binary": "Arquivo binário — sem prévia",
+          "preview_unavailable": "Prévia indisponível",
+          "preview_truncated": "Prévia truncada"
         }
       }
     },
@@ -1773,8 +1872,6 @@
             "ctrl_t_theme": "ctrl+t тема",
             "tab_focus": "tab фокус",
             "tab_indent": "tab отступ",
-            "ctrl_l_scene_picker": "ctrl+l сцена",
-            "scene_picker": "выбор сцены",
             "ctrl_b_files": "ctrl+b файлы",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h история",
@@ -1803,7 +1900,10 @@
             "y0_start": "y0 начало",
             "y_end": "y$ конец",
             "gg_top": "gg верх",
-            "esc_cancel": "esc отмена"
+            "esc_cancel": "esc отмена",
+            "type_filter": "ввод фильтра",
+            "arrows_select": "↑/↓ выбор",
+            "slash_filter": "/ фильтр"
           },
           "evidence": {
             "head": "вершина",
@@ -1907,6 +2007,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Поиск",
+          "placeholder": "Фильтр файлов…",
+          "empty": "Нет совпадений",
+          "preview_label": "Просмотр",
+          "preview_loading": "Загрузка просмотра…",
+          "preview_binary": "Двоичный файл — просмотр недоступен",
+          "preview_unavailable": "Просмотр недоступен",
+          "preview_truncated": "Просмотр сокращён"
         }
       }
     },
@@ -1964,8 +2074,6 @@
             "ctrl_t_theme": "ctrl+t سمة",
             "tab_focus": "tab تركيز",
             "tab_indent": "tab إزاحة",
-            "ctrl_l_scene_picker": "ctrl+l مشهد",
-            "scene_picker": "اختيار مشهد",
             "ctrl_b_files": "ctrl+b ملفات",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h سجل",
@@ -1994,7 +2102,10 @@
             "y0_start": "y0 بداية",
             "y_end": "y$ نهاية",
             "gg_top": "gg أعلى",
-            "esc_cancel": "esc إلغاء"
+            "esc_cancel": "esc إلغاء",
+            "type_filter": "اكتب للتصفية",
+            "arrows_select": "↑/↓ تحديد",
+            "slash_filter": "/ تصفية"
           },
           "evidence": {
             "head": "الرأس",
@@ -2098,6 +2209,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "بحث",
+          "placeholder": "تصفية الملفات…",
+          "empty": "لا نتائج",
+          "preview_label": "معاينة",
+          "preview_loading": "جارٍ تحميل المعاينة…",
+          "preview_binary": "ملف ثنائي — المعاينة غير متاحة",
+          "preview_unavailable": "المعاينة غير متاحة",
+          "preview_truncated": "المعاينة مختصرة"
         }
       }
     },
@@ -2155,8 +2276,6 @@
             "ctrl_t_theme": "ctrl+t tema",
             "tab_focus": "tab fokus",
             "tab_indent": "tab inden",
-            "ctrl_l_scene_picker": "ctrl+l adegan",
-            "scene_picker": "pilih adegan",
             "ctrl_b_files": "ctrl+b berkas",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h riwayat",
@@ -2185,7 +2304,10 @@
             "y0_start": "y0 awal",
             "y_end": "y$ akhir",
             "gg_top": "gg atas",
-            "esc_cancel": "esc batal"
+            "esc_cancel": "esc batal",
+            "type_filter": "ketik filter",
+            "arrows_select": "↑/↓ pilih",
+            "slash_filter": "/ filter"
           },
           "evidence": {
             "head": "kepala",
@@ -2289,6 +2411,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Cari",
+          "placeholder": "Filter berkas…",
+          "empty": "Tidak ada hasil",
+          "preview_label": "Pratinjau",
+          "preview_loading": "Memuat pratinjau…",
+          "preview_binary": "Berkas biner — pratinjau tidak tersedia",
+          "preview_unavailable": "Pratinjau tidak tersedia",
+          "preview_truncated": "Pratinjau dipotong"
         }
       }
     },
@@ -2346,8 +2478,6 @@
             "ctrl_t_theme": "ctrl+t tema",
             "tab_focus": "tab odak",
             "tab_indent": "tab girinti",
-            "ctrl_l_scene_picker": "ctrl+l sahne",
-            "scene_picker": "sahne seçici",
             "ctrl_b_files": "ctrl+b dosyalar",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h geçmiş",
@@ -2376,7 +2506,10 @@
             "y0_start": "y0 başlangıç",
             "y_end": "y$ son",
             "gg_top": "gg üst",
-            "esc_cancel": "esc iptal"
+            "esc_cancel": "esc iptal",
+            "type_filter": "filtre yaz",
+            "arrows_select": "↑/↓ seç",
+            "slash_filter": "/ filtre"
           },
           "evidence": {
             "head": "baş",
@@ -2480,6 +2613,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Ara",
+          "placeholder": "Dosyaları filtrele…",
+          "empty": "Eşleşme yok",
+          "preview_label": "Önizleme",
+          "preview_loading": "Önizleme yükleniyor…",
+          "preview_binary": "İkili dosya — önizleme yok",
+          "preview_unavailable": "Önizleme kullanılamıyor",
+          "preview_truncated": "Önizleme kısaltıldı"
         }
       }
     },
@@ -2537,8 +2680,6 @@
             "ctrl_t_theme": "ctrl+t थीम",
             "tab_focus": "tab फोकस",
             "tab_indent": "tab इंडेंट",
-            "ctrl_l_scene_picker": "ctrl+l दृश्य",
-            "scene_picker": "दृश्य चयन",
             "ctrl_b_files": "ctrl+b फाइलें",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h इतिहास",
@@ -2567,7 +2708,10 @@
             "y0_start": "y0 शुरुआत",
             "y_end": "y$ अंत",
             "gg_top": "gg ऊपर",
-            "esc_cancel": "esc रद्द"
+            "esc_cancel": "esc रद्द",
+            "type_filter": "फ़िल्टर लिखें",
+            "arrows_select": "↑/↓ चुनें",
+            "slash_filter": "/ फ़िल्टर"
           },
           "evidence": {
             "head": "शीर्ष",
@@ -2671,6 +2815,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "खोज",
+          "placeholder": "फ़ाइलें छाँटें…",
+          "empty": "कोई मेल नहीं",
+          "preview_label": "पूर्वावलोकन",
+          "preview_loading": "पूर्वावलोकन लोड हो रहा है…",
+          "preview_binary": "बाइनरी फ़ाइल — पूर्वावलोकन उपलब्ध नहीं",
+          "preview_unavailable": "पूर्वावलोकन उपलब्ध नहीं",
+          "preview_truncated": "पूर्वावलोकन संक्षिप्त है"
         }
       }
     },
@@ -2728,8 +2882,6 @@
             "ctrl_t_theme": "ctrl+t thema",
             "tab_focus": "tab focus",
             "tab_indent": "tab inspringen",
-            "ctrl_l_scene_picker": "ctrl+l scène",
-            "scene_picker": "scènekiezer",
             "ctrl_b_files": "ctrl+b bestanden",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h geschiedenis",
@@ -2758,7 +2910,10 @@
             "y0_start": "y0 begin",
             "y_end": "y$ einde",
             "gg_top": "gg boven",
-            "esc_cancel": "esc annuleren"
+            "esc_cancel": "esc annuleren",
+            "type_filter": "filter typen",
+            "arrows_select": "↑/↓ selecteren",
+            "slash_filter": "/ filter"
           },
           "evidence": {
             "head": "kop",
@@ -2862,6 +3017,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Zoeken",
+          "placeholder": "Bestanden filteren…",
+          "empty": "Geen resultaten",
+          "preview_label": "Voorbeeld",
+          "preview_loading": "Voorbeeld laden…",
+          "preview_binary": "Binair bestand — geen voorbeeld",
+          "preview_unavailable": "Voorbeeld niet beschikbaar",
+          "preview_truncated": "Voorbeeld ingekort"
         }
       }
     },
@@ -2919,8 +3084,6 @@
             "ctrl_t_theme": "ctrl+t motyw",
             "tab_focus": "tab fokus",
             "tab_indent": "tab wcięcie",
-            "ctrl_l_scene_picker": "ctrl+l scena",
-            "scene_picker": "wybór sceny",
             "ctrl_b_files": "ctrl+b pliki",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historia",
@@ -2949,7 +3112,10 @@
             "y0_start": "y0 początek",
             "y_end": "y$ koniec",
             "gg_top": "gg góra",
-            "esc_cancel": "esc anuluj"
+            "esc_cancel": "esc anuluj",
+            "type_filter": "wpisz filtr",
+            "arrows_select": "↑/↓ wybierz",
+            "slash_filter": "/ filtr"
           },
           "evidence": {
             "head": "głowa",
@@ -3053,6 +3219,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Szukaj",
+          "placeholder": "Filtruj pliki…",
+          "empty": "Brak wyników",
+          "preview_label": "Podgląd",
+          "preview_loading": "Wczytywanie podglądu…",
+          "preview_binary": "Plik binarny — brak podglądu",
+          "preview_unavailable": "Podgląd niedostępny",
+          "preview_truncated": "Podgląd skrócony"
         }
       }
     },
@@ -3110,8 +3286,6 @@
             "ctrl_t_theme": "ctrl+t giao diện",
             "tab_focus": "tab tiêu điểm",
             "tab_indent": "tab thụt lề",
-            "ctrl_l_scene_picker": "ctrl+l cảnh",
-            "scene_picker": "chọn cảnh",
             "ctrl_b_files": "ctrl+b tệp",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h lịch sử",
@@ -3140,7 +3314,10 @@
             "y0_start": "y0 đầu",
             "y_end": "y$ cuối",
             "gg_top": "gg đầu",
-            "esc_cancel": "esc hủy"
+            "esc_cancel": "esc hủy",
+            "type_filter": "nhập bộ lọc",
+            "arrows_select": "↑/↓ chọn",
+            "slash_filter": "/ lọc"
           },
           "evidence": {
             "head": "đầu",
@@ -3244,6 +3421,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Tìm",
+          "placeholder": "Lọc tệp…",
+          "empty": "Không khớp",
+          "preview_label": "Xem trước",
+          "preview_loading": "Đang tải bản xem trước…",
+          "preview_binary": "Tệp nhị phân — không thể xem trước",
+          "preview_unavailable": "Không thể xem trước",
+          "preview_truncated": "Bản xem trước bị cắt"
         }
       }
     },
@@ -3301,8 +3488,6 @@
             "ctrl_t_theme": "ctrl+t ธีม",
             "tab_focus": "tab โฟกัส",
             "tab_indent": "tab เยื้อง",
-            "ctrl_l_scene_picker": "ctrl+l ฉาก",
-            "scene_picker": "เลือกฉาก",
             "ctrl_b_files": "ctrl+b ไฟล์",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h ประวัติ",
@@ -3331,7 +3516,10 @@
             "y0_start": "y0 เริ่ม",
             "y_end": "y$ จบ",
             "gg_top": "gg บน",
-            "esc_cancel": "esc ยกเลิก"
+            "esc_cancel": "esc ยกเลิก",
+            "type_filter": "พิมพ์ตัวกรอง",
+            "arrows_select": "↑/↓ เลือก",
+            "slash_filter": "/ กรอง"
           },
           "evidence": {
             "head": "เฮด",
@@ -3435,6 +3623,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "ค้นหา",
+          "placeholder": "กรองไฟล์…",
+          "empty": "ไม่พบผลลัพธ์",
+          "preview_label": "ตัวอย่าง",
+          "preview_loading": "กำลังโหลดตัวอย่าง…",
+          "preview_binary": "ไฟล์ไบนารี — ไม่สามารถแสดงตัวอย่าง",
+          "preview_unavailable": "ไม่สามารถแสดงตัวอย่าง",
+          "preview_truncated": "ตัวอย่างถูกตัด"
         }
       }
     },
@@ -3492,8 +3690,6 @@
             "ctrl_t_theme": "ctrl+t پوسته",
             "tab_focus": "tab تمرکز",
             "tab_indent": "tab تورفتگی",
-            "ctrl_l_scene_picker": "ctrl+l صحنه",
-            "scene_picker": "انتخاب صحنه",
             "ctrl_b_files": "ctrl+b فایل‌ها",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h تاریخچه",
@@ -3522,7 +3718,10 @@
             "y0_start": "y0 آغاز",
             "y_end": "y$ پایان",
             "gg_top": "gg بالا",
-            "esc_cancel": "esc لغو"
+            "esc_cancel": "esc لغو",
+            "type_filter": "نوشتن فیلتر",
+            "arrows_select": "↑/↓ انتخاب",
+            "slash_filter": "/ فیلتر"
           },
           "evidence": {
             "head": "سر",
@@ -3626,6 +3825,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "جستجو",
+          "placeholder": "فیلتر پرونده‌ها…",
+          "empty": "بدون نتیجه",
+          "preview_label": "پیش‌نمایش",
+          "preview_loading": "در حال بارگذاری پیش‌نمایش…",
+          "preview_binary": "فایل دودویی — پیش‌نمایش در دسترس نیست",
+          "preview_unavailable": "پیش‌نمایش در دسترس نیست",
+          "preview_truncated": "پیش‌نمایش کوتاه شده"
         }
       }
     },
@@ -3683,8 +3892,6 @@
             "ctrl_t_theme": "ctrl+t ערכת נושא",
             "tab_focus": "tab מיקוד",
             "tab_indent": "tab הזחה",
-            "ctrl_l_scene_picker": "ctrl+l סצנה",
-            "scene_picker": "בחירת סצנה",
             "ctrl_b_files": "ctrl+b קבצים",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h היסטוריה",
@@ -3713,7 +3920,10 @@
             "y0_start": "y0 התחלה",
             "y_end": "y$ סוף",
             "gg_top": "gg למעלה",
-            "esc_cancel": "esc בטל"
+            "esc_cancel": "esc בטל",
+            "type_filter": "הקלדת סינון",
+            "arrows_select": "↑/↓ בחירה",
+            "slash_filter": "/ סינון"
           },
           "evidence": {
             "head": "ראש",
@@ -3817,6 +4027,16 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "חיפוש",
+          "placeholder": "סינון קבצים…",
+          "empty": "אין התאמות",
+          "preview_label": "תצוגה מקדימה",
+          "preview_loading": "טוען תצוגה מקדימה…",
+          "preview_binary": "קובץ בינארי — אין תצוגה מקדימה",
+          "preview_unavailable": "תצוגה מקדימה אינה זמינה",
+          "preview_truncated": "תצוגה מקדימה מקוצרת"
         }
       }
     }

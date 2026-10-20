@@ -40,6 +40,9 @@ const EditorModeKeys: Record<EditorMode, string> = Object.freeze({
 });
 
 const FooterHintKeys = Object.freeze({
+  TypeFilter: 'type_filter',
+  SlashFilter: 'slash_filter',
+  ArrowsSelect: 'arrows_select',
   JkMove: 'j_k_move',
   EnterChange: 'enter_change',
   F2Close: 'f2_close',
@@ -52,7 +55,6 @@ const FooterHintKeys = Object.freeze({
   CtrlSSave: 'ctrl_s_save',
   TabFocus: 'tab_focus',
   TabIndent: 'tab_indent',
-  CtrlLScenePicker: 'ctrl_l_scene_picker',
   CtrlBFiles: 'ctrl_b_files',
   CtrlGGraft: 'ctrl_g_graft',
   EnterOpen: 'enter_open',
@@ -98,6 +100,7 @@ export interface WorkspaceFooterState {
   readonly i18n: I18nPort;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
+  readonly fileSearchEditing?: boolean;
   readonly graftDrawerOpen: boolean;
   readonly viewMode: ViewMode;
   readonly markdownPreviewActive: boolean;
@@ -243,7 +246,6 @@ function footerDetail(state: WorkspaceFooterState): string {
 
   return activeFooterDetail(state, t)
     ?? footerHints([
-      scenePickerHint(t),
       focusHint(state, t),
       t(FooterHintKeys.CtrlBFiles),
       t(FooterHintKeys.CtrlGGraft),
@@ -283,11 +285,6 @@ function footerCursorPosition(state: WorkspaceFooterState): string | undefined {
 function footerHintTranslator(state: WorkspaceFooterState): FooterHintTranslator {
   return (key: string) => state.i18n.t(`footer.hints.${key}`);
 }
-
-function scenePickerHint(t: FooterHintTranslator): string {
-  return t(FooterHintKeys.CtrlLScenePicker);
-}
-
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
   if (kind === DrawerKinds.Files) {
@@ -335,9 +332,9 @@ function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator
 
 function fileDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
   return [
-    t(FooterHintKeys.JkMove),
-    t(FooterHintKeys.EnterOpen),
-    t(FooterHintKeys.BackspaceUp),
+    t(state.fileSearchEditing ? FooterHintKeys.TypeFilter : FooterHintKeys.JkMove),
+    t(state.fileSearchEditing ? FooterHintKeys.EscNormal : FooterHintKeys.SlashFilter),
+    state.fileSearchEditing ? undefined : t(FooterHintKeys.EnterOpen),
     t(FooterHintKeys.CtrlBClose),
     focusHint(state, t),
   ];

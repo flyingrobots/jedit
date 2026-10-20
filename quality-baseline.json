@@ -7,10 +7,10 @@
     "spec/workspace-command-completion.spec.mjs": 932,
     "spec/workspace-command-line.spec.mjs": 1974,
     "spec/workspace-helpers.mjs": 623,
-    "spec/workspace-runtime.spec.mjs": 619,
+    "spec/workspace-runtime.spec.mjs": 520,
     "spec/workspace-text-boundaries.spec.mjs": 559,
     "spec/workspace-text-cutover.spec.mjs": 2045,
-    "spec/workspace-title-screen.spec.mjs": 1184,
+    "spec/workspace-title-screen.spec.mjs": 730,
     "tests/replace-range-law-cycle.spec.mjs": 539
   },
   "forbiddenTypeKeywords": {},

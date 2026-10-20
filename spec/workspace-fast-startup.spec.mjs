@@ -94,45 +94,6 @@ test("the startup logo carries its own colours, not one flat token", async () =>
   assert.ok(inkColours.size > 3, `expected multiple ink colours, saw ${inkColours.size}`);
 });
 
-test("no title scene stats are reported when no backdrop is drawn", async () => {
-  const [init, stats] = await Promise.all([
-    importDist("app", "workspace", "init.js"),
-    importDist("app", "workspace", "title-scene-performance-stats.js"),
-  ]);
-  const model = init.createInitialModel(REPO_ROOT, VIEWER_WIDTH, VIEWER_HEIGHT, {
-    entries: [],
-    titleSceneSeed: FIXED_SEED,
-    jeditTheme: mockJeditTheme(),
-    i18n: mockI18n(),
-    nowMs: STARTUP_NOW_MS,
-  });
-
-  assert.equal(stats.titleScenePerformanceStats(model), undefined);
-});
-
-test("title scene stats are reported once the legacy backdrop is selected", async () => {
-  const [init, stats, titleScreen] = await Promise.all([
-    importDist("app", "workspace", "init.js"),
-    importDist("app", "workspace", "title-scene-performance-stats.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const model = init.createInitialModel(REPO_ROOT, VIEWER_WIDTH, VIEWER_HEIGHT, {
-    entries: [],
-    titleSceneSeed: FIXED_SEED,
-    jeditTheme: mockJeditTheme(),
-    i18n: mockI18n(),
-    nowMs: STARTUP_NOW_MS,
-  });
-
-  const reported = stats.titleScenePerformanceStats({
-    ...model,
-    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  });
-
-  assert.notEqual(reported, undefined);
-  assert.ok(reported.rayCount > 0);
-});
-
 test("an idle time tick returns the same model so nothing re-renders", async () => {
   const [runtimeModule, titleScreen] = await Promise.all([
     importDist("app", "workspace", "runtime.js"),
@@ -167,7 +128,7 @@ test("a time tick still animates while the perf overlay is visible", async () =>
   assert.equal(next.time, 1);
 });
 
-test("a time tick still animates while the legacy title backdrop is drawn", async () => {
+test("a stale legacy backdrop flag does not reactivate animation", async () => {
   const [runtimeModule, titleScreen] = await Promise.all([
     importDist("app", "workspace", "runtime.js"),
     importDist("ui", "title-screen.js"),
@@ -180,7 +141,7 @@ test("a time tick still animates while the legacy title backdrop is drawn", asyn
 
   const [next] = runtime.update({ type: "time-tick", time: 1 }, tracing);
 
-  assert.notEqual(next, tracing);
+  assert.equal(next, tracing);
 });
 
 function idleWorkspaceModel(titleScreen) {

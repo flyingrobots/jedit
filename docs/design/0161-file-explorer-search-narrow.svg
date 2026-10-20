@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280">
+  <rect width="640" height="280" fill="white"/>
+  <rect x="1" y="1" width="220" height="230" fill="#eeeeee" stroke="black"/>
+  <rect x="10" y="12" width="200" height="30" fill="#dddddd"/>
+  <rect x="10" y="82" width="200" height="28" fill="#bbbbbb"/>
+  <rect x="10" y="112" width="200" height="28" fill="#dddddd"/>
+  <g font-family="monospace" font-size="14" fill="black">
+    <text x="15" y="33">Search: rn</text>
+    <text x="15" y="100">› render.ts</text>
+    <text x="15" y="130">  renderer.test.ts</text>
+    <text x="240" y="33">Preview · render.ts</text>
+    <text x="240" y="80">export const example = 42;</text>
+    <text x="12" y="255">j/k move · / filter · Enter open</text>
+  </g>
+  <path d="M10 50 H210" stroke="black"/>
+</svg>

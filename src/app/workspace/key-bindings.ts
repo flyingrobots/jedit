@@ -11,10 +11,10 @@ import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { clearWorkspaceInlinePanelAfterKey } from './workspace-inline-panel.js';
-import { updateScenePickerKey } from './scene-picker-key-bindings.js';
 import { updateSettingsKey } from './settings-key-bindings.js';
 import { updateStartupFileModalKey } from './startup-file-modal-key-bindings.js';
 import { updateTitleScreenKey } from './title-screen-key-bindings.js';
+import { updateFileSearchInputKey } from './file-search-input-key.js';
 
 export type { UpdateFromKeyDeps } from './key-binding-context.js';
 
@@ -26,6 +26,7 @@ export function updateFromKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const result = updatePriorityKey(msg, model, context)
+    ?? updateFileSearchInputKey(msg, model)
     ?? updateHardGlobalWorkspaceKey(msg, model)
     ?? updateWorkspaceOverlayKey(msg, model, context)
     ?? updateGlobalWorkspaceKey(msg, model, context)
@@ -54,7 +55,6 @@ function updateWorkspaceOverlayKey(
 ) {
   return updateStartupFileModalKey(msg, model, context)
     ?? updateSettingsKey(msg, model, context)
-    ?? updateScenePickerKey(msg, model, context)
     ?? updateCommandLineKey(msg, model, context)
-    ?? updateTitleScreenKey(msg, model, context);
+    ?? updateTitleScreenKey(msg, model);
 }

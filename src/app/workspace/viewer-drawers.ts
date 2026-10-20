@@ -3,11 +3,11 @@ import { DrawerKinds, type DrawerKind } from '../../ui/drawer-layout.js';
 import { renderGraftDrawerLines } from '../../ui/graft-drawer.js';
 import {
   fitBlock,
-  formatTreeLine,
 } from '../../ui/workspace-render.js';
 import type { WorkspaceModel } from './model.js';
-import { DRAWER_INNER_PAD, listScrollOffset } from './viewport.js';
+import { DRAWER_INNER_PAD } from './viewport.js';
 import { applyBackground, fillSurface } from './surface-fill.js';
+import { renderFileExplorer } from './file-explorer-view.js';
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const DRAWER_PAD_MULTIPLIER = 2;
@@ -16,26 +16,7 @@ export function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: num
   if (kind === DrawerKinds.Graft) {
     return renderGraftDrawer(model, width, height);
   }
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.drawer);
-
-  const listWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const listHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const offset = listScrollOffset(
-    model.selectedIndex,
-    model.entries.length,
-    listHeight,
-  );
-  const lines = model.entries
-    .slice(offset, offset + listHeight)
-    .map((entry, index) => formatTreeLine(entry, {
-      selected: index + offset === model.selectedIndex,
-    }));
-  const content = stringToSurface(fitBlock(lines.join('\n'), listWidth, listHeight), listWidth, listHeight);
-  applyBackground(content, model.jeditTheme.surface.drawer);
-  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
-
-  return surface;
+  return renderFileExplorer(model, width, height);
 }
 
 function renderGraftDrawer(model: WorkspaceModel, width: number, height: number): Surface {

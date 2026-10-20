@@ -1,3 +1,4 @@
+import { filePreviewSource } from './file-preview.js';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
@@ -7,7 +8,6 @@ import {
   createGraftDiagnosticsPort,
   createGraftSourceHighlighter,
 } from './graft-source-highlighter.js';
-import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createPerfApp } from './workspace-perf-app.js';
 import type { WorkspaceProductionTextDependencies } from './workspace-production-text-dependencies.js';
@@ -17,8 +17,6 @@ import {
   createWorkspaceNotificationTickCmd,
   createWorkspaceTimeTickCmd,
 } from './workspace-animation-commands.js';
-import { openWorkspaceFileEntry } from '../app/workspace/file-tree.js';
-import type { WorkspaceModel } from '../app/workspace/model.js';
 import { createJimSettingsPort } from './jim-settings.js';
 import type { JimSettingsPort } from '../ports/jim-settings.js';
 
@@ -30,7 +28,6 @@ export interface WorkspaceAppOptions {
   perfEnabled: boolean;
   profileEnabled?: boolean;
   nowMs?: () => number;
-  random?: () => number;
   seed?: ReturnType<typeof createInitialModelSnapshot>;
 }
 
@@ -39,11 +36,9 @@ export function createWorkspaceApp(
   productionText: WorkspaceProductionTextDependencies,
 ) {
   const nowMs = options.nowMs ?? (() => Date.now());
-  const random = options.random ?? Math.random;
   const runtime = createWorkspaceRuntime(workspaceRuntimeDependencies(
     options,
     nowMs,
-    random,
     productionText,
   ));
   return createPerfApp(workspaceRuntimeApp(runtime), {
@@ -54,16 +49,15 @@ export function createWorkspaceApp(
 function workspaceRuntimeDependencies(
   options: WorkspaceAppOptions,
   nowMs: () => number,
-  random: () => number,
   productionText: WorkspaceProductionTextDependencies,
 ) {
   const editorFile = editorFilePort;
   const graftDiagnostics = createGraftDiagnosticsPort();
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
-  const titleSceneLoader = createTitleSceneLoaderPort();
   return {
     jimSettings: options.jimSettings ?? createJimSettingsPort(),
+    filePreviewSource,
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
@@ -73,12 +67,10 @@ function workspaceRuntimeDependencies(
     productionTextSession: productionText.productionTextSession,
     graftSession,
     sourceHighlighter,
-    titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
     profileOnStartup: options.profileEnabled ?? false,
-    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,
-    openEntry: createEntryOpener(nowMs, editorFile, graftSession, sourceHighlighter, productionText),
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,
     createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,
@@ -93,22 +85,4 @@ function workspaceRuntimeApp(runtime: ReturnType<typeof createWorkspaceRuntime>)
     view: runtime.view,
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
-}
-
-function createEntryOpener(
-  nowMs: () => number,
-  editorFile: typeof editorFilePort,
-  graftSession: ReturnType<typeof createGraftSessionPort>,
-  sourceHighlighter: ReturnType<typeof createGraftSourceHighlighter>,
-  productionText: WorkspaceProductionTextDependencies,
-) {
-  return (model: WorkspaceModel, entry: NonNullable<WorkspaceModel['entries'][number]>) => openWorkspaceFileEntry(
-    model, entry, nowMs, {
-      fileSystem: FileSystemPortAdapter,
-      editorFile,
-      graftSession,
-      sourceHighlighter,
-      productionTextSession: productionText.productionTextSession,
-    },
-  );
 }
