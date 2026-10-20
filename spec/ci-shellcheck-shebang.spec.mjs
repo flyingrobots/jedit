@@ -78,3 +78,23 @@ test('the ShellCheck driver refuses a tracked file whose env shebang it cannot c
   assert.equal(result.status, 1);
   assert.match(result.stderr, /cannot tell whether run is a shell script/);
 });
+
+test('the ShellCheck driver never opens tracked Markdown files', (t) => {
+  const repo = temporaryDirectory(t, 'jedit-shellcheck-markdown-');
+  mkdirSync(path.join(repo, 'scripts', 'ci'), { recursive: true });
+  cpSync(path.join(process.cwd(), 'scripts', 'ci'), path.join(repo, 'scripts', 'ci'), { recursive: true });
+  writeFileSync(path.join(repo, 'run'), '#!/usr/bin/env -S bash -e\necho hi\n', { mode: 0o755 });
+  writeFileSync(path.join(repo, 'notes.md'), '#!/usr/bin/env -S bash -e\n# Notes\n');
+  git(repo, 'init', '-q');
+  git(repo, 'add', '-A');
+
+  const result = spawnSync(path.join(repo, 'scripts', 'ci', 'shellcheck.sh'), [], {
+    cwd: repo,
+    encoding: 'utf8',
+    env: cleanGitEnv(),
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /cannot tell whether run is a shell script/);
+  assert.doesNotMatch(result.stderr, /notes\.md/);
+});

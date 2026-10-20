@@ -3,7 +3,7 @@ title: "<LEGEND>-<ID> - <Short Title>"
 legend: "<DX|DF|RE|LX|WF|DL|HT>"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/<number>"
-status: "draft|active|landed|superseded"
+status: "draft|active|landed"
 owners:
   - "@flyingrobots"
 created: "YYYY-MM-DD"
@@ -196,7 +196,6 @@ stateDiagram-v2
   [*] --> Draft
   Draft --> Active
   Active --> Landed
-  Active --> Superseded
 ```
 
 ## Accessibility Posture

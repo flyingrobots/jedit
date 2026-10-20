@@ -51,47 +51,25 @@ details consume the same evidence model.
 
 ## Current Truth
 
-The merge target is
-[`6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/commit/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8).
-
-- The public `JeditWhyRangeReport` names a worldline, current head, queried
-  range, reverse walk, and one produced-or-unavailable result, but it has no
-  leaf, blob, checkpoint, anchor, coverage, bound, or continuation model.
-  [`src/ports/jedit-why-range.ts#L21:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/ports/jedit-why-range.ts#L21)
-- The current implementation reconstructs a pseudo-diff from retained local
-  `TickMetadata`, derives rewrite and diff identifiers through local conversion
-  helpers, and aliases tick to rewrite plus receipt to diff. Those aliases are
-  not proof that distinct runtime facts were observed.
-  [`src/app/jedit-why-range.ts#L98:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/app/jedit-why-range.ts#L98)
-  [`src/app/jedit-why-range.ts#L143:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/app/jedit-why-range.ts#L143)
-- The legacy range-why spec still constructs the production-unsafe full
-  snapshot fixture and asserts those identity aliases. It proves coordinate
-  walking behavior, not graph-backed provenance.
-  [`spec/jedit-why-range.spec.mjs#L7:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/spec/jedit-why-range.spec.mjs#L7)
-  [`spec/jedit-why-range.spec.mjs#L43:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/spec/jedit-why-range.spec.mjs#L43)
-- Graph-rope authority already defines distinct worldline, head, leaf, blob,
-  rewrite, diff, and text-tick receipt facts.
-  [`src/domain/graph-rope-types.ts#L89:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/domain/graph-rope-types.ts#L89)
-  [`src/domain/graph-rope-types.ts#L156:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/domain/graph-rope-types.ts#L156)
-- Checkpoint declarations and optional Echo anchor associations are already
-  separate application facts, so `:why` must not infer an anchor from a
-  checkpoint.
-  [`src/domain/graph-rope-types.ts#L261:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/domain/graph-rope-types.ts#L261)
-  [`src/domain/graph-rope-types.ts#L302:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/domain/graph-rope-types.ts#L302)
-- `GraphRopeRuntime` exposes basis-pinned text windows, causal line diffs, and a
-  debug rope shape, but not a bounded range-provenance observation.
-  [`src/domain/graph-rope-runtime.ts#L146:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/domain/graph-rope-runtime.ts#L146)
-- Workspace inline panels already stay tied to a buffer and cursor anchor and
-  close on `Esc`, focus loss, buffer change, or cursor movement. Their payload
-  is currently only a title, message, and tone.
-  [`src/app/workspace/workspace-inline-panel.ts#L17:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/app/workspace/workspace-inline-panel.ts#L17)
-  [`src/app/workspace/workspace-inline-panel.ts#L64:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/src/app/workspace/workspace-inline-panel.ts#L64)
-- The architectural gate already requires range `:why` to cite head, leaf,
-  blob, rewrite, diff, tick, and checkpoint evidence.
-  [`docs/design/0149-graph-backed-rope-runtime-discovery.md#L880:6c4a54cda6d47b297a90ceed580691a2bc2b1fb8`](https://github.com/flyingrobots/jedit/blob/6c4a54cda6d47b297a90ceed580691a2bc2b1fb8/docs/design/0149-graph-backed-rope-runtime-discovery.md#L880)
-- [PR #205](https://github.com/flyingrobots/jedit/pull/205) established that
-  runtime-honesty gate. CR-00 through CR-05 subsequently landed the graph-rope,
-  coordinate, materialization, durability, and gutter prerequisites.
+- Production range `:why` returns a typed `WhyRange` obstruction:
+  `explainRange` in `src/adapters/workspace-production-text-session.ts` is an
+  unsupported operation on the Echo-hosted corridor.
+- The TypeScript range reader and graph-rope runtime this design first
+  targeted (`src/app/jedit-why-range.ts`, `src/domain/graph-rope-runtime.ts`,
+  and `spec/jedit-why-range.spec.mjs`) were removed in `a05cb427` with the rest
+  of the local text authority. Rope facts now live in the native Echo host under
+  the fact law in
+  [0158-replace-range-canonical-fact-law.md](0158-replace-range-canonical-fact-law.md).
+- The projection side survives: `src/ports/jedit-why-range.ts` defines the
+  report, and `src/app/workspace/workspace-why-range.ts` and
+  `workspace-why-range-details.ts` render it in the inline panel.
+- Checkpoint declarations and optional Echo anchor associations are separate
+  facts, so `:why` must not infer an anchor from a checkpoint.
+- [PR #205](https://github.com/flyingrobots/jedit/pull/205) established the
+  runtime-honesty gate this design implements: range `:why` must cite head,
+  leaf, blob, rewrite, diff, tick, and checkpoint evidence or say which is
+  missing. The evidence chain must come from a bounded Echo observation (a
+  future `jim.core`/`TextWindow` reading), not from a TypeScript reader.
 
 ## Problem
 
@@ -372,8 +350,9 @@ code. Human wording is localized outside the domain observation.
 - A checkpoint declaration does not imply an Echo anchor.
 - Echo owns admission, scheduling, causal control history, anchor facts, and
   Echo receipts.
-- The current graph-rope runtime may expose a transitional read seam, but the
-  observation contract must remain independent of its private map layout.
+- The range observation will come from the native host or a future
+  `jim.core`/`TextWindow` reading; the observation contract must remain
+  independent of any runtime's private fact layout.
 - Generated Edict operations will eventually own mutation invocation. This
   design adds no new handwritten mutation or inverse protocol.
 - Caches, line indexes, syntax readings, and rendered panels are disposable.
@@ -617,8 +596,6 @@ Commands expected before the CR-06 PR:
 
 ```bash
 npm run build
-node --test --test-concurrency=1 spec/rope-fact-inspector-design.spec.mjs
-node --test --test-concurrency=1 spec/jedit-why-range.spec.mjs
 node --test --test-concurrency=1 spec/workspace-command-line.spec.mjs
 npm run quality
 npm run check
@@ -684,7 +661,9 @@ Mitigations:
 What changed from the design:
 
 - The production range reader was added to the generated rope contract and
-  installed transport rather than exposed as a debug-only fact map.
+  installed transport rather than exposed as a debug-only fact map. That reader
+  was later removed with the local text authority in `a05cb427`; production
+  range `:why` is now a typed obstruction (see Current Truth).
 - The active inline panel retains the structured report as its application
   evidence payload. Gutter and footer projections consume that object instead
   of parsing the human message or copying provenance logic.

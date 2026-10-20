@@ -79,7 +79,9 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-## Strict Code Limits (Enforced)
+## Strict Code Limits
+
+`scripts/quality-gate.mjs` enforces these:
 
 - **File size**: ≤ **500 lines**
 - **Source line length**: ≤ **160 characters**
@@ -89,9 +91,12 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
   nesting level)
 - **Cyclomatic complexity**: ≤ **8**
 - **Parameters**: ≤ **5** (use a named options class/object otherwise)
+- Max 12 imports per file
+
+Review enforces these:
+
 - **Class size**: ≤ **400 lines**, ≤ **15 public methods**
 - One primary domain concept per file
-- Max 12 imports per file
 
 ---
 
@@ -137,38 +142,11 @@ must be named before comparison.
 
 ---
 
-## Sample ESLint Rules
+## Enforcement
 
-```json
-{
-  "rules": {
-    "max-lines": ["error", 500],
-    "max-len": ["error", { "code": 160 }],
-    "max-lines-per-function": ["error", { "max": 35, "skipBlankLines": true, "skipComments": true }],
-    "max-depth": ["error", 4],
-    "max-params": ["error", 5],
-    "complexity": ["error", 8],
-    "max-statements": ["error", 25],
-
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-restricted-types": [
-      "error",
-      {
-        "types": {
-          "unknown": "Use a concrete type instead of unknown"
-        }
-      }
-    ],
-    "@typescript-eslint/no-unsafe-assignment": "error",
-    "@typescript-eslint/no-unsafe-member-access": "error",
-    "@typescript-eslint/no-unsafe-return": "error",
-    "@typescript-eslint/no-unsafe-call": "error",
-    "@typescript-eslint/only-throw-error": "error",
-    "@typescript-eslint/switch-exhaustiveness-check": "error",
-    "@typescript-eslint/no-floating-promises": "error"
-  }
-}
-```
+The repository does not use ESLint. `scripts/quality-gate.mjs` implements the
+enforced limits, the banned-language list, and the magic-literal ratchet above; run `npm run quality` to see the full
+rule list and any ratcheted debt in `quality-baseline.json`.
 
 ---
 

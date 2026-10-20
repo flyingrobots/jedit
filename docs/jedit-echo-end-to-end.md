@@ -43,7 +43,8 @@ Jim has one production text-authority posture:
 2. The host initializes a real `WorldlineRuntime`, filesystem runtime WAL, and
    deterministic Echo engine.
 3. The host registers the checked generated package for buffer creation,
-   single-range replacement, and bounded text-window observation.
+   single-range replacement, checkpoint declaration, and bounded text-window
+   observation.
 4. Mutations enter through Echo's WAL-acknowledged app capability, receive
    Echo-owned installed-operation admission evidence, and execute only during a
    scheduler-owned tick.
@@ -58,7 +59,9 @@ builder, snapshot fallback, or optimistic settled-text mutation.
 
 The real corridor currently implements:
 
-- create or reopen a buffer;
+- create a buffer, or reopen one whose import anchor matches the file's current
+  bytes (otherwise the open is a typed obstruction; see
+  [How Jim sees source files](jim-component-ownership.md#how-jim-sees-source-files));
 - insert text through single-range replacement;
 - replace one UTF-8 byte range;
 - delete one UTF-8 byte range;
@@ -69,7 +72,7 @@ The real corridor currently implements:
 These operations remain typed obstructions:
 
 - multi-range edits;
-- checkpoint declaration and causal-anchor association;
+- causal-anchor association (checkpoint declaration itself is implemented);
 - save and export;
 - causal line-diff and gutter evidence;
 - `:why` range explanation;
@@ -97,8 +100,8 @@ features through a second authority.
 | Terminal loop and surfaces | Bijou |
 
 This table describes what is running, not what should remain. In the target,
-`Jim.edict` owns modal state and event interpretation; Jim-owned lawpacks own
-operations and optics; Jedit/Bijou/native adapters only decode events,
+`Jim.edict` owns modal state and event interpretation; `jedit.text` lawpacks own
+operations and optics, composed by `jim.core`; Jedit/Bijou/native adapters only decode events,
 transport artifacts, and render projections. Jim treats Echo-issued head, tick,
 commit, receipt, and reading identities as opaque.
 
@@ -285,9 +288,6 @@ JEDIT_DIST_PREBUILT=1 node --test spec/workspace-production-echo-wiring.spec.mjs
 node scripts/jedit-production-cutover-guard.mjs
 ```
 
-The older Echo WASM smoke witness proves a separate module-load boundary only.
-It is not the production text path and is not evidence that this package ran.
-
 ## Edict Migration
 
 The compatibility corridor exists to apply product pressure now, not to become
@@ -304,7 +304,7 @@ permanent protocol law. The convergence order is:
 6. Make the Wesley/Rust replacement path and frontend operation orchestration
    unreachable, then delete them.
 7. Migrate buffer create/open, checkpoint, save/export, and inverse operations
-   as Jim-owned Edict lawpacks and bounded readings.
+   as `jedit.text` Edict lawpacks and bounded readings.
 8. Delete the compatibility package and semantic process protocol.
 
 No migration step may restore local text authority to make the editor appear

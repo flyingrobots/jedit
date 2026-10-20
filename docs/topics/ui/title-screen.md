@@ -57,7 +57,46 @@ behavior. Below the 60×12 minimum, Jim shows its existing size notice.
 
 The ray-tracer engine and scene assets remain available to the explicit
 `title:preview`, `title:profile`, and `title:record` tools. They are separate
-from the live workspace; no title-screen action loads them.
+from the live workspace; no title-screen action loads them. The engine and
+assets are frozen (see
+[title-scene-freeze.md](../../method/title-scene-freeze.md)). Each tool renders
+headlessly, without a terminal UI, and each has a machine-readable output that
+agents can consume.
+
+`npm run title:record` (`scripts/title-scene-record.mjs`) exports frames of a
+scene. Options: `--format json|text|html|ansi` (default `json`), `--frames`
+(default 1), `--width` (default 96), `--height` (default 28), `--start`
+(default 0) and `--step` (default 0.5) in seconds, `--scene`, `--theme`,
+`--render-mode braille|ascii`, `--camera-angle`, `--camera-radius`, and
+`--output <path>`. JSON output has a top-level `recording` object (format,
+width, height, frame count, start and step, scene, theme, render mode, and
+camera) and a `frames` array whose entries have a stable `index`,
+`timeSeconds`, `glyphRows` (one string per terminal row), and `colorRows` (one
+row per terminal row, one `{ fgRGB, bgRGB }` object per cell). The same options
+produce byte-identical output. Invalid options print usage to stderr and exit
+with code 2. `spec/title-scene-record-cli.spec.mjs` pins this.
+
+`npm run title:preview` (`scripts/title-scene-preview.mjs`) renders one frame
+for authoring inspection. `--json` emits a deterministic report with a
+`preview` object (scene, render mode, time) and an `inspector` object (including
+the selected scene object); `--no-frame` omits the rendered frame. Without
+`--json` it prints a plain frame with inspector text.
+`spec/title-scene-preview-cli.spec.mjs` pins this.
+
+`npm run title:profile` (`scripts/title-scene-profile.mjs`) times rendering
+over `--frames` frames after `--warmup` frames. `--json` emits a report with
+`scene` (name, object count), `render` (mode, width, height, frames, primary
+samples per frame and in total), `timing` (including `minMs`, `avgMs`, and
+`maxMs`), and a `checksum` of the rendered output; without `--json` it prints a
+plain report. In Braille render mode the report also carries an `allocation`
+witness from `scripts/title-scene-allocation-witness.mjs`. Its `posture` is evidence,
+not a proof of allocation behavior: it is `unmeasured` when allocation
+instrumentation is unavailable (run Node with `--expose-gc`), and also when the
+forced-GC retained-heap delta is zero, because a zero retained delta does not
+show that no allocation happened. Only a positive retained delta reports
+`allocating`. The witness never reports `bounded-after-warmup` or
+`zero-hot-loop`. `spec/title-scene-profile-cli.spec.mjs` pins this, including
+Braille temporal sampling and these postures.
 
 ## Implementation Map
 

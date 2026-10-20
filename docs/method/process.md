@@ -11,8 +11,9 @@ exercises the real software surface: package API, runtime behavior, rendered
 output, scripted app flow, command behavior, schema validation, lower-mode
 output, or CI/tooling behavior.
 
-Design-doc assertions may be tested as evidence-ledger checks, but they cannot
-be the only acceptance test for product, runtime, UI, or tooling work.
+Tests never read documentation: no spec, test, or quality gate reads a
+document's content or asserts its wording. See
+[documentation-lifecycle.md](documentation-lifecycle.md).
 
 A good jedit design doc is specific enough that another engineer or agent can
 write the RED test from it without asking what behavior is supposed to exist. A
@@ -39,7 +40,7 @@ Use `docs/method/roadmap-planning.md` when work spans multiple cycles, defines
 a release-gate batch, claims versioned-release readiness, or coordinates a set
 of user stories and slices.
 
-The roadmap policy does not replace this process. It explains how `BEARING.md`,
+The roadmap policy does not replace this process. It explains how the README's *Current posture*,
 release-gate docs, full-cycle design docs, GitHub issues, slices, PRs, and
 witnesses relate. The same proof rule still applies: roadmap and design docs
 define intent, while tests, release gates, generated artifacts, model facts, and
@@ -74,7 +75,7 @@ branch changes, fetch and merge the target branch normally.
 - Do not expand a slice because nearby cleanup is tempting.
 - If a slice exposes follow-on work, create a GitHub issue instead of hiding it
   in prose.
-- Keep `docs/BEARING.md` current when execution gravity changes.
+- Keep the README's *Current posture* current when execution gravity changes.
 
 ## Ready For Review
 
@@ -93,9 +94,10 @@ A cycle PR is ready only when:
 
 After a cycle lands:
 
-- Keep the design doc as the historical record when it remains useful.
-- Move superseded design material into feature docs, retrospectives, or
-  `docs/method/graveyard/`.
+- Move any rule the design doc still binds into its canonical owner, then keep
+  or delete the design doc as
+  [documentation-lifecycle.md](documentation-lifecycle.md) requires. Git
+  history is the archive; there is no retrospective or graveyard directory.
 - Close linked follow-on issues only when their executable witness exists.
 - Do not treat a landed design doc as runtime truth. Tests, code, generated
   artifacts, command output, and user-visible behavior are the proof.
