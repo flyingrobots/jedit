@@ -199,6 +199,7 @@ test('mouse scrolling cannot move Settings focus away from an active Leader capt
   const scrolled = runtime.update(scroll, capturing)[0];
   assert.equal(scrolled.settingsFocusIndex, capturing.settingsFocusIndex);
   assert.equal(scrolled.leaderCaptureActive, true);
+  assert.equal(runtime.update(key('c', { ctrl: true }), capturing)[1].length, 1, 'Ctrl+C still quits during capture');
 });
 
 test('saving a dotfile symlink updates its target and preserves the symlink', async (t) => {
