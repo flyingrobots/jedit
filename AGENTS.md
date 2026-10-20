@@ -82,8 +82,9 @@ kept as history; follow `docs/method/documentation-lifecycle.md`.
   software surface: package API, runtime behavior, rendered output, scripted app
   flow, command behavior, schema validation, lower-mode output, or CI/tooling
   behavior.
-- Design-doc assertions are allowed only as evidence-ledger checks. They cannot
-  be the only acceptance test for product, runtime, UI, or tooling work.
+- Tests never read documentation. No spec, test, or gate may open a Markdown
+  file or assert its wording; see
+  [documentation-lifecycle.md](docs/method/documentation-lifecycle.md).
 - Fill in the design doc retrospective before marking the PR ready.
 - Create GitHub issues for deferred work instead of hiding follow-on debt in
   prose.

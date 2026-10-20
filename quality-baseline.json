@@ -10,8 +10,7 @@
     "spec/workspace-runtime.spec.mjs": 619,
     "spec/workspace-text-boundaries.spec.mjs": 559,
     "spec/workspace-text-cutover.spec.mjs": 2045,
-    "spec/workspace-title-screen.spec.mjs": 1184,
-    "tests/replace-range-law-cycle.spec.mjs": 539
+    "spec/workspace-title-screen.spec.mjs": 1184
   },
   "forbiddenTypeKeywords": {},
   "booleanParameters": {}

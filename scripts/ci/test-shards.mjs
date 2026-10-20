@@ -17,13 +17,6 @@ const CONTRACT_SPEC_PATTERNS = Object.freeze([
   'rope',
   'save-checkpoint',
 ]);
-const DOCS_SPEC_PATTERNS = Object.freeze([
-  'codegen-docs',
-  'docs',
-  'guide',
-  'quickstart',
-  'release-gate-script',
-]);
 const ECHO_SPEC_PATTERNS = Object.freeze([
   'echo',
   'hot-buffer',
@@ -63,7 +56,6 @@ const WORKSPACE_SPEC_PATTERNS = Object.freeze([
 export const TEST_SHARDS = Object.freeze({
   ContractApi: 'contract-api',
   CycleProofs: 'cycle-proofs',
-  DocsRelease: 'docs-release',
   EchoAuthority: 'echo-authority',
   MiscFast: 'misc-fast',
   TitleRendering: 'title-rendering',
@@ -73,7 +65,6 @@ export const TEST_SHARDS = Object.freeze({
 export const TEST_SHARD_NAMES = Object.freeze([
   TEST_SHARDS.ContractApi,
   TEST_SHARDS.CycleProofs,
-  TEST_SHARDS.DocsRelease,
   TEST_SHARDS.EchoAuthority,
   TEST_SHARDS.MiscFast,
   TEST_SHARDS.TitleRendering,
@@ -103,9 +94,6 @@ export function testShardForSpec(filePath) {
   const name = path.basename(repoPath).toLowerCase();
   if (includesAny(name, TITLE_SPEC_PATTERNS)) {
     return TEST_SHARDS.TitleRendering;
-  }
-  if (includesAny(name, DOCS_SPEC_PATTERNS)) {
-    return TEST_SHARDS.DocsRelease;
   }
   if (repoPath.startsWith('tests/')) {
     return TEST_SHARDS.CycleProofs;

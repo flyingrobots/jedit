@@ -10,7 +10,6 @@ const SOURCE_ROOT = path.join(ROOT, 'src');
 // max-lines applies here; the other rules encode TypeScript-specific doctrine.
 const SPEC_ROOTS = [path.join(ROOT, 'spec'), path.join(ROOT, 'tests')];
 const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
-const PACKAGE_PATH = path.join(ROOT, 'package.json');
 const MAX_LINES_PER_FILE = 500;
 const MAX_PARAMETERS_PER_FUNCTION = 5;
 const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
@@ -20,13 +19,6 @@ const MAX_NESTING_DEPTH = 4;
 const MAX_STATEMENTS_PER_FUNCTION = 25;
 const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
-const IDENTITY_DOCTRINE_DOC = path.join(ROOT, 'docs/design/echo-identity-doctrine.md');
-const IDENTITY_DOCTRINE_REQUIRED_LINKS = [
-  { file: 'ARCHITECTURE.md', marker: 'docs/design/echo-identity-doctrine.md' },
-  { file: 'README.md', marker: 'docs/design/echo-identity-doctrine.md' },
-  { file: 'docs/BEARING.md', marker: 'design/echo-identity-doctrine.md' },
-  { file: 'docs/echo-application-hosting-guide.md', marker: 'docs/design/echo-identity-doctrine.md' },
-];
 
 function main() {
   const baseline = loadBaseline();
@@ -34,7 +26,6 @@ function main() {
   const regressions = [];
   const debt = [];
   const improvements = [];
-  validateIdentityDoctrineReferences(regressions);
 
   for (const filePath of files) {
     const relativePath = toRepoPath(filePath);
@@ -214,7 +205,6 @@ function main() {
       'max-line-length-160',
       'no-magic-comparison-literal',
       'max-lines-500',
-      'identity-doctrine-links',
     ],
     fileCount: files.length + collectSpecFiles().length,
     regressions,
@@ -229,64 +219,6 @@ function main() {
   }
 
   process.exitCode = result.ok ? 0 : 1;
-}
-
-function validateIdentityDoctrineReferences(regressions) {
-  if (!isJeditRepoRoot()) {
-    return;
-  }
-
-  if (!fs.existsSync(IDENTITY_DOCTRINE_DOC)) {
-    regressions.push({
-      file: 'docs/design/echo-identity-doctrine.md',
-      rule: 'identity-doctrine-links',
-      actual: 'missing',
-      allowed: 'present',
-    });
-    return;
-  }
-
-  const doctrineText = fs.readFileSync(IDENTITY_DOCTRINE_DOC, 'utf8');
-  const hasTitle = doctrineText.includes('# Echo Identity Doctrine');
-  if (!hasTitle) {
-    regressions.push({
-      file: 'docs/design/echo-identity-doctrine.md',
-      rule: 'identity-doctrine-links',
-      actual: 'missing doctrine heading',
-      allowed: 'Echo Identity Doctrine',
-    });
-  }
-
-  for (const entry of IDENTITY_DOCTRINE_REQUIRED_LINKS) {
-    const fullPath = path.join(ROOT, entry.file);
-    if (!fs.existsSync(fullPath)) {
-      regressions.push({
-        file: entry.file,
-        rule: 'identity-doctrine-links',
-        actual: 'missing',
-        allowed: `include marker ${entry.marker}`,
-      });
-      continue;
-    }
-    const content = fs.readFileSync(fullPath, 'utf8');
-    if (!content.includes(entry.marker)) {
-      regressions.push({
-        file: entry.file,
-        rule: 'identity-doctrine-links',
-        actual: 'marker missing',
-        allowed: `include marker ${entry.marker}`,
-      });
-    }
-  }
-}
-
-function isJeditRepoRoot() {
-  if (!fs.existsSync(PACKAGE_PATH)) {
-    return false;
-  }
-
-  const packageJson = JSON.parse(fs.readFileSync(PACKAGE_PATH, 'utf8'));
-  return packageJson.name === 'jedit';
 }
 
 function recordCountRule(options) {

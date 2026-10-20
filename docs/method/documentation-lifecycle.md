@@ -33,10 +33,12 @@ Current accepted architecture and ownership rules stay explicit. An active, auth
 A focused `docs/design/` document owns its cycle while the cycle is active, and afterwards only while it is still the canonical statement of a rule in force. When a cycle lands:
 
 - Move any rule that is still binding into its canonical owner (see the register in [durable-decisions.md](durable-decisions.md)) if it is not already there.
-- If the document then only narrates the cycle, delete it, together with checks that only assert its wording.
+- If the document then only narrates the cycle, delete it.
 - If it remains the canonical owner of a current rule, keep it current like any other owner.
 
-A test that reads a document's text is a check on that document, not on behavior. When the document is deleted, its wording checks go with it. Any behavioral assertion in the same test file stays, or moves to a test of the behavior itself. Inaccurate documentation is fixed; behavioral tests and release gates are not weakened to make a documentation change pass.
+## Tests do not read documentation
+
+No spec, test, quality gate, or CI check opens a Markdown file or asserts what a document says. Tests pin behavior: package APIs, runtime output, rendered frames, command results, schemas, and tooling. A document is checked by the people who read it, not by a test, so a documentation change never needs a test change and a test never fails because prose moved. Inaccurate documentation is fixed; behavioral tests and release gates are not weakened to make a documentation change pass.
 
 ## Unresolved authority
 

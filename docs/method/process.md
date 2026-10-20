@@ -11,8 +11,9 @@ exercises the real software surface: package API, runtime behavior, rendered
 output, scripted app flow, command behavior, schema validation, lower-mode
 output, or CI/tooling behavior.
 
-Design-doc assertions may be tested as evidence-ledger checks, but they cannot
-be the only acceptance test for product, runtime, UI, or tooling work.
+Tests never read documentation: no spec, test, or quality gate opens a Markdown
+file or asserts its wording. See
+[documentation-lifecycle.md](documentation-lifecycle.md).
 
 A good jedit design doc is specific enough that another engineer or agent can
 write the RED test from it without asking what behavior is supposed to exist. A

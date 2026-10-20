@@ -596,7 +596,6 @@ Commands expected before the CR-06 PR:
 
 ```bash
 npm run build
-node --test --test-concurrency=1 spec/rope-fact-inspector-design.spec.mjs
 node --test --test-concurrency=1 spec/workspace-command-line.spec.mjs
 npm run quality
 npm run check

@@ -24,7 +24,6 @@ This document owns how Jedit CI decides what to run. The executable rules live i
 | --- | --- |
 | `contract-api` | Contract, codec, observer, operation, and generated API specs. |
 | `cycle-proofs` | Cycle proof specs under `tests/`. |
-| `docs-release` | Documentation and guide specs. |
 | `echo-authority` | Echo hosting, production text, restart, and release-authority specs. |
 | `misc-fast` | Small specs no narrower shard owns. |
 | `title-rendering` | Title scene, title screen, mesh, camera, and theme-rendering specs. |
@@ -37,7 +36,7 @@ Specs that import compiled modules load them through `spec/dist-helpers.mjs`, so
 - The required GitHub check is `check`.
 - Pushes to `main`, manual runs with `full`, and pull requests labelled `full-ci` run every shard and the release gate.
 - Changes to `.github/`, `scripts/ci/`, the quality gate, TypeScript configuration, or non-Bijou package changes run every shard and the release gate. A package change that only bumps Bijou dependencies runs a narrower compatibility set.
-- Contract and generated-contract changes run `contract-api`, `echo-authority`, and the release gate. Echo authority surfaces run `echo-authority`, `workspace-ui`, and the release gate. Workspace, title, and other UI surfaces run their owning shards. Changes under `docs/`, `ARCHITECTURE.md`, and `README.md` run `docs-release`; other root documents count as unrecognised paths. A changed spec runs its own shard.
+- Contract and generated-contract changes run `contract-api`, `echo-authority`, and the release gate. Echo authority surfaces run `echo-authority`, `workspace-ui`, and the release gate. Workspace, title, and other UI surfaces run their owning shards. Changes under `docs/`, `ARCHITECTURE.md`, and `README.md` run no test shard, because tests never read documentation; other root documents count as unrecognised paths. A changed spec runs its own shard.
 - A path the planner does not recognise runs every shard and the release gate.
 - Every plan runs build and quality.
 - Local `npm run check` runs the build, the full test suite, and the quality gate. ShellCheck runs in CI; run `scripts/ci/shellcheck.sh` locally when ShellCheck is installed.
