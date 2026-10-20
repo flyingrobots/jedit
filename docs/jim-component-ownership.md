@@ -562,6 +562,7 @@ view joins the editor projection only when it names the rendered buffer head.
 | While rendering | A declared causal view basis plus basis-matching optional projections | Deleting a cache or pane changes no text history; stale Graft data is withheld |
 | During save/export | A selected witnessed rope head | The adapter writes a projection and records which basis was materialized |
 | After external file change | Two potentially divergent authorities are observed | Jim must apply an explicit import, rebase, conflict, or refusal policy |
+| Reopening a path that has a buffer | The buffer's import anchor: the path, the imported bytes' host basis, and the imported head | The buffer is reused only when the anchor names the path's current basis; otherwise the open is refused and neither side is changed |
 
 This model also prevents a common false shortcut: reading a file immediately
 before every command does not make the filesystem an Echo reading, and writing
@@ -670,6 +671,26 @@ an existing head, or produce a conflict result. Echo history retains logical
 external identities, immutable content references, intents, and observations;
 it does not acquire ambient host paths as application authority.
 
+The current compatibility corridor implements the refusal half of that policy
+([#350](https://github.com/flyingrobots/jedit/issues/350)). Every open sends
+the path's host basis: the SHA-256 digest and length of the file's raw bytes,
+or the absence of a file. Creating a buffer records a
+`jedit.text.ImportAnchor.v1` fact in the same admitted Tick, binding the path,
+that basis, and the head built from those bytes, so the anchor is recovered
+from the Echo WAL with the buffer. A later open reuses the buffer only when the
+anchor names the path's current basis. Otherwise the native host refuses with a
+typed obstruction and writes nothing: `file-changed-since-import` when only the
+file changed, `file-and-buffer-changed-since-import` when the buffer also has
+edits beyond its anchored head, and `import-anchor-missing` when the buffer has
+no anchor, which includes every buffer recovered from a WAL written before
+anchors existed. The file layer of buffer durability is clean only against the
+anchored head. Explicit reconciliation (re-import, keep-buffer, discard) and
+re-anchoring on save are not implemented
+([#357](https://github.com/flyingrobots/jedit/issues/357)). Until they are, an open
+is refused for as long as the path's basis differs from the anchor, or the buffer
+has no anchor; restoring the anchored bytes makes the buffer reusable again.
+The target moves this decision into `jim.external-policy`.
+
 In summary, Jim sees source files as external coordinates and import/export
 surfaces. Jim edits an Echo-backed buffer worldline; the path is not the buffer,
 and the saved file is one observed materialization of a chosen head. Durable
@@ -697,13 +718,28 @@ definitions or test oracles accidentally become fake runtime implementations.
 | Installed release record | Echo | One complete closure was retained, installed, verified, and activated for a worldline under an explicit transition | That a particular command committed |
 | Tick, conflict outcome, reading, receipt, and recovery evidence | Echo realm | What happened under one release, realm, epoch, basis, and admitted or rejected execution | What Jim should decide next |
 
-The schema and oracle are already frozen under
-`contracts/jedit/lawpacks/replace-range-v1/`. `ReplaceRange.edict` and its
-complete application-owned lawpack closure do not yet exist in Jedit. Neither
-does the release manifest that would bind `jim.core`, `jedit.text`, their entry
-points, and the relevant profiles. Edict's generic application-owned lawpack
-authoring and bounded-control prerequisites have landed, but only the real
-application source can reveal the next honest compiler or target-profile gap.
+The schema and independent oracle are frozen under
+`contracts/jedit/lawpacks/replace-range-v1/`. Jedit now owns executable source
+and its complete published lawpack closure under `edict/replace-range/`.
+The public Edict build and independent verifier produce a pinned pure package
+that Echo executes as a flat-text replacement reference, with range, UTF-8,
+offset-boundary, no-op and resource refusals. The package and verifier report
+are byte-identical across the verified macOS and Linux builds. The application
+[README](../edict/replace-range/README.md) owns the exact build and runtime
+reproduction instructions.
+
+This reference computes bytes; it does not construct a persistent rope or
+produce the domain's typed outcomes. Authored graph effects, atomic admission,
+Tick/WAL/receipt/readings and fresh-engine recovery remain unimplemented for
+this package. The standalone runtime host is test-only conformance scaffolding,
+unreachable from the editor's production composition. The proposed persistent
+rope source remains a noncompiling draft outside the application gate.
+
+The release manifest binding `jim.core`, `jedit.text`, their entry points and
+profiles, and the installed release that would activate it, also remain absent.
+This working pure package refines the authored-source stage of the artifact
+chain; it does not establish an installed Jim release or replace the current
+native text-operation authority.
 
 In summary, the artifact chain moves from application definition, to authored
 source and lawpack closure, to compiler-produced package, to installed release,
@@ -763,13 +799,14 @@ one coherent command settlement inside an explicit authority realm and epoch.
 | Split, join, validate, and emit rope facts | Native Rust compatibility planner | `jedit.text`'s `ReplaceRange.edict`, compiled to generic target operations |
 | Settle buffer, Jim state, command result, and evidence | Not yet one application-authored causal cut | Echo executing the composed `JimRelease` program inside one realm and epoch |
 | Reject a candidate whose read set changed | Current compatibility behavior does not yet prove the final Jim protocol | Echo conflict outcome followed by a separate idempotent `jim.core` resolver Tick |
+| Decide whether an existing buffer may be reused for a file | Native Rust compatibility host (`import_anchor.rs`), refusal only | `jim.external-policy` |
 | Admit, schedule, persist, receipt, recover | Echo | Echo |
 | Read the resulting bounded text | Generated/native `TextWindow` observer | `TextWindow.edict` through Echo |
 | Install lines into the editor and paint | TypeScript/Bijou projection code | Jedit/Bijou projection code |
 
 The current GraphQL contract declares four operations: create a buffer
-worldline, replace a range as a Tick, declare a checkpoint, and read a bounded
-text window. Wesley generates codecs, identities, registry evidence, and host
+worldline (which also records its import anchor), replace a range as a Tick,
+declare a checkpoint, and read a bounded text window. Wesley generates codecs, identities, registry evidence, and host
 helpers from that schema. The actual operation law still appears in
 `native/jedit-echo-host/src/contract.rs` and its rope modules. TypeScript's
 `vim-chord-syntax.ts`, `vim-motion-resolver.ts`,
@@ -1178,7 +1215,7 @@ but contradictory prose.
 | Which TypeScript paths still own semantics? | Vim parsing, motion resolution, coordinate conversion, operation selection, and transition planning are executable today | Classify them explicitly as compatibility authority, not merely import or migration plumbing |
 | Who owns text and rope contracts in target prose? | Some older documents say “Jedit” broadly, while the first draft grouped them under Jim | Name `jedit.text` as the application-owned text capability, `jim.core` as its semantic consumer, and Jedit as the product/body composition |
 | Do documentation tests prove the canonical section? | Some policy tests search required phrases anywhere in a document | Scope tests to the named ownership sections and assert the complete contract, including test-only direct `ReplaceRange` invocation |
-| Does the target exist in code? | `Jim.edict`, `ReplaceRange.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers are absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
+| Does the target exist in code? | A compiler-produced pure flat-text `ReplaceRange.edict` reference exists; the authored persistent-rope operation, `Jim.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers remain absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
 
 There is also a procedural gap. The clean architecture worktree is one commit
 ahead of current Jedit `main`, and PR #300 carries these ownership corrections,

@@ -111,9 +111,10 @@ function openedTextModel(
     materialization: result.materialization,
     hostBasis: result.hostBasis,
     hostAbsenceBasisHeadId: result.hostBasis === WorkspaceTextHostBasisKinds.Missing
-      ? result.cache.textBasis.basisHeadId
+      ? result.importHeadId
       : undefined,
     hostFingerprint: result.hostFingerprint,
+    importHeadId: result.importHeadId,
     cache: result.cache,
   });
   return {

@@ -17,6 +17,10 @@ import {
   WorkspaceMaterializationKinds,
   type WorkspaceMaterializationKind,
 } from './workspace-materialization.js';
+import {
+  ProductionTextHostBasisKinds,
+  type ProductionTextHostBasis,
+} from './production-text-session.js';
 
 const OPEN_BASIS_READY = 'ready';
 const OPEN_BASIS_OBSTRUCTED = 'obstructed';
@@ -78,6 +82,22 @@ export function workspaceTextOpenBasis(
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint: loaded.fingerprint ?? editorFileFingerprintFromText(initialText),
   });
+}
+
+/**
+ * The basis the host anchors a new buffer to, and checks a reused one
+ * against: the file's raw-byte fingerprint, or its absence.
+ */
+export function workspaceTextProductionHostBasis(
+  basis: WorkspaceTextOpenBasis,
+): ProductionTextHostBasis {
+  if (basis.hostBasis === WorkspaceTextHostBasisKinds.Missing) {
+    return { kind: ProductionTextHostBasisKinds.Missing };
+  }
+  return {
+    kind: ProductionTextHostBasisKinds.File,
+    fingerprint: basis.hostFingerprint ?? editorFileFingerprintFromText(basis.initialText),
+  };
 }
 
 function openBasisIssue(

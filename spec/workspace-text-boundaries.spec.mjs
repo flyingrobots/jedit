@@ -37,7 +37,7 @@ test('reading cache materializes text and reports explicit postures', async () =
     filePath: '/repo/notes.md',
     bufferId: 'buffer:notes',
     readOnly: false,
-    dirty: false,
+    dirty: false, importHeadId: 'head:opened',
     cache,
   });
   const dirty = authorityModule.workspaceTextAuthorityWithReceipt(opened, 'receipt:1', {

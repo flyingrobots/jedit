@@ -1,0 +1,75 @@
+{
+  "compiler": {
+    "commit": "01dc5abb9a8a74f8fd8b0e0a6d1041d0adb86d6e",
+    "tree": "74e571125a1da6ac5b2eac80944e343811708d51",
+    "fileCount": 449,
+    "manifestSha256": "22e4cc00473d2ccd3db80fe1f1de2ed8377f8a976df1fd05117eac649e77c529",
+    "binarySha256": "e2700698829b03f437c66425ed9878b002ef7a34ac183a39bac4eaf6a758cc6d"
+  },
+  "jimSourceCommit": "e9ac7433c12d995743c109fd3cf6bcec46f9bca7",
+  "providerManifestSha256": "c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc",
+  "boundary": "Public compiler build and provider package/report only; runtime not exercised.",
+  "results": {
+    "baseline": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "51797e77062585a9f59083ee8a1da3faaf486ef7691e1b62203369a9d9356ee0",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "1860ab8a6cb9a4bfd63a1db99d1c2bc00aa53dae52a9d1998295654379a95d85",
+        "verification-report.cbor": "d96e5d21eecbc1e5bbf6ce76ab438d55cc8e74f6843121d4ffb0f4343e648267"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "first-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "fa207e40f734fce99c581efbc5159a276c95e7b399d3acce854829ace05c6d2e",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "d950cebad1bb978e24dfa736efab302eb0f5c96135cb32f27ad8781d6ace6b51",
+        "verification-report.cbor": "412fb923e3dbd3f070624446ae953920058e08eda5fdc94f201d9b475842c803"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "second-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "b7bdfce283a977bf2a04ec95d278138a9fbcaeb3e5eedefb909b6d617b1cf8c0",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "e75c18f7265ea8fd7390e2e2d4ff49047323e99a07602d80442659d636fd61f4",
+        "verification-report.cbor": "463a47e58e00390937c565413305b4ec553928b86aae2979fbcbf631b55961d9"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "assembly": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "8e8d2703759fb30cb49b73650ba8ddfd637d68b33b86145661bfca3033c968fc",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "e889d4680435139fe76f45762f0529c090afcf3d73ef7d17f787d44a49bda534",
+        "verification-report.cbor": "7eec90854e0663aa2346ec5005ff7d05eeb50fc2229b32b407dda3cfa0280077"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "assemblyOutcome": "package-and-report-produced"
+}

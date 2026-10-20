@@ -1,0 +1,167 @@
+// Draft: persistent-rope ReplaceRange intent (acceptance target 2).
+//
+// Reads the boundary closure of the edit in one bounded read, computes the
+// path-copied tree with the pure law in Rope.edict, and proposes `ensure`
+// effects for every fresh node and edge plus one compare-and-retarget of the
+// canonical head. Echo validates and commits the proposal atomically or
+// obstructs with no patch (Echo: Authored Operation Effects, proposed).
+//
+// Not compiled by the application gate. See README.md for the status of each
+// construct. Lines marked PROPOSED use syntax the Edict spec does not define.
+package jedit.text.replace_range@2;
+
+use lawpack jedit.text@2 as text;
+use target echo.dpo@1 as echo;
+use module jedit.text.v2@1 as v2;                           // PROPOSED: source-module import
+use module jedit.text.rope@1 as rope;
+
+type Input = {
+  bufferId: text.BufferId,
+  basisHeadId: text.HeadId,
+  startByte: U64,
+  endByte: U64,
+  replacement: Bytes<max=1048576>,
+};
+
+type Result = {
+  headId: text.HeadId,
+  rootNodeId: Option<NodeId>,
+  byteLength: U64,
+  lineCount: U64,
+  sequence: U64,
+  createdLeaves: U64,
+  createdBranches: U64,
+};
+
+// ---- Boundary closure selector ----
+//
+// The closure read starts at the head's root and asks this pure function, at
+// each expanded branch, which children to expand. It expands:
+// - every node whose byte interval contains `start` or `end` (the boundary
+//   paths split descends);
+// - the right spine of each left sibling and the left spine of each right
+//   sibling hanging off a boundary path, because join and rebalance descend
+//   exactly those spines;
+// - every node inside [start, end) when the range length equals the
+//   replacement length, so the no-op check can materialize the old bytes.
+// Every other child stays a stub and is reused by identity.
+
+type Spine = enum { Boundary, RightSpine, LeftSpine, Range };
+type Visit = { lo: U64, hi: U64, spine: Spine };
+type Want = { start: U64, end: U64, needRange: Bool };
+type Expansion = { left: Option<Visit>, right: Option<Visit> };
+
+fn contains(lo: U64, hi: U64, at: U64) -> Bool { return lo <= at && at <= hi; }
+
+fn expand(want: Want, visit: Visit, leftLength: U64) -> Expansion {
+  let mid = visit.lo + leftLength;                           // needs checked +
+  let left = { lo: visit.lo, hi: mid, spine: Spine::Boundary };
+  let right = { lo: mid, hi: visit.hi, spine: Spine::Boundary };
+  return match visit.spine {
+    RightSpine => { left: none(), right: some({ ...right, spine: Spine::RightSpine }) },
+    LeftSpine => { left: some({ ...left, spine: Spine::LeftSpine }), right: none() },
+    Range => { left: some({ ...left, spine: Spine::Range }), right: some({ ...right, spine: Spine::Range }) },
+    Boundary => {
+      left: some(if touches(want, left) then left else { ...left, spine: sideSpine(want, left, Spine::RightSpine) }),
+      right: some(if touches(want, right) then right else { ...right, spine: sideSpine(want, right, Spine::LeftSpine) }),
+    },
+  };
+}
+
+fn touches(want: Want, v: Visit) -> Bool {
+  return contains(v.lo, v.hi, want.start) || contains(v.lo, v.hi, want.end);
+}
+
+fn sideSpine(want: Want, v: Visit, outside: Spine) -> Spine {
+  return if want.needRange && want.start <= v.lo && v.hi <= want.end then Spine::Range else outside;
+}
+
+// ---- Operation ----
+
+intent replaceRange(input: Input) returns Result
+  profile text.replaceRange
+  basis input.basisHeadId
+  footprint <= text.replaceRangeFootprint
+  budget <= text.replaceRangeBudget
+  where input.startByte <= input.endByte
+{
+  let bufferRef = echo.ref<v2.BufferFact>(input.bufferId);
+  let buffer = bufferRef.read() else text.FactMissing;
+  let canonical = echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
+    .target() else text.FactMissing;                        // PROPOSED: read an edge by type
+  require canonical == input.basisHeadId else text.BasisNotCanonical;
+
+  let headRef = echo.ref<v2.HeadFact>(input.basisHeadId);
+  let head = headRef.read() else text.FactMissing;
+  let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
+    .target() else text.FactMissing;
+  require input.endByte <= head.byteLength else text.RangeOutOfBounds;
+  require core.bytes.isUtf8(input.replacement) else text.Utf8BoundaryInvalid;  // PROPOSED
+
+  let want = {
+    start: input.startByte,
+    end: input.endByte,
+    needRange: input.endByte - input.startByte == len(input.replacement),
+  };
+  let root = echo.closure<rope.Tree, Visit>(                 // PROPOSED generic guided closure read
+    echo.edge<v2.HeadFact, v2.BranchFact, v2.Root>(headRef),
+    { lo: 0u64, hi: head.byteLength, spine: Spine::Boundary },
+    expand(want, _, _),                                      // PROPOSED partial application
+    maxNodes: text.maxClosureNodes,
+    maxDepth: text.maxTreeHeight,
+  ).read() else text.MalformedRope;
+  require rope.byteLength(root) == head.byteLength else text.MalformedRope;
+
+  require rope.isCharBoundaryIn(root, input.startByte) else text.Utf8BoundaryInvalid;
+  require rope.isCharBoundaryIn(root, input.endByte) else text.Utf8BoundaryInvalid;
+  require !want.needRange
+      || rope.rangeBytes(root, input.startByte, input.endByte) != input.replacement
+    else text.NoOp;
+
+  let next = rope.replace(root, input.startByte, input.endByte, input.replacement)
+    else { ClosureTooSmall => text.MalformedRope };          // PROPOSED: map a pure failure
+  let fresh = rope.created(next);
+
+  for leaf in fresh.leaves bounded text.maxCreatedLeaves {
+    echo.ref<v2.LeafFact>(leaf.id).ensure(leaf.fact) else text.ContentIdentityMismatch;
+  }
+  for node in fresh.branches bounded text.maxCreatedBranches {
+    let nodeRef = echo.ref<v2.BranchFact>(node.id);
+    nodeRef.ensure(node.fact) else text.ContentIdentityMismatch;
+    echo.edge<v2.BranchFact, v2.BranchFact, v2.Left>(nodeRef)
+      .ensure(rope.idOf(node.left)) else text.ContentIdentityMismatch;   // PROPOSED: edge ensure
+    echo.edge<v2.BranchFact, v2.BranchFact, v2.Right>(nodeRef)
+      .ensure(rope.idOf(node.right)) else text.ContentIdentityMismatch;
+  }
+
+  let m = rope.metrics(next);
+  let newHead = {
+    byteLength: m.byteLength,
+    lineCount: m.lineBreaks + 1u64,                          // needs checked +
+    sequence: head.sequence + 1u64,
+  };
+  let rootId = if m.byteLength == 0u64 then none() else some(rope.idOf(next));
+  let newHeadId = v2.nodeId("head", core.cbor.encode({ newHead, rootId }), [importId]);
+  let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
+  newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
+  if isSome(rootId) {
+    echo.edge<v2.HeadFact, v2.BranchFact, v2.Root>(newHeadRef)
+      .ensure(unwrap(rootId)) else text.ContentIdentityMismatch;
+  }
+  echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(newHeadRef)
+    .ensure(importId) else text.ContentIdentityMismatch;
+
+  echo.edge<v2.BufferFact, v2.HeadFact, v2.CanonicalHead>(bufferRef)
+    .replace(input.basisHeadId, newHeadId) else text.BasisNotCanonical;  // PROPOSED: compare-and-retarget
+  bufferRef.replace({ ...buffer, version: buffer.version + 1u64 }) else text.BasisNotCanonical;
+
+  return {
+    headId: newHeadId,
+    rootNodeId: rootId,
+    byteLength: m.byteLength,
+    lineCount: newHead.lineCount,
+    sequence: newHead.sequence,
+    createdLeaves: len(fresh.leaves),
+    createdBranches: len(fresh.branches),
+  };
+}
