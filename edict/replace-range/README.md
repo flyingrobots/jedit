@@ -112,3 +112,13 @@ the other.
 The next gate must exercise an authored rope consequence under generic Echo
 stateful execution and compare it with the independent oracle. This pure
 boundary witness is not a substitute for that evidence.
+
+## Moving to new Echo and Edict commits
+
+`scripts/deps/echo-edict-relock.mjs` moves Jedit to the Echo and Edict commits checked out in two clean checkouts and regenerates everything derived from them: the host's and conformance runtime's Echo pins, the host's Wesley contract bindings, the ReplaceRange oracle, this lawpack's oracle digests, the vendored `jedit-text` publication and the source's import digest, the toolchain lock, and the build and executable-subject locks. It then runs `tests/build.sh`. Run it with the Node, npm, and Rust releases this toolchain lock pins:
+
+```bash
+node scripts/deps/echo-edict-relock.mjs --echo-repo /path/to/echo --edict-repo /path/to/edict
+```
+
+If the host stops compiling against the new Echo, the run stops before any generated artifact changes; that is source work, not relocking.
