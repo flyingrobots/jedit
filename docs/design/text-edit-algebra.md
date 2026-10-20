@@ -356,6 +356,22 @@ Anchor payload should support:
 
 Anchors transform through logical receipts, not through rope housekeeping.
 
+A point anchor transforms through one logical `ReplaceRange` delta (replace
+bytes `[startByte, endByte)` with `insertedByteLength` bytes) by these laws:
+
+1. An anchor before `startByte` is unchanged.
+2. At a pure insertion point, a left-biased anchor stays before the inserted
+   text and a right-biased anchor moves after it.
+3. An anchor at or after `endByte` shifts by the replacement's byte delta
+   (`insertedByteLength - (endByte - startByte)`).
+4. An anchor inside a replaced span collapses to `startByte`.
+
+`src/domain/anchor-transform-contract.ts` implements them, and
+`spec/anchor-transform.contract.spec.mjs` and
+`tests/anchor-transform-cycle.spec.mjs` pin them. Interval anchors,
+persistence, and editor integration are not specified yet
+([#359](https://github.com/flyingrobots/jedit/issues/359)).
+
 ## Suggested Runtime Shapes
 
 Illustrative only:
