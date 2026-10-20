@@ -78,6 +78,21 @@ test('the active unsaved buffer projection is previewed without filesystem reads
   assert.equal(opened.textAuthority, initial.textAuthority);
 });
 
+test('an open buffer previews its current reading rather than a stale opening window', async () => {
+  const { runtime, model, reads } = await setup();
+  const cache = { coverage: 'window', startLine: 0, lines: ['CURRENT'], totalLineCount: 500, truncated: false };
+  const textAuthority = { kind: 'opened', filePath: '/repo/alpha.txt', cache };
+  const initial = { ...model, editor: { path: '/repo/alpha.txt', lines: ['STALE'] }, textAuthority };
+  const [opened] = runtime.update(key('b', { ctrl: true }), initial);
+  assert.deepEqual(opened.fileExplorerPreview.result, { kind: 'loaded', lines: ['CURRENT'], truncated: true });
+  assert.deepEqual(reads, []);
+  const [scrolled, commands] = runtime.update(key('b', { ctrl: true }), {
+    ...initial, textAuthority: { ...textAuthority, cache: { ...cache, startLine: 40 } },
+  });
+  assert.equal(scrolled.fileExplorerPreview.result, undefined);
+  assert.ok(commands.length > 0, 'a reading that misses the head falls back to the file');
+});
+
  test('click selection previews without opening and closing rejects its outstanding result', async () => {
   const { runtime, model } = await setup();
   const [opened] = runtime.update(key('b', { ctrl: true }), model);
