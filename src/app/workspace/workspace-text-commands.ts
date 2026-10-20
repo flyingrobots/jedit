@@ -32,6 +32,8 @@ import { materializationPreflightIssue } from './workspace-text-materialization-
 import {
   WorkspaceTextOpenBasisResultKinds,
   workspaceTextOpenBasis,
+  workspaceTextProductionHostBasis,
+  type WorkspaceTextOpenBasis,
 } from './workspace-text-open-basis.js';
 import { readingCache } from './workspace-text-observed-reading.js';
 import { openedWorkspaceTextResult } from './workspace-text-open-result.js';
@@ -209,12 +211,7 @@ async function openWorkspaceText(
       return obstructedOpen(request.filePath, basisResult.issue);
     }
     const basis = basisResult.basis;
-    const opened = await request.productionTextSession.openBuffer({
-      bufferKey: request.filePath,
-      initialText: basis.initialText,
-      projectionPath: request.filePath,
-      atMs: request.atMs,
-    });
+    const opened = await openAnchoredBuffer(request, basis);
     if (opened.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedOpen(request.filePath, opened.obstruction.issue);
     }
@@ -226,18 +223,28 @@ async function openWorkspaceText(
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedOpen(request.filePath, observed.obstruction.issue);
     }
-    return openedWorkspaceTextResult(
-      request,
-      basis,
-      opened.bufferId,
-      observed.observed.value,
-    );
+    return openedWorkspaceTextResult(request, basis, opened.bufferId, observed.observed.value, opened.importAnchor.headId);
   } catch (cause) {
     return obstructedOpen(
       request.filePath,
       runtimeIssue(`${OPEN_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
+}
+
+/**
+ * Opens the file's buffer against its current bytes. The session reuses an
+ * existing buffer only when its anchored import names those bytes, and
+ * otherwise refuses without touching the buffer or the file.
+ */
+function openAnchoredBuffer(request: WorkspaceTextOpenCommandRequest, basis: WorkspaceTextOpenBasis) {
+  return request.productionTextSession.openBuffer({
+    bufferKey: request.filePath,
+    initialText: basis.initialText,
+    projectionPath: request.filePath,
+    hostBasis: workspaceTextProductionHostBasis(basis),
+    atMs: request.atMs,
+  });
 }
 
 async function editWorkspaceText(

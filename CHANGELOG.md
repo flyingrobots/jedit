@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Fixed reopening a file silently reusing a stale rope (#350). Opening a file
+  now sends the SHA-256 digest and length of its raw bytes (or its absence) to
+  the native Echo host, which records a `jedit.text.ImportAnchor.v1` fact in the
+  same admitted Tick that creates the buffer: the file path, that basis, and
+  the head built from those bytes. A later open reuses the buffer only when the
+  anchor names the file's current basis; otherwise it is refused with a typed
+  obstruction (`file-changed-since-import`,
+  `file-and-buffer-changed-since-import`, or `import-anchor-missing`) and
+  nothing is written, so unsaved edits survive and the disk never replaces the
+  rope. File durability is clean only against the anchored head, so a reused
+  buffer with edits stays dirty, and a buffer without an anchor is never
+  assumed to match its file. The `createBufferWorldline` contract gains the
+  import basis fields and was regenerated with `echo-wesley-gen`. Echo WALs
+  written before this change still recover, but their buffers have no anchor, so
+  reopening one is refused with `import-anchor-missing` (verified against a WAL
+  written by the previous host). The anchor lives beside the
+  rope facts, so their bytes and the ReplaceRange oracle corpus are unchanged.
+  Rust tests cover unchanged reopen, external modification, unsaved edits, both
+  sides changing, file appearance and disappearance across restart, and a
+  missing anchor; a real-binary spec covers reopen across a host restart.
+
 - Corrected the canonical ownership document to describe the executable pure
   flat-text reference separately from the unfinished stateful rope and installed
   release. The historical basis-identity probe now supplies its own matching
