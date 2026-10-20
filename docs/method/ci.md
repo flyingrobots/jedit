@@ -47,7 +47,7 @@ Specs that import compiled modules load them through `spec/dist-helpers.mjs`, so
 over the `pre-commit` and `pre-push` launchers that `scripts/install-hooks.sh`
 generates, installed into a throwaway repository. A tracked file counts as a
 shell script when it ends in `.sh` or its shebang names `bash` or `sh` (Markdown
-files are never opened, so they are never shell scripts), either
+files are never read, so they are never shell scripts), either
 directly (`#!/bin/sh`) or through a plain `env` (`#!/usr/bin/env bash`, with
 optional `NAME=value` assignments). An `env` shebang that uses options, quotes,
 or escapes (such as `#!/usr/bin/env -S bash -e`) fails the check with a message

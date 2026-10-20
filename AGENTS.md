@@ -82,8 +82,9 @@ kept as history; follow `docs/method/documentation-lifecycle.md`.
   software surface: package API, runtime behavior, rendered output, scripted app
   flow, command behavior, schema validation, lower-mode output, or CI/tooling
   behavior.
-- Tests never read documentation. No spec, test, or gate may open a Markdown
-  file or assert its wording; see
+- Tests never read documentation. No spec, test, or gate may read a document's
+  content or assert its wording, so a docs change never changes a check's
+  result; see
   [documentation-lifecycle.md](docs/method/documentation-lifecycle.md).
 - Fill in the design doc retrospective before marking the PR ready.
 - Create GitHub issues for deferred work instead of hiding follow-on debt in

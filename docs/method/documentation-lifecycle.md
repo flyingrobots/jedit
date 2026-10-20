@@ -38,7 +38,7 @@ A focused `docs/design/` document owns its cycle while the cycle is active, and 
 
 ## Tests do not read documentation
 
-No spec, test, quality gate, or CI check opens a Markdown file or asserts what a document says. Tests pin behavior: package APIs, runtime output, rendered frames, command results, schemas, and tooling. A document is checked by the people who read it, not by a test, so a documentation change never needs a test change and a test never fails because prose moved. Inaccurate documentation is fixed; behavioral tests and release gates are not weakened to make a documentation change pass.
+No spec, test, quality gate, or CI check reads a document's content or asserts what it says, so editing, moving, or deleting a document can never change a check's result. Copying a directory byte-for-byte into a fixture is not reading it; parsing a document, even only its first line, is. Tests pin behavior: package APIs, runtime output, rendered frames, command results, schemas, and tooling. A document is checked by the people who read it, not by a test, so a documentation change never needs a test change and a test never fails because prose moved. Inaccurate documentation is fixed; behavioral tests and release gates are not weakened to make a documentation change pass.
 
 ## Unresolved authority
 
