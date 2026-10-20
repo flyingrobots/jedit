@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Folded `VISION.md` and `docs/BEARING.md` into `README.md`. *Current posture*
+  now holds current truth, the authority and artifact boundaries, the roadmap
+  toward `Jim.edict`, and the hard gates; *Where Jim is going* holds the product
+  promise, boundary doctrine, product goalposts, and non-goals. The README's
+  Vim-parody introduction is unchanged. Every reference now points at the
+  README sections.
+
 - Removed obsolete documentation: completed or abandoned design cycles whose
   rules now live in code, specs, or canonical owners; documents for retired
   interfaces (the TypeScript text runtime, optic session, WASM transport, and

@@ -12,7 +12,7 @@ Jim-owned Edict lawpacks define application operations and optics; Edict emits
 independently verified generic packages; and Echo supplies only generic runtime
 authority. Generated TypeScript is a codec/transport stub and renderer, not
 Jim. See [ARCHITECTURE.md](../ARCHITECTURE.md) and
-[BEARING.md](BEARING.md).
+the README's [Current posture](../README.md#current-posture).
 
 This document is a progressive, end-to-end technical explanation of `jedit` aimed at a reader with no prior knowledge of this codebase, its domain vocabulary, or the surrounding runtime stack. Each section builds on the last.
 
@@ -23,7 +23,7 @@ active roadmap and should not be treated as the freshest status ledger.
 
 Use these documents for current planning posture:
 
-- [`docs/BEARING.md`](BEARING.md) for compact current truth and next goalpost.
+- The README's [Current posture](../README.md#current-posture) for current truth and the roadmap.
 - [`docs/method/roadmap-planning.md`](method/roadmap-planning.md) for roadmap
   process.
 - [#128](https://github.com/flyingrobots/jedit/issues/128) for the Jim/Vim

@@ -17,8 +17,8 @@ a decision, but they are not its canonical repository home.
    `ARCHITECTURE.md` owns repository-wide doctrine;
    `docs/jim-component-ownership.md` owns the Jim/Jedit/Edict/Echo target
    ownership and causal model; a focused `docs/design/` document owns a design
-   cycle; `docs/method/` owns workflow policy; and `docs/BEARING.md` owns current
-   execution gravity.
+   cycle; `docs/method/` owns workflow policy; and `README.md` (*Current posture*)
+   owns current execution gravity.
 2. Record the accepted rule, its current-versus-target posture, and explicit
    refinement, supersession, dependency, and related-document edges.
 3. Update the relevant documentation entrance or router when a durable page is
@@ -46,7 +46,8 @@ a decision, but they are not its canonical repository home.
 | Workflow policy, including this policy | `docs/method/` |
 | When documentation is kept, rewritten, or deleted (Git history is the archive) | `docs/method/documentation-lifecycle.md` |
 | What CI runs for a change | `docs/method/ci.md` |
-| Current execution gravity | `docs/BEARING.md` |
+| Current execution gravity | `README.md` (*Current posture*) |
+| Product direction | `README.md` (*Where Jim is going*) |
 
 Rule 1 applies to this document too: workflow policy belongs in `docs/method/`,
 which is why the policy body lives here rather than in `AGENTS.md`.

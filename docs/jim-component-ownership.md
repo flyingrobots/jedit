@@ -9,7 +9,7 @@ status: accepted
 project: jedit
 related:
   - ../ARCHITECTURE.md
-  - BEARING.md
+  - ../README.md
   - jedit-echo-end-to-end.md
 ---
 
@@ -1209,11 +1209,10 @@ but contradictory prose.
 | How does save survive a host crash or intervening writer? | The file is correctly described as an export projection, but no executable effect provider or compare-and-swap contract exists | Define stable intent and outcome identities, fingerprints, immutable content references, idempotency keys, guarantee and certainty classes, effect evidence, authorship classification, indeterminate supersession, leases and fencing where available, and recovery decisions |
 | Can the UI combine inconsistent bases? | Projections are disposable, but the current target has no canonical view-basis contract | Make every Jim state declare its presentation head and coordinate bases; render only a valid view basis and withhold optional Graft data when its basis differs |
 | Are all unhappy outcomes obstructions? | Current prose and contracts emphasize typed obstructions | Freeze separate normal-domain, obstruction, admission, compiler, external-effect, and runtime-fault result classes |
-| Is checkpoint declaration supported today? | The native host registers, admits, persists, and returns `RopeCheckpointDeclared` evidence; `docs/BEARING.md` records it as implemented | Remove stale claims that checkpoint always fails closed; retain the distinction from causal anchors and text mutation |
+| Is checkpoint declaration supported today? | The native host registers, admits, persists, and returns `RopeCheckpointDeclared` evidence; the README's *Current posture* records it as implemented | Remove stale claims that checkpoint always fails closed; retain the distinction from causal anchors and text mutation |
 | What exactly is a canonical event envelope? | The target sequences require one, but the final wire schema is not yet frozen | Define one opaque transport contract: Jedit decodes raw input, Echo carries the envelope without interpreting Jim fields, and only `jim.core` assigns editor meaning |
 | Which TypeScript paths still own semantics? | Vim parsing, motion resolution, coordinate conversion, operation selection, and transition planning are executable today | Classify them explicitly as compatibility authority, not merely import or migration plumbing |
 | Who owns text and rope contracts in target prose? | Some older documents say “Jedit” broadly, while the first draft grouped them under Jim | Name `jedit.text` as the application-owned text capability, `jim.core` as its semantic consumer, and Jedit as the product/body composition |
-| Do documentation tests prove the canonical section? | Some policy tests search required phrases anywhere in a document | Scope tests to the named ownership sections and assert the complete contract, including test-only direct `ReplaceRange` invocation |
 | Does the target exist in code? | A compiler-produced pure flat-text `ReplaceRange.edict` reference exists; the authored persistent-rope operation, `Jim.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers remain absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
 
 In summary, the remaining disagreements are not about whether Echo should
@@ -1230,7 +1229,7 @@ because documentation drifts from the code that actually decides.
 
 The audit followed these evidence layers:
 
-1. `ARCHITECTURE.md`, `docs/BEARING.md`, and
+1. `ARCHITECTURE.md`, the README's *Current posture*, and
    `docs/jedit-echo-end-to-end.md` supplied the declared target and current
    runtime corridor.
 2. `contracts/jedit/echo-text.graphql` supplied the current operation surface.

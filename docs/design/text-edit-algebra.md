@@ -458,5 +458,5 @@ Git is optional interop, not architecture.
 
 ## Build Order
 
-`docs/BEARING.md` owns the order of work. The `ReplaceRange` law is fixed in
+The README's [Roadmap](../../README.md#roadmap) owns the order of work. The `ReplaceRange` law is fixed in
 0158, and the persistent rope is drafted in 0159.

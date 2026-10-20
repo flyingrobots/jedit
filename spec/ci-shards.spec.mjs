@@ -39,7 +39,7 @@ test('known specs map to stable shard owners', () => {
 });
 
 test('planner runs no test shards for docs-only changes', () => {
-  const plan = planChangedShards(['docs/BEARING.md']);
+  const plan = planChangedShards(['docs/method/ci.md']);
 
   assert.equal(plan.full, false);
   assert.equal(plan.releaseGate, false);

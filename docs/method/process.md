@@ -40,7 +40,7 @@ Use `docs/method/roadmap-planning.md` when work spans multiple cycles, defines
 a release-gate batch, claims versioned-release readiness, or coordinates a set
 of user stories and slices.
 
-The roadmap policy does not replace this process. It explains how `BEARING.md`,
+The roadmap policy does not replace this process. It explains how the README's *Current posture*,
 release-gate docs, full-cycle design docs, GitHub issues, slices, PRs, and
 witnesses relate. The same proof rule still applies: roadmap and design docs
 define intent, while tests, release gates, generated artifacts, model facts, and
@@ -75,7 +75,7 @@ branch changes, fetch and merge the target branch normally.
 - Do not expand a slice because nearby cleanup is tempting.
 - If a slice exposes follow-on work, create a GitHub issue instead of hiding it
   in prose.
-- Keep `docs/BEARING.md` current when execution gravity changes.
+- Keep the README's *Current posture* current when execution gravity changes.
 
 ## Ready For Review
 

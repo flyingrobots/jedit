@@ -35,8 +35,9 @@ These are hard repo rules, not suggestions:
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/jim-component-ownership.md` owns the Jim/Jedit/Edict/Echo target
   ownership and causal model.
-- `docs/BEARING.md` records the current execution gravity and the roadmap toward
-  the `Jim.edict` goalpost.
+- `README.md` (*Current posture*) records current truth, the roadmap toward the
+  `Jim.edict` goalpost, and the hard gates; *Where Jim is going* records the
+  product direction.
 - `docs/method/process.md` is the canonical cycle workflow.
 - `docs/method/durable-decisions.md` owns the durable decision policy and the
   canonical-owner register.

@@ -197,7 +197,7 @@ Versioned release planning has four jobs:
    landed.
 
 No versioned release roadmap is active. The `v0.1.0` roadmap was retired after
-its authority claim was invalidated; current direction is `docs/BEARING.md`
+its authority claim was invalidated; current direction is the README's *Current posture*
 and the [Jim.edict goalpost](https://github.com/flyingrobots/jedit/issues/295).
 A new roadmap starts from this policy when a release is planned.
 
@@ -252,7 +252,7 @@ Authority flows in this order:
    generated artifacts, command output, and CI checks.
 3. GitHub Issues and pull requests.
 4. Design docs and roadmap docs.
-5. `CHANGELOG.md`, `docs/BEARING.md`, and release notes.
+5. `CHANGELOG.md`, the README's *Current posture*, and release notes.
 6. Coordination memory.
 
 Memory notes help coordination, but they do not override files, commits,
@@ -452,12 +452,12 @@ contract works.
 
 | Document | Time horizon | Primary question | Update frequency |
 | --- | --- | --- | --- |
-| `VISION.md` | Long-term | Where are we going? | Rare |
-| `docs/BEARING.md` | Current state | Where are we now? | Frequent |
+| `README.md` *Where Jim is going* | Long-term | Where are we going? | Rare |
+| `README.md` *Current posture* | Current state | Where are we now? | Frequent |
 | Roadmap docs | Release cycle | What must land for this version? | Per release |
 | Goalpost docs | Milestone | What will this goalpost prove? | Per goalpost |
 | GitHub issues | Execution | What work remains? | Continuous |
 
-`docs/BEARING.md` stays short and factual; it is not a manifesto, backlog, or
-issue tracker. When a roadmap or goalpost is finished or abandoned, its document
+*Current posture* stays factual; it is not a manifesto, backlog, or issue
+tracker. When a roadmap or goalpost is finished or abandoned, its document
 is deleted as [documentation-lifecycle.md](documentation-lifecycle.md) requires.
