@@ -13,11 +13,17 @@ cd "$root"
 source "$root/scripts/ci/lib/shebang.sh"
 
 scripts=()
+unparsed=()
 while IFS= read -r -d '' path; do
   case "$path" in
     *.sh) scripts+=("$path") ;;
     *)
-      if [[ -f "$path" ]] && interpreter="$(shebang_interpreter "$path")"; then
+      [[ -f "$path" ]] || continue
+      status=0
+      interpreter="$(shebang_interpreter "$path")" || status=$?
+      if ((status == 2)); then
+        unparsed+=("$path")
+      elif ((status == 0)); then
         case "$interpreter" in
           bash | sh) scripts+=("$path") ;;
         esac
@@ -25,6 +31,12 @@ while IFS= read -r -d '' path; do
       ;;
   esac
 done < <(git ls-files -z)
+
+if ((${#unparsed[@]})); then
+  printf 'shellcheck: cannot tell whether %s is a shell script from its env shebang\n' "${unparsed[@]}" >&2
+  echo "shellcheck: use a plain shebang such as '#!/usr/bin/env bash' or '#!/bin/sh' (env options, quotes, and escapes are not parsed), or give a shell script a .sh extension." >&2
+  exit 1
+fi
 
 if ((${#scripts[@]} == 0)); then
   echo "shellcheck: no tracked shell scripts found" >&2
