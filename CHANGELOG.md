@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Folded `VISION.md` and `docs/BEARING.md` into `README.md`. *Current posture*
+  now holds current truth, the authority and artifact boundaries, the roadmap
+  toward `Jim.edict`, and the hard gates; *Where Jim is going* holds the product
+  promise, boundary doctrine, product goalposts, and non-goals. The README's
+  Vim-parody introduction is unchanged. Every reference now points at the
+  README sections.
+
+- Removed obsolete documentation: completed or abandoned design cycles whose
+  rules now live in code, specs, or canonical owners; documents for retired
+  interfaces (the TypeScript text runtime, optic session, WASM transport, and
+  structural-history generation); dated audit snapshots; the invalidated
+  `v0.1.0` release material; the method backlog, retrospective, and graveyard
+  directories; and five closed Edict probes. Still-binding rules moved into
+  their owners, live ideas became GitHub issues, and links were repaired.
+  `docs/method/documentation-lifecycle.md` now owns the rule that Git history
+  is the archive, `docs/method/ci.md` documents CI planning, and `AGENTS.md`,
+  `ARCHITECTURE.md`, `README.md`, `VISION.md`, `CODE_STANDARDS.md`, BEARING,
+  the ownership map, and the Echo guides were corrected where they had drifted.
+  Tests no longer read documentation at all: the specs that asserted Markdown
+  wording (`audit-docs`, `design-cycle-policy`, `guide-path-references`,
+  `echo-application-hosting-guide`, `rope-fact-inspector-design`, the Vim
+  command-line teardown check, and the design-doc ledger half of
+  `replace-range-law-cycle`) and the quality gate's `identity-doctrine-links`
+  rule were removed, along with the now-empty `docs-release` CI shard, so a
+  docs-only change runs build and quality but no test shard. Behavioural checks
+  were kept, including the lawpack digest sidecars and the cutover guard.
+
 - CI now runs ShellCheck (`scripts/ci/shellcheck.sh`, in the `quality` job) over
   every tracked shell script and over the pre-commit and pre-push launchers that
   `scripts/install-hooks.sh` generates, installed into a throwaway repository.

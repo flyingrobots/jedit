@@ -20,8 +20,8 @@ The broader project doctrine is written down in
   Ports describe typed runtime contracts. They do not decode raw payloads.
 
 - `src/adapters`
-  Concrete implementations for filesystem, MCP, Bijou integration, persistence, and process boundaries.
-  Raw strings, JSON, bytes, terminal events, and MCP payloads are decoded here and re-encoded here.
+  Concrete implementations for the filesystem, the native Echo host process, Graft, Bijou integration, and other process boundaries.
+  Raw strings, JSON, bytes, terminal events, and host payloads are decoded here and re-encoded here.
 
 - `src/ui`
   Presentation and input mapping.
@@ -232,17 +232,21 @@ Why the boundary exists:
 - Graft's `StructuredBuffer` surface is an immutable parsed snapshot over
   `path + content`, which is excellent for language intelligence but not a
   substitute for an editor runtime.
-- `jedit` still needs a lawful text-edit kernel with explicit tick-grounded
-  history, stable anchors, and eventually a persistent piece-rope worldline.
+- Editor truth needs a lawful text-edit kernel with tick-grounded history and
+  stable anchors. The persistent rope is `jedit.text` law hosted in Echo's
+  graph (see `docs/design/0159-edict-rope-representation.md`), not a Graft
+  concern.
 - Structural projections and causal text truth are related, but they are not
   the same layer.
 
 The intended stack is:
 
-- `jedit` core owns editing interaction and buffer lifecycle over causal text
-  frontiers
+- `Jim.edict` owns editing interaction and buffer lifecycle over causal text
+  frontiers; today TypeScript and the native host hold this as compatibility
+  authority
 - Graft provides structural intelligence and parser-backed projections
-- Echo / `echo-text` owns the native causal text substrate
+- Echo owns generic admission, scheduling, graph state, receipts, and
+  recovery; it hosts the rope as application law, not as a built-in text engine
 - Echo persistence owns durable causal history
 - filesystem remains a working projection boundary
 - Git remains an ecosystem projection and compatibility export
@@ -251,8 +255,9 @@ The intended stack is:
 implementation may use Echo internally, but `jedit` should not have to route
 canonical editor truth through Graft to reach its own causal substrate.
 
-The transport used to reach Graft is not architectural truth. The current MCP
-path is an implementation detail, not a long-term ownership claim.
+The transport used to reach Graft is not architectural truth. The current
+direct Graft API session (`src/adapters/graft-api-session.ts`) is an
+implementation detail, not a long-term ownership claim.
 
 ## Testing Rule
 

@@ -17,6 +17,8 @@ unparsed=()
 while IFS= read -r -d '' path; do
   case "$path" in
     *.sh) scripts+=("$path") ;;
+    # Documentation is never opened by a check, even to read a shebang.
+    *.md) ;;
     *)
       [[ -f "$path" ]] || continue
       status=0

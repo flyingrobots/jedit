@@ -1,6 +1,8 @@
 # Supported Outcome Settlement And `:why`
 
-Status: design note for WF-0108A.
+Status: accepted doctrine for how `:why` words runtime evidence. In production
+today, range `:why` returns a typed obstruction; this vocabulary governs it as
+explanation is implemented.
 
 Supported Outcome Settlement is the cross-repo doctrine that replaces the
 temporary ULTRAGOLD working name. For jedit, the doctrine matters because
@@ -22,6 +24,16 @@ Jim does not own:
 - Continuum support admissibility;
 - XYPH Quest settlement;
 - proof-tier policy for a foreign authority.
+
+Jim is an Echo application. It does not talk to Echo through Continuum.
+Continuum matters only where Jim and Echo evidence must be portable to other
+Continuum participants (WARP TTD, Graft, WARP DRIVE, agents):
+
+| Layer | Owns | Does not own |
+| --- | --- | --- |
+| Jim / jedit | `:why` UX, command catalog, Vim command grammar, editor facts, JSON witness shape | Runtime admission or generic protocol doctrine |
+| Echo | Reading envelopes, receipts, retained evidence, runtime admission, replayable basis facts | Jim commands, Vim nouns, buffers, registers, macros |
+| Continuum | Portable profile vocabulary, evidence posture, participant discovery, conformance fixtures | Jim/Echo app integration, runtime implementation, editor app ontology |
 
 ## `:why` Outcome Vocabulary
 

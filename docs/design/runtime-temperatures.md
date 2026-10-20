@@ -26,8 +26,7 @@ Interpret them through the current doctrine:
 The old terms are compatibility labels. They are not ontology claims.
 
 The rationale for choosing Echo as native truth is written down in
-[why-echo.md](why-echo.md). The Optic-shaped file model is written down in
-[0006-optic-backed-file-model](0006-optic-backed-file-model/optic-backed-file-model.md).
+[why-echo.md](why-echo.md).
 
 ## Core Law
 

@@ -136,7 +136,7 @@ reachable through the live workspace dependency graph.
 - Tests exercise runtime and rendered output, not design-document assertions.
 - Preserve editor behavior and the Echo authority boundary.
 - Use the existing `title-unfreeze` label under the
-  [freeze policy](../method/backlog/leash/title-scene-freeze.md). The human's
+  [freeze policy](../method/title-scene-freeze.md). The human's
   explicit removal request authorizes this narrow title integration change;
   engine/asset polish remains frozen.
 

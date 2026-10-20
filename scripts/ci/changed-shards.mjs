@@ -148,7 +148,7 @@ export function impactForPath(pathName, packageChangeKind = PACKAGE_CHANGE_KINDS
     return shardImpact('workspace-ui-change', [TEST_SHARDS.WorkspaceUi, TEST_SHARDS.EchoAuthority], false);
   }
   if (isDocsPath(pathName)) {
-    return shardImpact('docs-change', [TEST_SHARDS.DocsRelease], false);
+    return shardImpact('docs-change', [], false);
   }
   return fullImpact('unknown-path');
 }

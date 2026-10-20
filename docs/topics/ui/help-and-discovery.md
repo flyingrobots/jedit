@@ -16,7 +16,7 @@ Jim uses several help surfaces:
 | Command completions | Command names, aliases, and one-line descriptions. |
 | Inline command help | Argument shape and focused-command details. |
 | `:help` | Browseable help for commands and concepts. |
-| `:why` | Causal explanation of a command or selected range. |
+| `:why` | Causal explanation of the last command. Range explanation currently returns a typed obstruction. |
 | Settings descriptions | Short explanations for preferences. |
 
 ## `:help`
