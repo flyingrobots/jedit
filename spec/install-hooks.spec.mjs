@@ -339,3 +339,17 @@ test('a shallow clone cannot conclude its history never had the hooks when pushi
   assert.match(result.stderr, /shallow/);
   assert.doesNotMatch(remoteRefs(remote), /refs\/heads\/hookless/);
 });
+
+test('a pending octopus merge counts every merged parent as history', (t) => {
+  const fixture = makeRepository(t);
+  const worktree = path.join(fixture.root, 'old');
+  git(fixture.repo, 'worktree', 'add', '-q', '-b', 'old', worktree, fixture.beforeHooks);
+  const first = git(fixture.repo, 'commit-tree', `${fixture.beforeHooks}^{tree}`, '-p', fixture.beforeHooks, '-m', 'first');
+  git(fixture.repo, 'branch', 'first', first);
+  // Only the second merged parent, main, has the hooks; MERGE_HEAD lists first, then main.
+  git(worktree, 'merge', '-q', '--no-verify', '-s', 'ours', '--no-commit', 'first', 'main');
+  assert.equal(existsSync(path.join(worktree, 'scripts', 'hooks', 'pre-commit')), false);
+  const result = spawnSync('git', ['commit', '-q', '-m', 'octopus'], { cwd: worktree, encoding: 'utf8', env: hookEnv(fixture) });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /scripts\/hooks\/pre-commit/);
+});

@@ -174,12 +174,21 @@ else
     fail "this commit would record $tracked without executable mode 100755." \
       "Run 'git update-index --chmod=+x $tracked', then try again."
   fi
+  # MERGE_HEAD as a revision names only the first merged commit; the file
+  # lists every parent of a pending merge, one per line (an octopus has
+  # several), and each one's history counts.
   revisions=()
-  for revision in HEAD MERGE_HEAD; do
-    if git rev-parse --verify --quiet "$revision" >/dev/null; then
-      revisions+=("$revision")
-    fi
-  done
+  if git rev-parse --verify --quiet HEAD >/dev/null; then
+    revisions+=(HEAD)
+  fi
+  merge_heads="$(git rev-parse --git-path MERGE_HEAD)"
+  if [[ -f "$merge_heads" ]]; then
+    while read -r merged _; do
+      if [[ -n "$merged" ]]; then
+        revisions+=("$merged")
+      fi
+    done <"$merge_heads"
+  fi
   if ((${#revisions[@]})); then
     if had_hook "${revisions[@]}"; then
       refuse "this commit would drop"
