@@ -143,6 +143,8 @@ export async function load(url, context, nextLoad) {
   assert.equal(result.status, 0, result.stderr);
   const loaded = readFileSync(log, 'utf8');
   const distUrl = pathToFileURL(path.join(REPO_ROOT, 'dist')).href;
+  // Positive control: the forbidden checks below would pass vacuously on a URL prefix mismatch.
+  assert.equal(loaded.includes(`${distUrl}/adapters/workspace-app.js`), true, 'entry module URL');
   for (const forbidden of REMOVED_RAY_TRACING_RUNTIME_MODULES) {
     assert.equal(loaded.includes(`${distUrl}/${forbidden}`), false, forbidden);
   }
