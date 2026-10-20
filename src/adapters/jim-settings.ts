@@ -1,4 +1,4 @@
-import { closeSync, fchmodSync, lstatSync, openSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { closeSync, fchmodSync, fsyncSync, lstatSync, openSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -147,6 +147,8 @@ function replaceConfig(path: string, source: string, mode: number): JimSettingsI
       // openSync applies the process umask; restore the existing file's mode.
       fchmodSync(descriptor, mode & PERMISSION_BITS);
       writeFileSync(descriptor, source, CONFIG_ENCODING);
+      // Durable before the rename, so a crash cannot leave a truncated .jimrc.
+      fsyncSync(descriptor);
     } finally {
       closeSync(descriptor);
     }
