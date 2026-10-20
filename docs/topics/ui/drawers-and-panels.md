@@ -37,6 +37,13 @@ The Graft drawer is a projection surface. It can show symbols, structure, and
 projection posture, but it does not own source text. If the projection is stale
 or unavailable, the drawer should say so directly.
 
+When Graft supplies provider-neutral projection lanes (for example an Edict Core
+projection, Echo Target IR, or an opaque obstruction receipt), the drawer shows
+each lane and any bounded review payload for display only. Jedit never executes
+Echo, computes digests, or admits artifacts on the strength of a lane; payloads
+that exceed the adapter bounds are shown as omitted rather than truncated
+silently.
+
 ## Causal History
 
 Jim does not currently expose a history drawer. The previous drawer projected

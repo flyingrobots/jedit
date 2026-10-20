@@ -31,7 +31,7 @@ an executable or inspectable software surface.
 | Acceptance Criteria | Completion contract | Docs and issue bodies |
 | Validation Plan | Required proof commands | Design docs and PR bodies |
 | Pull Request | Review and merge vehicle | GitHub PR |
-| Changelog Entry | Historical ledger | `CHANGELOG.md` or `docs/BEARING.md` |
+| Changelog Entry | Release notes | `CHANGELOG.md` |
 
 ## Relationship Model
 
@@ -196,33 +196,22 @@ Versioned release planning has four jobs:
 4. Define the release gate that must be true before the version can be called
    landed.
 
-The current roadmap instance is the Echo-hosted jedit `v0.1.0` completion
-roadmap:
-
-- Roadmap index:
-  `docs/BEARING.md`
-- Baseline release-gate design:
-  `docs/design/0024-jedit-powered-by-echo-release-gate.md`
-- Production cutover design:
-  `docs/design/0027-echo-hosted-production-cutover.md`
-- Recovery and WSC scope:
-  `docs/design/0033-echo-authoritative-recovery-gate-b.md`
-  and `docs/design/0035-jedit-wsc-durability-scope.md`
-- Goalpost docs and umbrella issues:
-  create or update them when the `v0.1.0` roadmap is scaffolded under this
-  policy
+No versioned release roadmap is active. The `v0.1.0` roadmap was retired after
+its authority claim was invalidated; current direction is `docs/BEARING.md`
+and the [Jim.edict goalpost](https://github.com/flyingrobots/jedit/issues/295).
+A new roadmap starts from this policy when a release is planned.
 
 ### Versioned Release Contract
 
 ```text
 VersionedRelease = {
-  id: "v0.1.0",
-  name: "Echo-Hosted jedit Completion Roadmap",
+  id: "vMAJOR.MINOR.PATCH",
+  name: string,
   roadmapDoc: MarkdownDocument,
   goalposts: Goalpost[],
   releaseGate: ChecklistItem[],
   totalSliceBudget: PositiveInteger,
-  status: "planned" | "active" | "landed" | "superseded"
+  status: "planned" | "active" | "landed"
 }
 ```
 
@@ -231,45 +220,8 @@ VersionedRelease = {
 A versioned release is ready when every goalpost in the release is landed and
 the release-level gate is satisfied.
 
-For Echo-hosted jedit `v0.1.0`, the release gate is:
-
-- [ ] The production text model is Echo-hosted; non-Echo runtime profiles are
-      not exposed as product paths.
-- [ ] jedit app code submits product intents and observes readings through
-      product ports such as `TextBufferSessionPort` and `TextBufferOptic`.
-- [ ] Trusted host code owns package install, scheduler lifecycle, fault
-      recovery, and runtime control.
-- [ ] jedit never exposes Echo runtime coordinates as app-facing product
-      authority.
-- [ ] Graft remains structural intelligence, not editing truth.
-- [ ] Workspace render caches, footer state, preview, highlighting, save/export,
-      and recovery flows do not become hidden text authority.
-- [ ] Missing Echo retention, replay, WSC, or recovery evidence is reported as
-      explicit obstruction or unavailable posture, not local fallback truth.
-- [ ] UI behavior is proven through model/render/runtime tests or lower-mode
-      facts, not screenshots alone.
-- [ ] A single validation command or release checklist proves readiness.
-
-### Release Sequencing
-
-```mermaid
-flowchart LR
-  V010[v0.1.0 Release]
-  V010 --> GP1[GP1 Echo-Hosted Text Authority]
-  V010 --> GP2[GP2 Interactive Workspace Cutover]
-  V010 --> GP3[GP3 Echo Recovery And WSC Durability]
-  V010 --> GP4[GP4 File Lifecycle And Export]
-  V010 --> GP5[GP5 Vim UX And Command Surface]
-  V010 --> GP6[GP6 Release Quality And Packaging]
-
-  GP1 --> GP2
-  GP1 --> GP3
-  GP2 --> GP4
-  GP3 --> GP4
-  GP2 --> GP5
-  GP4 --> GP6
-  GP5 --> GP6
-```
+Each roadmap document states its release gate as a checklist of executable
+conditions.
 
 ### Version Naming
 
@@ -277,9 +229,8 @@ Use SemVer roadmap names when a body of work has a release-level definition of
 complete. Release IDs must include the leading `v` and all three SemVer
 positions:
 
-- `v0.1.0`: first version that can reasonably be called Echo-hosted.
-- `v0.2.0`: compatible feature or workflow release after `v0.1.0`.
-- `v0.2.1`: patch release for fixes, docs, or proof hardening.
+- `v0.3.0`: a feature or workflow release before the first complete version.
+- `v0.3.1`: a patch release for fixes, docs, or proof hardening.
 - `v1.0.0`: first version that can reasonably be called complete from a user's
   perspective.
 
@@ -312,7 +263,7 @@ witnesses.
 
 ```text
 Goalpost = {
-  id: "JEDIT-V0.1-GP<n>",
+  id: "JEDIT-V<major>.<minor>-GP<n>",
   title: string,
   umbrellaIssue: GitHubIssue,
   designDoc: MarkdownDocument,
@@ -321,7 +272,7 @@ Goalpost = {
   checklist: Slice[],
   acceptanceCriteria: ChecklistItem[],
   validationPlan: CommandOrWitness[],
-  completionState: "planned" | "active" | "landed" | "superseded"
+  completionState: "planned" | "active" | "landed"
 }
 ```
 
@@ -430,9 +381,9 @@ stateDiagram-v2
   Active --> ReviewReady: slices complete + validation green
   ReviewReady --> Landed: PR merged
   ReviewReady --> Active: review issues found
-  Active --> Superseded: roadmap changes
+  Active --> Retired: roadmap changes; its document is deleted
   Landed --> [*]
-  Superseded --> [*]
+  Retired --> [*]
 ```
 
 ### Cycle Lifecycle
@@ -476,25 +427,6 @@ Acceptable proof includes:
 Docs can explain the contract. They cannot be the only evidence that the
 contract works.
 
-## Current Roadmap Instance
-
-| Goalpost | Slice budget | Umbrella issue |
-| --- | ---: | --- |
-| JEDIT-V0.1-GP1 Echo-Hosted Text Authority | 18 | TBD |
-| JEDIT-V0.1-GP2 Interactive Workspace Cutover | 22 | TBD |
-| JEDIT-V0.1-GP3 Echo Recovery And WSC Durability | 24 | TBD |
-| JEDIT-V0.1-GP4 File Lifecycle And Export | 18 | TBD |
-| JEDIT-V0.1-GP5 Vim UX And Command Surface | 18 | TBD |
-| JEDIT-V0.1-GP6 Release Quality And Packaging | 16 | TBD |
-
-Current release: `v0.1.0`.
-
-Total planned budget: 116 slices.
-
-The `TBD` umbrella issues should be created when the roadmap is formally
-scaffolded under this policy. Until then, do not report percentage progress
-from this table as landed truth.
-
 ## Operating Invariants
 
 - Every versioned release has a roadmap document.
@@ -514,50 +446,18 @@ from this table as landed truth.
 - Bijou owns terminal runtime mechanics, not causal semantics.
 - Changes are committed as normal commits, never amended.
 - Branches, commits, and PRs do not use a `codex` prefix.
-- PRs are non-draft unless repo policy changes.
+- Draft pull requests follow `docs/method/process.md`.
 
-## Vision And Bearing Recommendation
-
-jedit should keep `BEARING.md` and `VISION.md`.
-
-### Keep `BEARING.md`
-
-`BEARING.md` already exists and is useful. It should remain the short
-operational orientation document:
-
-- what jedit is right now
-- what recently shipped
-- what is currently risky
-- what open loops matter next
-- what constraints an agent or engineer should remember before touching the
-  repo
-
-`BEARING.md` should be updated frequently and should stay factual. It should
-not become a product manifesto, backlog, or issue tracker.
-
-### Keep `VISION.md`
-
-Root-level `VISION.md` is the stable north star for jedit. It should answer:
-
-- Who is jedit for?
-- What job should it become excellent at?
-- What does "complete" mean from a user's perspective?
-- What should jedit refuse to become?
-- What product principles should guide roadmap tradeoffs?
-- Which workflows define success one year from now?
-
-`VISION.md` should change rarely. It should guide release roadmaps without
-becoming a roadmap itself.
-
-### Recommended Separation
+## Planning Document Roles
 
 | Document | Time horizon | Primary question | Update frequency |
 | --- | --- | --- | --- |
 | `VISION.md` | Long-term | Where are we going? | Rare |
-| `BEARING.md` | Current state | Where are we now? | Frequent |
+| `docs/BEARING.md` | Current state | Where are we now? | Frequent |
 | Roadmap docs | Release cycle | What must land for this version? | Per release |
 | Goalpost docs | Milestone | What will this goalpost prove? | Per goalpost |
-| GitHub Issues | Execution | What work remains? | Continuous |
+| GitHub issues | Execution | What work remains? | Continuous |
 
-Keep `BEARING.md` explicitly pointed at `VISION.md` for long-term direction and
-to roadmap docs for release execution.
+`docs/BEARING.md` stays short and factual; it is not a manifesto, backlog, or
+issue tracker. When a roadmap or goalpost is finished or abandoned, its document
+is deleted as [documentation-lifecycle.md](documentation-lifecycle.md) requires.

@@ -33,42 +33,25 @@ These are hard repo rules, not suggestions:
 ## Structure
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
-- `docs/BEARING.md` records the current execution gravity.
+- `docs/jim-component-ownership.md` owns the Jim/Jedit/Edict/Echo target
+  ownership and causal model.
+- `docs/BEARING.md` records the current execution gravity and the roadmap toward
+  the `Jim.edict` goalpost.
 - `docs/method/process.md` is the canonical cycle workflow.
 - `docs/method/durable-decisions.md` owns the durable decision policy and the
   canonical-owner register.
+- `docs/method/documentation-lifecycle.md` owns when documentation is kept,
+  rewritten, or deleted.
 - `docs/method/roadmap-planning.md` defines release-gate, roadmap, slice, and
   proof policy for multi-cycle planning.
+- `docs/method/ci.md` describes what CI runs for a change.
 - `docs/design/TEMPLATE.md` is the required template for full cycle designs.
-- `docs/design/0034-design-cycle-template-and-lifecycle.md` records the policy
-  decision that made executable design docs official.
-- `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the completed
-  baseline plan for the first thirty slices proving jedit has an installed
-  package/evidence path while Echo remains generic.
-- `docs/design/0025-echo-application-hosting-pattern.md` is the completed
-  post-release-pressure ten-slice plan for proving the reusable Echo
-  application-hosting pattern before applying it to Graft, Think, or other apps.
-- `docs/design/0026-echo-hosting-hardening-first-twenty.md` is the completed
-  hardening plan for slices 41-60. Keep track of our progress in that plan doc
-  by checking off slices just before you make the commit for that slice.
-- `docs/design/0027-echo-hosted-production-cutover.md` is the active production
-  cutover plan for slices 61-80. Keep track of progress in that plan doc by
-  checking off slices just before you make the commit for that slice.
-- `docs/BEARING.md` is the active plan for the powered-by-Echo completion
-  budget after slice 80. Keep track of progress there by checking off slices
-  just before you make the commit for that slice.
-- `docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`
-  records the local package for slices 101-110.
-- `docs/design/0033-echo-authoritative-recovery-gate-b.md` records the current
-  local companion plan for consuming Echo recovery truth through jedit-owned
-  ports. Keep track of progress there and in `docs/BEARING.md` by checking off
-  slices just before you make the commit for that slice.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
-  Keep it empty when the ratchet is clean.
+  Lower an entry when the debt shrinks, and remove it when the debt is gone.
 
-Keep track of our progress in the plan doc by checking off slices just before
-you make the commit for that slice.
+When a cycle has a plan doc with a slice checklist, check off each slice just
+before you make the commit for that slice.
 
 ## Durable Decision Discipline
 
@@ -82,9 +65,9 @@ Chat transcripts, Think memories, pull-request prose, and review threads may
 motivate a decision; none of them is its repository home.
 
 Treat missing or stale canonical decision documentation as incomplete
-engineering work, not optional polish. Historical design documents remain
-evidence of their cycle; when durable current architecture changes, update the
-current owning doctrine rather than relying on an old retrospective.
+engineering work, not optional polish. When durable current architecture
+changes, update the current owning doctrine. Obsolete documents are deleted, not
+kept as history; follow `docs/method/documentation-lifecycle.md`.
 
 ## Design Cycle Workflow
 
@@ -107,13 +90,15 @@ current owning doctrine rather than relying on an old retrospective.
 
 ## Current Reality
 
-The repo is still converging toward the full architecture doctrine, but the
-enforceable quality ratchet is currently clean.
+The repo is still converging toward the full architecture doctrine.
 
-- `scripts/quality-gate.mjs` currently enforces no `any`, no `unknown`, and no
-  TypeScript file over 500 lines.
-- `quality-baseline.json` should stay empty unless temporary ratcheted debt is
-  deliberately introduced and documented.
+- `scripts/quality-gate.mjs` enforces the rules it prints (`npm run quality`),
+  including no `any`, no `unknown`, no enums, no type assertions, function,
+  parameter, import, complexity, and line-length limits, and a 500-line file
+  limit that also covers specs and tests.
+- `quality-baseline.json` records the remaining ratcheted debt: line counts for
+  a few oversized spec and test files. A change may lower an entry, never raise
+  one.
 
 ## Delivery Workflow
 

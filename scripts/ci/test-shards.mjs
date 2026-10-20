@@ -23,7 +23,6 @@ const DOCS_SPEC_PATTERNS = Object.freeze([
   'guide',
   'quickstart',
   'release-gate-script',
-  'release-quickstart',
 ]);
 const ECHO_SPEC_PATTERNS = Object.freeze([
   'echo',

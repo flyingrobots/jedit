@@ -15,10 +15,12 @@ work hardens the wrong abstractions.
 
 Event-class boundaries live in [causal-event-model.md](causal-event-model.md).
 The substrate choice is explained in [why-echo.md](why-echo.md).
-The detailed Echo-hosted text reading shape is described in
-[jedit-echo-graph-model.md](jedit-echo-graph-model.md).
-The static/dynamic rewrite-footprint split is described in
-[0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
+The native `ReplaceRange` fact law and its differential corpus are fixed in
+[0158-replace-range-canonical-fact-law.md](0158-replace-range-canonical-fact-law.md);
+the Edict-authored rope representation is drafted in
+[0159-edict-rope-representation.md](0159-edict-rope-representation.md).
+The static/dynamic rewrite-footprint split is
+[project invariant 14](project-invariants.md#14-footprint-schema-is-static-binding-is-dynamic).
 
 ## One Sentence
 
@@ -428,34 +430,17 @@ That gives the runtime:
 
 ## Persistence Direction
 
-The likely persistent shape is:
+The persistent shape is:
 
-- Echo-backed causal truth
-- `echo-text` schema for rope roots, blobs, anchors, and receipts
-- `.jedit/` for local persistence, refs, checkpoints, caches, and workspace
-  state
-- ordinary files as projections for interoperability
+- Echo-backed causal truth, recovered from the native host's Echo WAL
+  (`.jedit/echo-wal` by default)
+- `jedit.text` rope facts in Echo's graph, with the schema in
+  `contracts/jedit/lawpacks/replace-range-v1/text-schema-v1.json`
+- ordinary files as import sources and export projections
 
 Git is optional interop, not architecture.
 
-## Initial Build Order
+## Build Order
 
-1. persistent piece-rope in memory
-2. `ReadRange`
-3. `ReplaceRange`
-4. anchor transforms
-5. undo groups
-6. strands
-7. strand-slice admission
-8. persistence to `.jedit/`
-9. Markdown and block-aware projections
-
-## Immediate Design Test
-
-The next useful test is simple:
-
-define the exact invariants, preconditions, and postconditions for
-`ReplaceRange`.
-
-If that one operation feels elegant, the whole editor can stay clean.
-If it feels cursed, the architecture is just expensive poetry.
+`docs/BEARING.md` owns the order of work. The `ReplaceRange` law is fixed in
+0158, and the persistent rope is drafted in 0159.

@@ -71,8 +71,8 @@ Jim command
 ```
 
 The implemented surface is intentionally narrow: create/open a buffer,
-single-range replace/insert/delete, and bounded text-window observation. Other
-operations return typed obstructions. Edict will replace the transitional Rust
+single-range replace/insert/delete, checkpoint declaration, and bounded
+text-window observation. Other operations return typed obstructions. Edict will replace the transitional Rust
 operation law and invocation seam operation by operation; do not widen this
 compatibility path merely to regain feature parity.
 

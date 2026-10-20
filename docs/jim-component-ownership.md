@@ -4,14 +4,13 @@ date: 2026-08-22
 author: James Ross
 description: "A guided map of Jim's editor mind, text capability, causal settlement, runtime, UI body, compiler, structural intelligence, compatibility layers, and external-effect boundaries."
 tags: [jim, jedit, edict, echo, architecture, ownership, causal-rope]
-draft: true
-status: review
+draft: false
+status: accepted
 project: jedit
 related:
   - ../ARCHITECTURE.md
   - BEARING.md
   - jedit-echo-end-to-end.md
-  - stack-map.md
 ---
 
 # Jim: Components, Responsibilities, and Ownership
@@ -431,7 +430,7 @@ positive responsibility and the forbidden expansion for each participant.
 | Bijou | Terminal UI substrate | Terminal event decoding support, surface lifecycle, focus, layout, paint | Modes, motions, rope law, causal truth | Exists and remains part of the target body |
 | Native adapters | Process bootstrap and raw host capabilities | Echo process lifecycle, filesystem import/export, declared materialization guarantees, package transport, raw I/O | Native Jim planner callbacks or exaggerated filesystem authority in the final composition | Exists; the current Rust host still contains compatibility rope law |
 | `jim.core` / `Jim.edict` | Active observer and editor mind | Persistent editor state, event interpretation, observation requests, operation choice, command settlement composition, result handling | Rope representation, scheduling, WAL, receipt identity, terminal or filesystem mechanics | Target only; source not yet checked in |
-| `jedit.text` Edict capability | Reusable application-owned text model, operations, and optics | Buffer and head contracts, `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, `TextWindow`, slices, diffs, rope invariants, and typed text outcomes | Jim modes, commands, registers, cursor policy, Echo admission, host syscalls | Schema and oracle are frozen; executable sources are not yet authored |
+| `jedit.text` Edict capability | Reusable application-owned text model, operations, and optics | Buffer and head contracts, `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, `TextWindow`, slices, diffs, rope invariants, and typed text outcomes | Jim modes, commands, registers, cursor policy, Echo admission, host syscalls | Schema and oracle are frozen; a pure flat-text `ReplaceRange.edict` reference is authored, compiled, and verified; the persistent-rope operation and the other sources are not yet authored |
 | `jim.external-policy` | Jim's policy for external authorities | Import, export, provider selection, expected-fingerprint, guarantee-class, conflict, and reconciliation decisions | Ambient paths, raw syscalls, or claims that an external effect committed or was authored without matching evidence | Target contract defined here; no executable provider protocol yet |
 | `JimRelease` | Immutable executable application composition | Complete transitive package, standard-library, schema, codec, entry-point, instruction-set, execution-profile, verifier, effect-protocol, migration, and command-relevant provider closure | Ambient “latest package” lookup or reinterpretation of historical events | Target contract defined here; exact manifest schema, artifact store, and activation protocol remain unimplemented |
 | Edict | Language, compiler, package builder, and verifier boundary | Parsing, typing, authority closure, Core IR, Target IR lowering, canonical package construction, independent verification | Running Jim, choosing events, or committing graph state | Generic prerequisites have landed; Jim is the next real consumer |
@@ -1195,12 +1194,6 @@ but contradictory prose.
 | Do documentation tests prove the canonical section? | Some policy tests search required phrases anywhere in a document | Scope tests to the named ownership sections and assert the complete contract, including test-only direct `ReplaceRange` invocation |
 | Does the target exist in code? | A compiler-produced pure flat-text `ReplaceRange.edict` reference exists; the authored persistent-rope operation, `Jim.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers remain absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
 
-There is also a procedural gap. The clean architecture worktree is one commit
-ahead of current Jedit `main`, and PR #300 carries these ownership corrections,
-but it remains blocked by five unresolved review threads. This document is a
-review draft on that branch; it is not merged architecture doctrine and must
-not be cited as production evidence.
-
 In summary, the remaining disagreements are not about whether Echo should
 learn Jim vocabulary. They are about making every document and executable
 guard describe one pinned-release, durable-event, split Jim/text semantics,
@@ -1211,12 +1204,11 @@ generic-Echo model.
 
 This map was built by comparing canonical architecture claims with the code
 paths that currently make decisions. Documentation alone was insufficient,
-because the open architecture PR itself contains a stale checkpoint statement
-and under-classifies some compatibility authority.
+because documentation drifts from the code that actually decides.
 
 The audit followed these evidence layers:
 
-1. `ARCHITECTURE.md`, `docs/BEARING.md`, `docs/stack-map.md`, and
+1. `ARCHITECTURE.md`, `docs/BEARING.md`, and
    `docs/jedit-echo-end-to-end.md` supplied the declared target and current
    runtime corridor.
 2. `contracts/jedit/echo-text.graphql` supplied the current operation surface.
@@ -1230,9 +1222,8 @@ The audit followed these evidence layers:
 5. The frozen schema, codec vectors, and oracle under
    `contracts/jedit/lawpacks/replace-range-v1/` established what exists without
    pretending those artifacts are executable semantics.
-6. Live PR and issue state established that PR #300 is blocked, Jedit #296 is
-   the first operation slice, and the relevant generic Edict prerequisites have
-   landed.
+6. Issue state established that Jedit #296 is the first operation slice and
+   that the relevant generic Edict prerequisites have landed.
 
 One earlier line of thought treated a generic native rope capability as the
 likely answer. That was rejected because it would preserve application law

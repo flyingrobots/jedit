@@ -27,7 +27,7 @@ No, [get outta here](https://github.com/flyingrobots/echo#is-this-just-git).
 
 ### How Vim-like is Jim?
 
-See `docs/vi_diff.txt` when available, along with the design docs and parity notes, for differences from Vim.
+See `docs/vi_diff.txt` for differences from Vim.
 
 ### Should I use Jim?
 
@@ -35,7 +35,7 @@ Probably not yet, unless you enjoy living near the active edge of a weird — bu
 
 That said, I have started dogfooding it and pushing it toward daily-driver territory. Jim is especially useful for editing programs and other plain text where trust, auditability, and recoverability matter. All core commands use ordinary keyboard characters. The editing surface is meant to stay quiet, direct, and fast. The editor should not scream just because the runtime underneath it knows more than most editors dare to remember.
 
-Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production text path is now Echo-hosted: a trusted native process registers a Wesley-generated compatibility package, submits generated EINT envelopes through Echo's WAL-backed app capability, and consumes scheduler receipts plus bounded readings. Echo owns admission, runtime lifecycle, scheduling, graph state, receipts, and recovery. Jim currently supports only create/open, single-range editing, and bounded text reads through that path; unsupported operations fail closed. Edict will replace the narrow compatibility package when its native invocation corridor is ready. That split is not decorative. Jim should know editor truths, not substrate coordinates.
+Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production text path is now Echo-hosted: a trusted native process registers a Wesley-generated compatibility package, submits generated EINT envelopes through Echo's WAL-backed app capability, and consumes scheduler receipts plus bounded readings. Echo owns admission, runtime lifecycle, scheduling, graph state, receipts, and recovery. Jim currently supports only create/open, single-range editing, checkpoint declaration, and bounded text reads through that path; unsupported operations fail closed. Edict will replace the narrow compatibility package when its native invocation corridor is ready. That split is not decorative. Jim should know editor truths, not substrate coordinates.
 
 Jim grows out of the `jedit` repository. The product arc is Jim. The repository, packages, contracts, release gates, and internal APIs remain `jedit` until the Echo-backed proof and compatibility plan make a public rename safe. The rename should be earned the same way the rest of the editor is earned: through real product pressure, not theater.
 
@@ -71,9 +71,9 @@ binary, and `JEDIT_ECHO_WAL_DIR` may select its filesystem WAL directory.
 
 ## Installation
 
-See the quickstart materials under `docs/releases/` for the current release-gate path.
+See [Build And Startup](docs/jedit-echo-end-to-end.md#build-and-startup) for building the native Echo host and launching the editor.
 
-At the moment, the quickstart is aimed less at “install this polished public editor” and more at “prove this Echo-backed edit/read path is real, bounded, and honest.” This is not a bug in the README. The product should earn its myths.
+At the moment, setup is aimed less at “install this polished public editor” and more at “prove this Echo-backed edit/read path is real, bounded, and honest.” This is not a bug in the README. The product should earn its myths.
 
 ## Documentation
 
@@ -83,9 +83,10 @@ Start here:
 - `ADVANCED_GUIDE.md` — how the visible editor, projections, and Echo authority fit together.
 - `ARCHITECTURE.md` — the layer rules, dependency graph, and product vocabulary.
 - `docs/BEARING.md` — compact current truth, active roadmap anchors, and non-negotiables.
-- `docs/design/` — living design specs for each major cycle.
+- `docs/jim-component-ownership.md` — who owns what across Jim, Jedit, Edict, and Echo, now and in the target.
+- `docs/design/` — active design documents and accepted doctrine.
 - `docs/design/echo-identity-doctrine.md` — canonical Echo identity, scope, and transport doctrine.
-- `docs/method/` — process, roadmap, release, and proof policy.
+- `docs/method/` — process, roadmap, documentation, CI, and proof policy.
 - `docs/jedit-echo-end-to-end.md` — the current jedit-plus-Echo proof path.
 
 Inside the editor, the command surface continues to grow. The roadmap is not “become all of Vim and then add lore.” The roadmap is accountable editing through a product loop with teeth: explain, preview, admit, recover.
@@ -97,7 +98,7 @@ What you get right now includes:
 - Vim-shaped editing with Normal and Insert behavior, plus a growing command surface.
 - A real native Echo host for buffer creation, single-range editing, bounded
   observation, scheduler receipts, and restart recovery.
-- Typed obstruction for save/export, checkpoints, `:why`, causal gutter
+- Typed obstruction for save/export, range `:why`, causal gutter
   readings, multi-range editing, and undo/redo until those paths are Echo-owned.
 - No local history drawer or undo stack; those surfaces remain unavailable until they can read retained, basis-pinned Echo evidence.
 - Graft-backed syntax highlighting, outlines, diagnostics, and structural projections where available.

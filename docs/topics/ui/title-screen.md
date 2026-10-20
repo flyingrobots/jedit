@@ -53,6 +53,16 @@ workspace file-opening behavior as the files drawer. Selecting a directory must
 descend into that directory. Selecting a file must open it through the
 production Echo-backed text session.
 
+## Developer Tools
+
+The title scene is frozen (see
+[title-scene-freeze.md](../../method/title-scene-freeze.md)), but its
+developer tools remain:
+
+- `npm run title:preview` renders a scene for authoring inspection.
+- `npm run title:record` exports a terminal recording of a scene.
+- `npm run title:profile` profiles scene rendering.
+
 ## Implementation Map
 
 | File | Responsibility |

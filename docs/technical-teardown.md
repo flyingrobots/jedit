@@ -24,11 +24,10 @@ active roadmap and should not be treated as the freshest status ledger.
 Use these documents for current planning posture:
 
 - [`docs/BEARING.md`](BEARING.md) for compact current truth and next goalpost.
-- [`docs/stack-map.md`](stack-map.md) for the layer map.
 - [`docs/method/roadmap-planning.md`](method/roadmap-planning.md) for roadmap
   process.
-- [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md)
-  for the active Jim/Vim power-move roadmap.
+- [#128](https://github.com/flyingrobots/jedit/issues/128) for the Jim/Vim
+  power-move work.
 - [`docs/jedit-echo-end-to-end.md`](jedit-echo-end-to-end.md) for the current
   jedit plus Echo proof path.
 

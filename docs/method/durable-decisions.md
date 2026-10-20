@@ -22,7 +22,7 @@ a decision, but they are not its canonical repository home.
 2. Record the accepted rule, its current-versus-target posture, and explicit
    refinement, supersession, dependency, and related-document edges.
 3. Update the relevant documentation entrance or router when a durable page is
-   added, moved, or renamed.
+   added, moved, renamed, or deleted.
 4. Link to the canonical owner from reader-specific pages instead of copying
    the same rule into several places.
 5. Keep implementation checklists in their cycle owner and live review or
@@ -31,6 +31,10 @@ a decision, but they are not its canonical repository home.
 6. Revisit the same canonical owner whenever later work refines the decision.
    A refinement is not complete while code, schemas, packages, runtime
    evidence, or release behavior disagree with the documented rule.
+7. When a decision retires or supersedes a document, move any rule that still
+   binds into its canonical owner and delete the old document, as
+   [documentation-lifecycle.md](documentation-lifecycle.md) requires. A
+   superseded document is not kept beside its replacement.
 
 ## Ownership register
 
@@ -40,6 +44,8 @@ a decision, but they are not its canonical repository home.
 | Jim/Jedit/Edict/Echo target ownership and causal model | `docs/jim-component-ownership.md` |
 | A design cycle | the focused `docs/design/` document for that cycle |
 | Workflow policy, including this policy | `docs/method/` |
+| When documentation is kept, rewritten, or deleted (Git history is the archive) | `docs/method/documentation-lifecycle.md` |
+| What CI runs for a change | `docs/method/ci.md` |
 | Current execution gravity | `docs/BEARING.md` |
 
 Rule 1 applies to this document too: workflow policy belongs in `docs/method/`,

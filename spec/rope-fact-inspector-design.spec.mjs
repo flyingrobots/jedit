@@ -20,7 +20,6 @@ test('rope fact inspector design pins the runtime evidence chain', () => {
   const design = fs.readFileSync(DESIGN_PATH, 'utf8');
 
   assert.match(design, /issues\/209/);
-  assert.match(design, /0149-graph-backed-rope-runtime-discovery/);
   assert.match(design, /pull\/205/);
   for (const evidenceKind of [
     'RopeHead',

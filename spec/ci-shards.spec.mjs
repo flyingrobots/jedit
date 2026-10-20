@@ -36,7 +36,7 @@ test('known specs map to stable shard owners', () => {
   assert.equal(testShardForSpec('spec/jedit-echo-host-witness.spec.mjs'), TEST_SHARDS.EchoAuthority);
   assert.equal(testShardForSpec('spec/graph-rope-contract.spec.mjs'), TEST_SHARDS.ContractApi);
   assert.equal(testShardForSpec('tests/anchor-transform-cycle.spec.mjs'), TEST_SHARDS.CycleProofs);
-  assert.equal(testShardForSpec('spec/release-quickstart.spec.mjs'), TEST_SHARDS.DocsRelease);
+  assert.equal(testShardForSpec('spec/guide-path-references.spec.mjs'), TEST_SHARDS.DocsRelease);
 });
 
 test('planner keeps docs-only changes narrow', () => {

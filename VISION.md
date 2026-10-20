@@ -72,43 +72,14 @@ createBuffer
 One witnessed editor story is worth more than a generalized protocol that no
 product path has forced into existence.
 
-## Current checkpoint
+## Where the product stands
 
-The first cross-stack truth was Stack Witness 0001:
-
-```text
-createBuffer
--> replaceRange("hello")
--> textWindow(0..5)
--> ReadingEnvelope + QueryBytes("hello")
--> TextWindowReading
-```
-
-This is intentionally small. It proves the first editor/runtime seam without
-turning the repo into protocol theater.
-
-The next checkpoint is stronger: jedit is now the release gate for Echo
-`v0.1.0`. Echo is not considered ready to build with until this repository can
-run a real Echo witness for a contract-backed edit, scheduler-owned tick,
-observed outcome, bounded text reading, retained evidence, and replay.
-
-The current stack posture is:
-
-- Wesley publishes the fixture artifact shape.
-- Echo hosts the fixture runtime path and owns the WASM package export boundary.
-- jedit consumes the seam through a fake transport and an opt-in real Echo WASM
-  witness.
-- jedit now keeps read coordinates behind `TextBufferOptic` and an opaque
-  `ReadBasisHandle`.
-- Continuum remains intentionally untouched until the local product/runtime seam
-  is proven enough to publish as a shared protocol family.
-
-The opt-in real Echo WASM witness now preserves the required authority split:
-application code submits and observes, while trusted host code owns scheduler
-control. The witness also reports inline reading evidence, missing durable
-retention posture, and replay obstruction posture. The next pressure is not
-tick authority; it is replacing those honest obstructions with generic retained
-refs, durable replay, and a jedit-owned generated contract path.
+That first proof now runs through a real native Echo host: a Wesley-generated
+compatibility package admits buffer creation, single-range edits, checkpoint
+declarations, and bounded text-window reads, with WAL-backed restart recovery.
+It is a compatibility corridor, not the target. The target runs `Jim.edict` as
+an Echo-realized active observer, with application law authored in Edict.
+`docs/BEARING.md` records exactly what works today and what comes next.
 
 ## Boundary doctrine
 
@@ -118,14 +89,13 @@ App-facing jedit code should not know about:
 
 - worldline ids
 - basis refs
-- heads
 - ticks
 - strands
 - scheduler mechanics
 - Echo root derivation
-- fixture-only runtime coordinates
+- runtime-internal coordinates
 
-Those belong below the optic/session adapter boundary.
+Those stay below the production text session and the native host boundary.
 
 App-facing jedit code may know about:
 
@@ -136,22 +106,20 @@ App-facing jedit code may know about:
 - panes
 - panels
 - lenses
-- `TextBufferOptic`
-- `ReadBasisHandle`
+- opaque head identities returned by Jim, carried as a reading's basis
 - product-shaped readings such as `TextWindowReading`
 
 The durable direction is:
 
 ```text
-open buffer/session
--> receive TextBufferOptic
--> request bounded text window through its opaque read basis handle
--> receive product-shaped reading plus evidence-bearing runtime envelope
+open a buffer
+-> receive an opaque buffer identity and basis head
+-> request a bounded text window at an explicit basis head
+-> receive a product-shaped reading plus evidence-bearing runtime envelope
 ```
 
-The handle is not the basis. `TextBufferOptic` is the app-facing capability;
-`ReadBasisHandle` is an opaque supporting token that lets the session resolve
-the correct basis below the app boundary.
+App code replays an opaque head identity; it never derives, inspects, or mints
+one.
 
 ## Echo relationship
 
@@ -166,27 +134,20 @@ The Echo boundary should eventually feel boring:
 - byte ABI is documented
 - scheduler/materialization behavior is explicit
 - session bootstrap is explicit
-- optics own basis resolution
+- every reading names the basis it was taken at
 - app code never derives root worldline lore
 
-The current real WASM witness is a necessary bridge, not a public contract. It
-exists to keep pressure on the byte ABI until Echo provides a durable package
-and session bootstrap. It may report `missing_retention` or
-`durable_replay_unavailable`; those are release-gate blockers, not acceptable
-v0.1.0 end states.
+## Wesley and Edict relationship
 
-## Wesley relationship
+Echo's Wesley contract-host generator produces today's compatibility package
+from `contracts/jedit/echo-text.graphql`: codecs, operation identities, and host
+helpers. That package is migration evidence, not the target. Jim's application
+law is to be authored in Edict and compiled through Edict's public build into
+verified generic Echo packages, replacing the compatibility package operation by
+operation.
 
-Wesley owns deterministic contract artifact generation.
-
-The current Stack Witness fixture uses human-readable fixture bytes so the seam
-can be inspected. Those bytes must not fossilize into doctrine.
-
-The durable target is Wesley-generated binary codecs shared by Rust and
-TypeScript, plus generated helpers for intent and observation shapes.
-
-`jedit` should consume generated helpers when they are ready. It should not
-invent parallel protocol shapes because doing so makes drift invisible.
+`jedit` should not invent protocol shapes beside either. Doing so makes drift
+invisible.
 
 ## Graft relationship
 
@@ -233,10 +194,9 @@ Near-term product work should stay narrow and ordered by goalposts:
 Runtime work still follows product pressure:
 
 - Keep Echo app/host authority split intact.
-- Keep witness reports honest about inline evidence, missing retained refs, and
-  replay obstruction.
-- Move remaining fixture-only basis lore below durable session boundaries.
-- Replace hand-authored fixture assumptions with Wesley-generated helpers.
+- Keep witness reports honest about what is retained, replayable, or obstructed.
+- Replace the Wesley compatibility package with Edict-authored law, operation
+  by operation.
 - Add editor semantics only when pulled by the causal seam.
 - Bring Continuum in only after the local jedit/Echo boundary is proven enough
   to publish without speculative ontology.
@@ -249,7 +209,8 @@ Runtime work still follows product pressure:
 - Do not publish packages just because the witness ritual works.
 - Do not prepare a public editor release until the product has a credible demo
   path for accountable editing.
-- Do not route around Wesley with permanent hand-authored protocol shapes.
+- Do not invent hand-authored protocol shapes beside the generated contract or
+  the Edict packages.
 - Do not bring Continuum in to bless an unproven boundary.
 - Do not implement collaboration before one local causal file history is honest.
 

@@ -70,6 +70,10 @@ compares with the current admitted head:
 | `Last save` | The head used for the latest successful file materialization. |
 | `Import` | The head created when the buffer entered the current Jim session. |
 
+Save/export currently returns a typed obstruction in production, so `Last save`
+has no materialized head to compare with, and the gutter markers themselves are
+not yet shown (see [Editor Chrome](editor-chrome.md)).
+
 Selected-checkpoint and selected-tick choices were removed with the
 process-local history drawer. They may return only when a bounded Echo
 observation supplies matching opaque head and receipt evidence.

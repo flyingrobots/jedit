@@ -34,7 +34,7 @@ claims belong in git history and design retrospectives.
   or optimistically mutate visible text.
 - Buffer open/create, insert, replace, delete, checkpoint declaration, and
   bounded text-window reads are implemented. Multi-range edit, save/export,
-  `:why`, causal line-diff, and undo/redo return typed obstructions.
+  range `:why`, causal line-diff, and undo/redo return typed obstructions.
 - Jim owns `RopeCheckpointDeclared` semantics. Echo admits and schedules the
   generated declaration, persists its Jim fact in the graph/WAL history, and
   returns the opaque receipt and tick identities. Declaration validates that
@@ -138,7 +138,8 @@ or support-policy logic.
    Echo-owned WAL, admission, scheduling, graph state, receipts, and restart
    recovery.
 2. Avoid restoring broad editor feature parity through transitional APIs.
-3. Check in Jim-owned `ReplaceRange.edict` with its complete lawpack closure.
+3. Author the persistent-rope `ReplaceRange.edict` in `jedit.text`, with typed
+   outcomes; the flat-text reference is already authored, built, and verified.
 4. Build it through Edict's public application-build boundary and let the first
    honest compiler or target-profile failure route work to its owning repo.
 5. Extend Echo only for generic bounded-program capabilities proven necessary

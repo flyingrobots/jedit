@@ -93,9 +93,10 @@ A cycle PR is ready only when:
 
 After a cycle lands:
 
-- Keep the design doc as the historical record when it remains useful.
-- Move superseded design material into feature docs, retrospectives, or
-  `docs/method/graveyard/`.
+- Move any rule the design doc still binds into its canonical owner, then keep
+  or delete the design doc as
+  [documentation-lifecycle.md](documentation-lifecycle.md) requires. Git
+  history is the archive; there is no retrospective or graveyard directory.
 - Close linked follow-on issues only when their executable witness exists.
 - Do not treat a landed design doc as runtime truth. Tests, code, generated
   artifacts, command output, and user-visible behavior are the proof.
