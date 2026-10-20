@@ -85,8 +85,15 @@ over `--frames` frames after `--warmup` frames. `--json` emits a report with
 `scene` (name, object count), `render` (mode, width, height, frames, primary
 samples per frame and in total), `timing` (including `minMs`, `avgMs`, and
 `maxMs`), and a `checksum` of the rendered output; without `--json` it prints a
-plain report. `spec/title-scene-profile-cli.spec.mjs` pins this, including
-Braille temporal sampling and the allocation-posture witness.
+plain report. In Braille render mode the report also carries an `allocation`
+witness from `scripts/title-scene-allocation-witness.mjs`. Its `posture` is evidence,
+not a proof of allocation behavior: it is `unmeasured` when allocation
+instrumentation is unavailable (run Node with `--expose-gc`), and also when the
+forced-GC retained-heap delta is zero, because a zero retained delta does not
+show that no allocation happened. Only a positive retained delta reports
+`allocating`. The witness never reports `bounded-after-warmup` or
+`zero-hot-loop`. `spec/title-scene-profile-cli.spec.mjs` pins this, including
+Braille temporal sampling and these postures.
 
 ## Implementation Map
 
