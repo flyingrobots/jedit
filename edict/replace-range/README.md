@@ -34,12 +34,12 @@ and five host-resource refusals. It performs no native replacement and links
 no native rope planner. The package-chain harness runs both the boundary and
 flat-text targets, and the build closure includes both test sources.
 
-The toolchain pins Edict main `2b4832efe62de75e1f204cec72f9fe7d00ef9551`
-and Echo main `b314f7fd071985edad1f9876df383a85fb491205`. The generated
+The toolchain pins Edict main `2ddc0692ae894c786e8f37b497719191ad7d4d69`
+and Echo main `0faaf58a15a4b03036cf36b465d79af76c952193`. The generated
 build and executable-subject locks bind the changed source, vendor publication,
 provider and test closure. Public macOS and Linux builds emit identical package
 and verifier-report bytes. The package identity is
-`sha256:4c2b7859f291e97b6b38fb265086e6cb0581ed030d54d38152b0585152120397`.
+`sha256:37b51045160d164b520b3c36af7521659fd199f08e09314bd52c312dd825c47d`.
 The Docker package-chain gate checks the exact clean Git toolchains, rebuilds
 through the public CLI, verifies the locks, runs both runtime targets and
 refuses mutation of authoritative inputs.
