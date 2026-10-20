@@ -12,6 +12,12 @@
   representation gate and a file-crossing gate. The draft Edict sources and
   README follow, and every capability the rope needs has an owner issue.
 
+- `scripts/deps/echo-edict-relock.mjs` moves Jedit to new Echo and Edict commits in
+  one command: Echo pins, regenerated host bindings, the ReplaceRange oracle, the
+  republished `jedit.text` lawpack and import digest, and every proof lock,
+  followed by the package-chain proof. Run against the current pins it
+  reproduces them byte for byte.
+
 - Jim now runs on current Echo and Edict. The native host had been pinned to
   Echo `90f63ae` (2026-07-17), 1054 commits behind main, so Jim never exercised
   the Echo being built. It now builds against Echo main `0faaf58`, with contract
