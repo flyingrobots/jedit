@@ -240,7 +240,7 @@ test("runtime trims frame history to the configured window", async () => {
     { type: "time-tick", time: 2 },
     {
       ...initialModel,
-      lastFrameMs: 100,
+      lastFrameMs: 100, perfVisible: true,
       frameTimeHistory: Array.from({ length: 55 }, (_, index) => index),
     },
   );
