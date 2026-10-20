@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- CI now runs ShellCheck (`scripts/ci/shellcheck.sh`, in the `quality` job) over
+  every tracked shell script and over the pre-commit and pre-push launchers that
+  `scripts/install-hooks.sh` generates, installed into a throwaway repository.
+  The ReplaceRange proof locks were refreshed for the changed workflow bytes.
+
 - Replaced the leftover Husky hook path with plain shell hooks in
   `scripts/hooks/`: pre-commit runs the quality gate and a TypeScript
   typecheck, and pre-push runs the full test suite. Both share

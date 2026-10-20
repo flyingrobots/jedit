@@ -2,10 +2,10 @@
   "schema": "jedit.edict-build-lock/v1",
   "applicationCoordinate": "jedit.text.replace_range@1",
   "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
-  "toolchainLockSha256": "8872fe4bf8559e1ca9c96f9c984ff8a7c2ecee33bb357e15e5d42a3376be878c",
+  "toolchainLockSha256": "0a01119318d60a6dd10b17ffb68adab5e4162aa8a35828e18661fa39eedea5f6",
   "sourceClosure": {
     "schema": "jedit.edict-source-closure/v1",
-    "digest": "sha256:b6443e58cdb725fb09078d1709bb3e2ae0dcf994e6de233418b45c84a3f2b4b8",
+    "digest": "sha256:44b61622b6a109bb86cda184af31f56a7383a954d1b705189b1bd486ab7d2362",
     "files": [
       {
         "path": "application/edict.application.json",
@@ -17,7 +17,7 @@
       },
       {
         "path": "application/edict.toolchain-lock.json",
-        "sha256": "8872fe4bf8559e1ca9c96f9c984ff8a7c2ecee33bb357e15e5d42a3376be878c"
+        "sha256": "0a01119318d60a6dd10b17ffb68adab5e4162aa8a35828e18661fa39eedea5f6"
       },
       {
         "path": "application/src/ReplaceRange.edict",
@@ -81,7 +81,7 @@
       },
       {
         "path": "project/.github/workflows/ci.yml",
-        "sha256": "bc19286ef44ce7d8ba0fd8a3e39a8ec0313d07ed3084fbe15e25ef42d82bc8f1"
+        "sha256": "b85f2e43552dab43dd9d8f87daacc0c73b437fc2bde341eb3fb21fd6e2394c12"
       },
       {
         "path": "project/package.json",
