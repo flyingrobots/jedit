@@ -20,6 +20,7 @@ use crate::generated::contract::{
     REGISTRY_VERSION, SCHEMA_SHA256, WESLEY_GENERATOR_VERSION,
 };
 use crate::identity::parse_node_id;
+use crate::import_anchor::{plan_import_anchor, AnchorPlan, ImportHostBasis};
 use crate::records::CheckpointReason;
 use crate::rope::{plan_checkpoint, plan_create, plan_replace, read_window};
 
@@ -30,6 +31,8 @@ const CHECKPOINT_REASON_AUTOSAVE: &str = "autosave";
 const CHECKPOINT_REASON_RETENTION_BOUNDARY: &str = "retention-boundary";
 const CHECKPOINT_REASON_EXPORT: &str = "export";
 const CHECKPOINT_REASON_IMPORT: &str = "import";
+const IMPORT_HOST_BASIS_FILE: &str = "file";
+const IMPORT_HOST_BASIS_MISSING: &str = "missing";
 
 pub fn installed_package() -> InstalledContractPackage<'static> {
     InstalledContractPackage {
@@ -81,16 +84,18 @@ fn create_buffer_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickD
     let Some(vars) = create_buffer_worldline_contract_vars(view, scope) else {
         return;
     };
-    if let Ok(plan) = create_plan(view, vars) {
+    if let Ok((plan, anchor)) = create_plan(view, vars) {
         plan.emit(delta);
+        anchor.emit(delta);
     }
 }
 
 fn create_buffer_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
     let mut footprint = create_buffer_worldline_contract_runtime_ingress_footprint(view, scope);
     if let Some(vars) = create_buffer_worldline_contract_vars(view, scope) {
-        if let Ok(plan) = create_plan(view, vars) {
+        if let Ok((plan, anchor)) = create_plan(view, vars) {
             plan.extend_footprint(&mut footprint);
+            anchor.extend_footprint(&mut footprint);
         }
     }
     footprint
@@ -99,13 +104,67 @@ fn create_buffer_footprint(view: GraphView<'_>, scope: &NodeId) -> Footprint {
 fn create_plan(
     view: GraphView<'_>,
     vars: CreateBufferWorldlineVars,
-) -> crate::error::HostResult<crate::rope::MutationPlan> {
-    plan_create(
+) -> crate::error::HostResult<(crate::rope::MutationPlan, AnchorPlan)> {
+    let host_basis = import_host_basis(
+        &vars.input.importHostBasis,
+        vars.input.importSha256.as_deref(),
+        vars.input.importByteLength,
+    )?;
+    let projection_path = vars.input.projectionPath;
+    let plan = plan_create(
         &view,
         &vars.input.bufferKey,
         &vars.input.initialText,
-        vars.input.projectionPath,
-    )
+        projection_path.clone(),
+    )?;
+    let anchor = plan_import_anchor(
+        &view,
+        plan.buffer_id,
+        plan.head_id,
+        projection_path,
+        host_basis,
+    )?;
+    Ok((plan, anchor))
+}
+
+/// Decodes the create input's import basis. A file basis needs both its
+/// digest and length; a missing basis carries neither.
+fn import_host_basis(
+    kind: &str,
+    sha256: Option<&str>,
+    byte_length: Option<i32>,
+) -> crate::error::HostResult<ImportHostBasis> {
+    match (kind, sha256, byte_length) {
+        (IMPORT_HOST_BASIS_MISSING, None, None) => Ok(ImportHostBasis::Missing),
+        (IMPORT_HOST_BASIS_FILE, Some(sha256), Some(byte_length)) => Ok(ImportHostBasis::File {
+            sha256: crate::protocol::parse_sha256(sha256)?,
+            byte_length: non_negative(byte_length, "importByteLength")?,
+        }),
+        _ => Err(crate::error::HostError::InvalidRequest(format!(
+            "import basis {kind} does not match its digest fields"
+        ))),
+    }
+}
+
+/// Encodes an import basis as the create input's flat fields.
+pub fn generated_import_host_basis(
+    basis: &ImportHostBasis,
+) -> crate::error::HostResult<(String, Option<String>, Option<i32>)> {
+    match basis {
+        ImportHostBasis::Missing => Ok((IMPORT_HOST_BASIS_MISSING.to_owned(), None, None)),
+        ImportHostBasis::File {
+            sha256,
+            byte_length,
+        } => Ok((
+            IMPORT_HOST_BASIS_FILE.to_owned(),
+            Some(hex::encode(sha256)),
+            Some(i32::try_from(*byte_length).map_err(|_| {
+                crate::error::HostError::InvalidRequest(
+                    "importByteLength exceeds the v1 contract bound".to_owned(),
+                )
+            })?),
+        )),
+    }
 }
 
 fn replace_range_executor(view: GraphView<'_>, scope: &NodeId, delta: &mut TickDelta) {

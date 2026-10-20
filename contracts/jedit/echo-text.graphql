@@ -36,6 +36,12 @@ input CreateBufferWorldlineInput {
     bufferKey: String!
     initialText: String!
     projectionPath: String
+    """What the imported host coordinate held: file or missing."""
+    importHostBasis: String!
+    """Lowercase hex SHA-256 of the imported file bytes; set only for "file"."""
+    importSha256: String
+    """Byte length of the imported file; set only for "file"."""
+    importByteLength: Int
 }
 
 input ReplaceRangeAsTickInput {

@@ -59,7 +59,9 @@ builder, snapshot fallback, or optimistic settled-text mutation.
 
 The real corridor currently implements:
 
-- create or reopen a buffer;
+- create a buffer, or reopen one whose import anchor matches the file's current
+  bytes (otherwise the open is a typed obstruction; see
+  [How Jim sees source files](jim-component-ownership.md#how-jim-sees-source-files));
 - insert text through single-range replacement;
 - replace one UTF-8 byte range;
 - delete one UTF-8 byte range;

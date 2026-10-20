@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
+  EchoTextHostBasisKinds,
   EchoTextHostCheckpointReasons,
   EchoTextHostOperationNames,
   EchoTextHostOutcomeKinds,
@@ -28,6 +29,7 @@ try {
       bufferKey: 'witness.txt',
       initialText: INITIAL_TEXT,
       projectionPath: null,
+      hostBasis: { kind: EchoTextHostBasisKinds.Missing },
     }),
     EchoTextHostOutcomeKinds.Opened,
   );
