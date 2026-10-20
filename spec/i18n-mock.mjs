@@ -43,6 +43,11 @@ export function createI18nMock(overrides = {}) {
     'settings.rows.theme.description': 'Switch between installed data-driven themes.',
     'settings.rows.theme_mode.label': 'Light/dark',
     'settings.rows.theme_mode.description': 'Switch the current theme to its light or dark companion.',
+    'settings.rows.filepaths.label': 'Filepaths',
+    'settings.values.paths_git_root': 'Git root',
+    'settings.values.paths_absolute': 'Fully qualified',
+    'settings.rows.footer_layout.label': 'Footer layout',
+    'settings.values.footer_focused': 'Focused + workspace',
     'settings.rows.footer.label': 'Footer',
     'settings.rows.footer.description': 'Show mode, focus, and command hints at the bottom edge.',
     'settings.rows.line_numbers.label': 'Line numbers',
@@ -80,6 +85,9 @@ export function createI18nMock(overrides = {}) {
       direction: 'ltr',
     }],
     t: (path, values) => {
+      if (path === 'footer.status.modified_count') return `${values?.count ?? 0} modified`;
+      if (path === 'footer.status.pending_count') return `${values?.count ?? 0} pending`;
+      if (path === 'footer.status.buffer_count') return `${values?.count ?? 0} buffers`;
       if (path === 'footer.context.history_count') {
         return `Echo evidence: ${values?.count ?? 0}`;
       }

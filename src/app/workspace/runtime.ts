@@ -417,6 +417,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       deps.createStartupFileDrawerAnimationCmd,
     createNotificationTickCmd: deps.createNotificationTickCmd,
     deps: {
+      footerPreferences: deps.footerPreferences,
       fileSystem: deps.fileSystem,
       editorFile: deps.editorFile,
       sourceHighlighter: deps.sourceHighlighter,

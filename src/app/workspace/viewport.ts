@@ -1,3 +1,4 @@
+import { footerLayoutRows, type FooterLayout } from '../../ui/footer-layout.js';
 export { wrapIndex } from '../list-index.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import { sourceViewerGutterWidth } from '../../ui/source-viewer.js';
@@ -10,7 +11,7 @@ export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
 export const FILE_SEARCH_ROW = DRAWER_INNER_PAD;
 export const FILE_SEARCH_SEPARATOR_ROW = FILE_SEARCH_ROW + 1;
-export const FILE_SEARCH_LIST_TOP = FILE_SEARCH_SEPARATOR_ROW + 1;
+export const FILE_SEARCH_LIST_TOP = FILE_SEARCH_ROW + 1;
 
 export function fileSearchListHeight(height: number): number {
   return Math.max(0, height - FILE_SEARCH_LIST_TOP - DRAWER_INNER_PAD);
@@ -29,6 +30,8 @@ export interface WorkspaceViewport {
 export interface WorkspaceBodyHeightOptions {
   readonly rows: number;
   readonly footerVisible: boolean;
+  readonly footerLayout?: FooterLayout;
+  readonly fileSearchEditing?: boolean;
 }
 
 export function clamp01(value: number): number {
@@ -61,8 +64,12 @@ export function listScrollOffset(
   return Math.max(0, Math.min(total - visibleRows, centred));
 }
 
+export function workspaceFooterRows(options: Pick<WorkspaceBodyHeightOptions, 'footerVisible' | 'footerLayout' | 'fileSearchEditing'>): number {
+  return options.footerVisible ? footerLayoutRows(options.footerLayout) : options.fileSearchEditing ? 1 : 0;
+}
+
 export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {
-  const footerRows = options.footerVisible ? FOOTER_ROWS : 0;
+  const footerRows = workspaceFooterRows(options);
   return Math.max(1, options.rows - HEADER_ROWS - footerRows);
 }
 
@@ -76,13 +83,10 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
 type WorkspaceViewportModel = Pick<
   WorkspaceModel,
   'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'
-> & Partial<Pick<WorkspaceModel, 'editor' | 'lineNumberMode'>>;
+> & Partial<Pick<WorkspaceModel, 'editor' | 'lineNumberMode' | 'footerLayout' | 'fileSearchEditing'>>;
 
 export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
-  const bodyHeight = workspaceBodyHeight({
-    rows: model.rows,
-    footerVisible: model.footerVisible,
-  });
+  const bodyHeight = workspaceBodyHeight(model);
   const layout = resolveWorkspaceLayout(
     model.columns,
     model.fileDrawerProgress,

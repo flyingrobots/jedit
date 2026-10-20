@@ -96,7 +96,7 @@ test('an open buffer previews its current reading rather than a stale opening wi
  test('click selection previews without opening and closing rejects its outstanding result', async () => {
   const { runtime, model } = await setup();
   const [opened] = runtime.update(key('b', { ctrl: true }), model);
-  const [selected, commands] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 6 }, {
+  const [selected, commands] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 5 }, {
     ...opened, fileDrawerProgress: 1,
   });
   assert.equal(selected.selectedIndex, 1);

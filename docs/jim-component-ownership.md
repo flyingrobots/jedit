@@ -288,7 +288,11 @@ cache nor the screen becomes text authority.
 The current Files drawer search and read-only preview are transient Jedit
 presentation projections. Navigation/filter mode, query/caret, hover, and
 selection are session-only shell state; they are not persisted or replayed as
-Jim buffer-search state. The filter creates no database or authoritative
+Jim buffer-search state. `/` temporarily places the filter prompt in the footer;
+Escape/Enter retain the query while returning navigation ownership to the list.
+The drawer header identifies the active filter. A hidden footer appears only
+while input needs it. This is presentation geometry, not persisted editor search.
+The filter creates no database or authoritative
 inventory. Selection previews bounded filesystem content or an already open
 buffer projection without replacing the active buffer, editing, saving, or
 creating an Echo buffer. Entry identity and request identity reject stale
@@ -298,6 +302,27 @@ continues through the native Echo text-import path.
 [DX-0161](design/0161-file-explorer-search.md) owns this bounded implementation;
 a future workspace or symbol index must remain a rebuildable projection and
 declare its observation basis and staleness policy.
+
+The footer layout is a Jedit presentation preference, remembered across launches
+through an injected preferences port and the `~/.jimrc` JSON adapter. The
+`filepathStyle` preference shares that adapter and chooses paths relative to
+the Git root or fully qualified paths. A bounded startup Git query discovers
+the root; outside-root paths and non-repository workspaces keep absolute paths.
+Formatting changes display only, preserving native open/save and buffer identity.
+Its three
+layouts derive the same focused-surface observations and known-buffer counts.
+They reserve two, two, or one rows; hidden footer reserves none. This setting
+does not advance a Jim worldline, submit an Echo Tick, or change buffer history.
+Saving edits only the owned `footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes
+and existing file permissions, and refuses malformed or ambiguous documents.
+The model changes after a successful save. A failed save reports an error and
+retains the previous layout. Other Appearance settings keep their current
+session lifetime. Active modes use a filled theme badge; ordinary status text
+is muted and emphasized facts use normal foreground. Settings owns opaque
+borders and filled selections independent of terminal cursor inversion.
+This refines projection and I/O ownership without changing
+the target causal model or claiming general settings replay support.
+[DX-0162](design/0162-selectable-footer-layouts.md) owns the implementation evidence.
 
 > **Intuition to carry forward:** semantic ownership and storage authority are
 > different powers. Jim decides what command to perform, the text capability

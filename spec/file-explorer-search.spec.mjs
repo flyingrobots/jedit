@@ -44,13 +44,15 @@ async function drawer(model, width = 32, height = 12) {
   return renderDrawer('files', model, width, height);
 }
 
-test('slash focuses a sticky search input with a visible caret', async () => {
+test('slash focuses a footer search prompt with a visible caret', async () => {
   const { model } = await setup();
   assert.equal(model.focusPane, 'files');
   assert.deepEqual(model.fileSearch, { input: '', cursorIndex: 0 });
   const surface = await drawer(model);
-  assert.match(text(surface).split('\n')[1], /Search: Filter files/);
-  assert.equal(surface.get(9, 1).bg, model.jeditTheme.cursor.insert.bg);
+  assert.doesNotMatch(text(surface).split('\n')[1], /Search:/);
+  const footer = (await setup()).runtime.view(model);
+  assert.match(text(footer).split('\n')[model.rows-2], /\/Filter files/);
+  assert.ok(footer.get(1,model.rows-2).modifiers?.includes('underline'));
 });
 
 test('typing fuzzy-filters loaded relative paths without mutating the source list', async () => {
@@ -126,13 +128,13 @@ test('the input stays pinned while the filtered list scrolls and caret text scro
   assert.ok(rendered.some((line) => line.includes('› entry-22.ts')));
   next = runtime.update(key('u', { ctrl: true }), next)[0];
   next = type(runtime, next, 'a'.repeat(40) + 'tail');
-  assert.match(text(await drawer(next, 28, 10)).split('\n')[1], /tail/);
+  assert.match(text(runtime.view({...next,columns:60})).split('\n')[next.rows-2], /tail/);
 });
 
 test('filtered result clicks and wheel selection use the pinned-header geometry', async () => {
   const { runtime, model } = await setup();
   const filtered = type(runtime, model, '.ts');
-  const [clicked] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 6 }, filtered);
+  const [clicked] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 5 }, filtered);
   assert.equal(clicked.selectedIndex, 4);
   assert.equal(clicked.textAuthority, model.textAuthority);
   const [wheeled] = runtime.update({ type: 'mouse', action: 'scroll-down', button: 'none', col: 5, row: 8 }, filtered);
@@ -175,7 +177,7 @@ test('Settings and pane focus take ownership without changing the search query',
   assert.equal(type(runtime, settings, 'q').fileSearch.input, 'rnt');
   const unfocused = { ...filtered, focusPane: 'editor' };
   const surface = await drawer(unfocused);
-  assert.equal(surface.get(12, 1).bg, model.jeditTheme.surface.currentLine.bg);
+  assert.equal(surface.get(12, 1).bg, model.jeditTheme.surface.drawer.bg);
   assert.equal(unfocused.fileSearch.input, 'rnt');
 });
 
@@ -201,10 +203,10 @@ test('localized labels fit narrow fields and wide-character clicks use display c
     const next = type(runtime, model, '界x');
     const options = fileSearchInputOptions(next, 28);
     const surface = await drawer(next, 30, 8);
-    assert.match(text(surface).split('\n')[1], /界x/);
+    assert.match(text(surface).split('\n')[1], /界 ?x/);
     assert.ok(!options.label.includes('fileExplorer.'));
     const { visibleLineLength } = await importDist('ui', 'fit-line.js');
-    const prefix = visibleLineLength(`${options.label}: `);
+    const prefix = visibleLineLength(options.label);
     assert.equal(fileSearchCursorAtColumn(options, prefix + 2), 1);
     assert.equal(fileSearchCursorAtColumn(options, prefix + 3), 2);
   }
@@ -214,25 +216,25 @@ test('the input has a distinct background and only fuzzy-matched letters receive
   const { runtime, model } = await setup({ entries: [ENTRIES[4], { ...ENTRIES[4], name: 'render-test.ts', path: '/repo/src/render-test.ts' }] });
   const filtered = type(runtime, model, 'rnt');
   const surface = await drawer(filtered);
-  assert.notEqual(surface.get(2, 1).bg, surface.get(2, 3).bg);
-  assert.equal(surface.get(2, 1).bg, model.jeditTheme.surface.currentLine.bg);
+  const footer = runtime.view(filtered);
+  assert.notEqual(footer.get(2,model.rows-2).bg, model.jeditTheme.surface.drawer.bg);
   for (const x of [3, 5, 10]) {
-    assert.equal(surface.get(x, 3).fg, surface.get(4, 3).fg);
-    assert.equal(surface.get(x, 4).fg, model.jeditTheme.chrome.activeEdge.fg);
-    assert.ok(surface.get(x, 3).modifiers.includes('bold'));
+    assert.equal(surface.get(x, 2).fg, surface.get(4, 2).fg);
+    assert.equal(surface.get(x, 3).fg, model.jeditTheme.chrome.activeEdge.fg);
+    assert.ok(surface.get(x, 2).modifiers.includes('bold'));
   }
-  assert.equal(surface.get(4, 4).fg, model.jeditTheme.surface.drawer.fg);
+  assert.equal(surface.get(4, 3).fg, model.jeditTheme.surface.drawer.fg);
   const cleared = runtime.update(key('u', { ctrl: true }), filtered)[0];
   const plain = await drawer(cleared);
-  assert.equal(plain.get(3, 4).fg, model.jeditTheme.surface.drawer.fg);
+  assert.equal(plain.get(3, 3).fg, model.jeditTheme.surface.drawer.fg);
 });
 
 test('the input background remains distinct across built-in dark and light themes', async () => {
   const { availableJeditThemes, oppositeJeditTheme } = await importDist('ui', 'jedit-themes.js');
-  const { model } = await setup();
+  const { runtime, model } = await setup();
   for (const theme of availableJeditThemes().flatMap((theme) => [theme, oppositeJeditTheme(theme)])) {
-    const surface = await drawer({ ...model, jeditTheme: theme });
-    assert.notEqual(surface.get(2, 1).bg, surface.get(2, 3).bg, theme.name);
+    const surface = runtime.view({ ...model, jeditTheme: theme });
+    assert.notEqual(surface.get(2,model.rows-2).bg, theme.surface.drawer.bg, theme.name);
   }
 });
 
@@ -259,13 +261,13 @@ test('the input background remains distinct across built-in dark and light theme
 
  test('mouse hover is separate from selection and clicking selects without opening', async () => {
   const { runtime, model } = await setup({ navigation: true });
-  const [hover, commands] = runtime.update({ type: 'mouse', action: 'move', button: 'none', col: 5, row: 7 }, model);
+  const [hover, commands] = runtime.update({ type: 'mouse', action: 'move', button: 'none', col: 5, row: 6 }, model);
   assert.equal(hover.fileHoveredIndex, 2);
   assert.equal(hover.selectedIndex, 0);
   assert.deepEqual(commands, []);
   const surface = await drawer(hover);
-  assert.notEqual(surface.get(2, 3).bg, surface.get(2, 5).bg);
-  const [selected] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 7 }, hover);
+  assert.notEqual(surface.get(2, 2).bg, surface.get(2, 4).bg);
+  const [selected] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 6 }, hover);
   assert.equal(selected.selectedIndex, 2);
   assert.equal(selected.focusPane, 'files');
   assert.equal(selected.textAuthority, model.textAuthority);
@@ -293,8 +295,8 @@ test('the input background remains distinct across built-in dark and light theme
   const { model } = await setup({ navigation: true });
   for (const theme of availableJeditThemes().flatMap((theme) => [theme, oppositeJeditTheme(theme)])) {
     const surface = await drawer({ ...model, jeditTheme: theme, selectedIndex: 1, fileHoveredIndex: 2 });
-    const selected = surface.get(3, 4);
-    const hovered = surface.get(3, 5);
+    const selected = surface.get(3, 3);
+    const hovered = surface.get(3, 4);
     assert.notEqual(selected.bg, hovered.bg, theme.name);
     assert.ok(contrastRatio(selected.fgRGB, selected.bgRGB) >= 4.45, theme.name);
   }

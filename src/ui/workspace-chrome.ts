@@ -1,3 +1,4 @@
+import { renderFooterLayout, type FooterPresentation } from './workspace-footer-presentation.js';
 import { createSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
@@ -94,6 +95,7 @@ export interface WorkspaceTitleState {
 }
 
 export interface WorkspaceFooterState {
+  readonly footerPresentation?: FooterPresentation;
   readonly i18n: I18nPort;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
@@ -147,6 +149,12 @@ export function centerLine(text: string, width: number): string {
 }
 
 export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: JeditStyleToken): Surface {
+  if (state.footerPresentation != null) return renderFooterLayout({
+    presentation: state.footerPresentation, width, background,
+    command: state.commandLine?.active ? {
+      i18n: state.i18n, commandLine: state.commandLine, contextLine: commandLineHints(state.i18n), commandLineError: state.commandLineError,
+    } : undefined,
+  });
   const surface = createSurface(width, FOOTER_ROWS);
   fillFooterSurface(surface, background);
   if (width <= FOOTER_ORIGIN) {
@@ -438,3 +446,5 @@ function footerHints(parts: ReadonlyArray<string | undefined>): string {
 function chordFooterHints(chord: string, suggestions: readonly string[]): string {
   return `${chord} [${suggestions.join(' · ')}]`;
 }
+
+export { workspaceFooterPresentation } from './workspace-footer-presentation.js';

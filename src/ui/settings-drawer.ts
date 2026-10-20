@@ -1,8 +1,10 @@
+import { filledSelectionToken } from './filled-selection-token.js';
 import {
   colorHex,
   createSurface,
   stringToSurface,
   type Surface,
+  type Cell,
   type TokenValue,
 } from '@flyingrobots/bijou';
 import { drawer } from '@flyingrobots/bijou-tui';
@@ -85,10 +87,12 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
     screenWidth: options.width,
     screenHeight: options.height,
     width: options.width,
-    borderToken: tokenValue(options.theme.chrome.activeEdge),
+    borderToken: tokenValue(settingsDrawerTextToken(options.theme, options.theme.chrome.activeEdge)),
     bgToken: tokenValue(options.theme.surface.drawer),
   });
-  return overlay.surface ?? renderSettingsDrawerFallback(options, content);
+  const surface = overlay.surface ?? renderSettingsDrawerFallback(options, content);
+  paintSettingsChrome(surface, options.theme);
+  return surface;
 }
 
 function renderSettingsDrawerFallback(options: RenderSettingsDrawerOptions, content: Surface): Surface {
@@ -136,7 +140,7 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
   }
   const label = fitLine(settingsRowLabel(options), Math.max(1, surface.width - options.x));
   const labelToken = options.selected
-    ? options.theme.cursor.normal
+    ? filledSelectionToken(options.theme)
     : options.theme.surface.drawer;
   paintText(surface, label, options.x, options.y, labelToken);
 
@@ -291,4 +295,26 @@ function tokenValue(token: JeditStyleToken): TokenValue {
     hex: colorHex(token.fg) ?? token.hex ?? SETTINGS_FALLBACK_FOREGROUND,
     bg: colorHex(token.bg) ?? SETTINGS_FALLBACK_BACKGROUND,
   };
+}
+
+function paintSettingsChrome(surface: Surface, theme: JeditTheme): void {
+  const border = settingsDrawerTextToken(theme, theme.chrome.activeEdge);
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const cell = surface.get(x, y);
+      const painted = isSettingsBorder(x, y, surface)
+        ? { ...cell, fg: border.fg, fgRGB: border.fgRGB, bg: border.bg, bgRGB: border.bgRGB, empty: false }
+        : fillMissingSettingsStyle(cell, theme.surface.drawer);
+      surface.set(x, y, painted);
+    }
+  }
+}
+
+function isSettingsBorder(x: number, y: number, surface: Surface): boolean {
+  return x === 0 || y === 0 || x === surface.width - 1 || y === surface.height - 1;
+}
+
+function fillMissingSettingsStyle(cell: Cell, token: JeditStyleToken): Cell {
+  return { ...cell, fg: cell.fg ?? token.fg, fgRGB: cell.fgRGB ?? token.fgRGB,
+    bg: cell.bg ?? token.bg, bgRGB: cell.bgRGB ?? token.bgRGB, empty: false };
 }
