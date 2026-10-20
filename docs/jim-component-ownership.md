@@ -285,6 +285,20 @@ the meaning of a checkpoint declaration, while Echo owns the Tick and receipt
 that witness its persistence. Jedit owns a screen cache, while neither that
 cache nor the screen becomes text authority.
 
+The current Files drawer search and read-only preview are transient Jedit
+presentation projections. Navigation/filter mode, query/caret, hover, and
+selection are session-only shell state; they are not persisted or replayed as
+Jim buffer-search state. The filter creates no database or authoritative
+inventory. Selection previews bounded filesystem content or an already open
+buffer projection without replacing the active buffer, editing, saving, or
+creating an Echo buffer. Entry identity and request identity reject stale
+preview results. Native file paths remain intact while portable search paths
+are normalized at the filesystem boundary. Opening explicitly with Enter
+continues through the native Echo text-import path.
+[DX-0161](design/0161-file-explorer-search.md) owns this bounded implementation;
+a future workspace or symbol index must remain a rebuildable projection and
+declare its observation basis and staleness policy.
+
 > **Intuition to carry forward:** semantic ownership and storage authority are
 > different powers. Jim decides what command to perform, the text capability
 > defines what the text operation means, and Echo decides whether their

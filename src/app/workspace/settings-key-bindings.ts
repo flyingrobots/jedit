@@ -35,6 +35,7 @@ export function updateSettingsKey(
     return [{
       ...model,
       settingsOpen: !model.settingsOpen,
+      fileSearchEditing: false,
       settingsFocusIndex: 0,
       settingsDiagnosticsOpen: false,
     }, []];

@@ -1,3 +1,4 @@
+import type { FilePreviewSource } from '../../ports/file-preview.js';
 import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
@@ -12,17 +13,13 @@ import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
-import type { WorkspaceEntryOpener } from './mouse.js';
 
 export type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 export type WorkspaceResizeMsg = ResizeMsg;
 
 export interface WorkspaceRuntimeDependencies {
-  // Supplied by the composition root so pointer clicks can open an entry.
-  // Optional: the pointer path still selects without it, and test harnesses
-  // that never click do not have to construct the filesystem dependencies.
-  readonly openEntry?: WorkspaceEntryOpener['openEntry'];
+  readonly filePreviewSource?: FilePreviewSource;
   readonly initialColumns: number;
   readonly initialRows: number;
   readonly initialWorkingDirectory: string;

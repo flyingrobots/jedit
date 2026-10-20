@@ -1,3 +1,4 @@
+import { applyFileExplorerPreview, synchronizeFileExplorerPreview } from './file-explorer-preview.js';
 import { createInitialModel, workspaceAnimationIsActive } from "./init.js";
 import type { WorkspaceModel } from "./model.js";
 import {
@@ -84,9 +85,9 @@ function updateWorkspaceRuntime(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  return syncWorkspaceRuntimeResult(
+  return synchronizeFileExplorerPreview(syncWorkspaceRuntimeResult(
     rebaseFrameClock(deps, model, updateWorkspaceRuntimeState(deps, msg, model)),
-  );
+  ), deps.filePreviewSource);
 }
 
 // While the workspace is idle the tick handler returns the model untouched, so
@@ -199,6 +200,7 @@ function updateWorkspaceStateMessage(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.FileExplorerPreviewResult) return [applyFileExplorerPreview(model, msg), []];
   const animation = updateAnimationStateMessage(msg, model);
   if (animation != null) {
     return animation;
@@ -400,9 +402,6 @@ function updateWorkspaceInputMessage(
       msg,
       model,
       deps.sourceHighlighter,
-      deps.openEntry == null
-        ? undefined
-        : { nowMs: deps.nowMs, openEntry: deps.openEntry },
     );
   }
   return msg.type === WorkspaceInputMessageTypes.Key

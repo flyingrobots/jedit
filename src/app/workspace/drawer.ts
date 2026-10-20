@@ -46,6 +46,7 @@ function openFileDrawer(
   const next = withFocusPane({
     ...model,
     fileDrawerOpen: true,
+    fileSearchEditing: false,
   }, FocusPanes.Files);
 
   if (model.fileDrawerOpen) {
@@ -77,7 +78,7 @@ export function closeDrawer(
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const next = kind === DrawerKinds.Files
-    ? { ...model, fileDrawerOpen: false }
+    ? { ...model, fileDrawerOpen: false, fileSearchEditing: false, fileHoveredIndex: undefined }
     : { ...model, graftDrawerOpen: false };
 
   const focusState: Omit<FocusCycleState, 'focusPane'> = {

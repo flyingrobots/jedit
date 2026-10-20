@@ -52,6 +52,7 @@ export function loadEntries(cwd: string): readonly FileEntry[] {
       kind: 'parent',
       name: '..',
       path: parent,
+      searchPath: portableFileSearchPath(parent),
     });
   }
 
@@ -60,6 +61,7 @@ export function loadEntries(cwd: string): readonly FileEntry[] {
       kind: entry.isDirectory() ? 'dir' : 'file',
       name: entry.name,
       path: join(cwd, entry.name),
+      searchPath: portableFileSearchPath(join(cwd, entry.name)),
     }))
     .sort(compareEntries);
 
@@ -128,4 +130,8 @@ function formatUnknownFilesystemError(cause: Throwable): string {
     && typeof cause.message === 'string'
     ? cause.message
     : String(cause);
+}
+
+export function portableFileSearchPath(path: string): string {
+  return path.replaceAll('\\', '/');
 }
