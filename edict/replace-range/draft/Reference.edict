@@ -66,7 +66,7 @@ intent replaceRange(input: Input) returns Result
     + slice(old.bytes, input.endByte, len(old.bytes));
   require len(bytes) <= 1048576u64 else text.RangeOutOfBounds;   // needs a bound proof
   let fact = { bytes, lineBreaks: v2.lineBreaks(bytes) };
-  let newTextId = v2.nodeId("text", core.cbor.encode(fact), []);   // PROPOSED encode
+  let newTextId = v2.contentId(fact, []);
   echo.ref<TextFact>(newTextId).ensure(fact) else text.ContentIdentityMismatch;
 
   let newHead = {
@@ -74,7 +74,10 @@ intent replaceRange(input: Input) returns Result
     lineCount: fact.lineBreaks + 1u64,                       // needs checked +
     sequence: head.sequence + 1u64,
   };
-  let newHeadId = v2.nodeId("head", core.cbor.encode(newHead), [newTextId, importId]);
+  let newHeadId = v2.contentId(newHead, [
+    { edgeType: typeId<v2.Root>(), to: newTextId },
+    { edgeType: typeId<v2.Anchor>(), to: importId },
+  ]);
   let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
   newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
   echo.edge<v2.HeadFact, TextFact, v2.Root>(newHeadRef)

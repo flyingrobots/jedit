@@ -96,6 +96,8 @@ intent replaceRange(input: Input) returns Result
   let importId = echo.edge<v2.HeadFact, v2.ImportFact, v2.Anchor>(headRef)
     .target() else text.FactMissing;
   require input.endByte <= head.byteLength else text.RangeOutOfBounds;
+  require len(input.replacement) <= text.maxReplacementBytes
+    else text.ResourceLimitExceeded;                         // the v1 envelope (DL-0159)
   require core.bytes.isUtf8(input.replacement) else text.Utf8BoundaryInvalid;  // PROPOSED
 
   let want = {
@@ -109,7 +111,10 @@ intent replaceRange(input: Input) returns Result
     expand(want, _, _),                                      // PROPOSED partial application
     maxNodes: text.maxClosureNodes,
     maxDepth: text.maxTreeHeight,
-  ).read() else text.MalformedRope;
+  ).read() else {
+    LimitReached => text.ResourceLimitExceeded,              // PROPOSED: closure-read outcomes (echo#926)
+    InvariantViolated => text.MalformedRope,
+  };
   require rope.byteLength(root) == head.byteLength else text.MalformedRope;
 
   require rope.isCharBoundaryIn(root, input.startByte) else text.Utf8BoundaryInvalid;
@@ -119,8 +124,11 @@ intent replaceRange(input: Input) returns Result
     else text.NoOp;
 
   let next = rope.replace(root, input.startByte, input.endByte, input.replacement)
-    else { ClosureTooSmall => text.MalformedRope };          // PROPOSED: map a pure failure
-  let fresh = rope.created(next);
+    else { ClosureTooSmall => text.ClosureInsufficient };    // a defect in the selector, not in the data
+  // Repeated text yields repeated content ids. Emit one effect per id, refuse
+  // an id with two different contents, keep canonical order (DL-0159).
+  let fresh = rope.normalized(rope.created(next))
+    else { ConflictingContent => text.ContentIdentityMismatch };
 
   for leaf in fresh.leaves bounded text.maxCreatedLeaves {
     echo.ref<v2.LeafFact>(leaf.id).ensure(leaf.fact) else text.ContentIdentityMismatch;
@@ -141,7 +149,13 @@ intent replaceRange(input: Input) returns Result
     sequence: head.sequence + 1u64,
   };
   let rootId = if m.byteLength == 0u64 then none() else some(rope.idOf(next));
-  let newHeadId = v2.nodeId("head", core.cbor.encode({ newHead, rootId }), [importId]);
+  // The head's id commits to the fact it stores and its actual edges: anchor,
+  // plus root when the text is non-empty.
+  let anchorEdge = { edgeType: typeId<v2.Anchor>(), to: importId };
+  let headEdges = if isSome(rootId)
+    then [{ edgeType: typeId<v2.Root>(), to: unwrap(rootId) }, anchorEdge]
+    else [anchorEdge];
+  let newHeadId = v2.contentId(newHead, headEdges);
   let newHeadRef = echo.ref<v2.HeadFact>(newHeadId);
   newHeadRef.ensure(newHead) else text.ContentIdentityMismatch;
   if isSome(rootId) {

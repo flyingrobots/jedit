@@ -6,7 +6,7 @@ package jedit.text.v2@1;
 use lawpack jedit.text@2 as text;
 use target echo.dpo@1 as echo;
 
-// ---- Stored facts (alpha atoms, canonical CBOR v1) ----
+// ---- Stored facts (alpha atoms, Echo's canonical codec profile) ----
 
 type BufferFact = {
   bufferKey: String<max=4096>,
@@ -30,41 +30,60 @@ type LeafFact = {
   lineBreaks: U64,
 };
 
-// Provenance only: the bytes a head's lineage was imported from. Copying the
-// anchor forward never claims the rope still matches the file.
+// Provenance only: the bytes a head's lineage was imported from, and the
+// observation that witnessed them. Copying the anchor forward never claims the
+// rope still matches the file.
 type ImportFact = {
   fileCoordinate: String<max=4096>,
   hostDigest: Bytes<exact=32>,
+  observation: Bytes<exact=32>,
 };
 
-// Synchronization: one witnessed write of a buffer's bytes to its file.
-// Evidence of the crossing, not file authority. `exportEvent` names the causal
-// event that witnessed the write; the exported head is not reachable from it.
+// The host version Jim currently works against (DL-0159, accepted host basis).
+// `evidence` names the observation or export that made it current;
+// `generation` increases with every transition.
+type HostBasisFact = {
+  fileCoordinate: String<max=4096>,
+  hostDigest: Bytes<exact=32>,
+  evidence: Bytes<exact=32>,
+  generation: U64,
+};
+
+// What Jim last exported: evidence of one crossing, never the synchronization
+// basis and never file authority. Every field names evidence that existed
+// before this node was written; the exported head is not reachable from it.
 type ExportFact = {
+  exportIntent: Bytes<exact=32>,
   fileCoordinate: String<max=4096>,
   logicalDigest: Bytes<exact=32>,
   hostDigest: Bytes<exact=32>,
-  exportEvent: Bytes<exact=32>,
+  observation: Bytes<exact=32>,
 };
 
 // ---- Edge types (no payload; one edge per source node and type) ----
 
+type BufferSlot = Unit;      // worldline root -> Buffer, one per buffer (echo#927)
 type CanonicalHead = Unit;   // Buffer -> Head
+type AcceptedHostBasis = Unit; // Buffer -> HostBasis, retargeted by basis transitions
 type Root = Unit;            // Head -> Branch | Leaf
 type Anchor = Unit;          // Head -> Import, copied to every new head
-type LastExport = Unit;      // Buffer -> Export, retargeted by each save
+type LastExport = Unit;      // Buffer -> Export, retargeted by each confirmed export
 // No head-to-predecessor edge: Echo's ticks and receipts own history (DL-0159).
 type Left = Unit;            // Branch -> Branch | Leaf
 type Right = Unit;           // Branch -> Branch | Leaf
 
-// ---- Identity law ----
+// ---- Identity law: Echo ContentAddressV1 (DL-0159) ----
+//
+// A content node's id commits to its type, the attachment digest of the atom
+// it actually stores, and its complete outgoing edge set. Echo recomputes it
+// and refuses a mismatch, so source computes it from the same inputs, never
+// from an application-specific recipe. Edge ids (content and slot) are
+// computed by the edge effects themselves.
 
-fn nodeId(kind: String<max=32>, atom: Bytes<max=8192>, children: List<NodeId, max=2>) -> NodeId {
-  return hash("jedit.text.node.v2", { kind, atom, children });
-}
+type OutEdge = { edgeType: TypeId, to: NodeId };
 
-fn edgeId(from: NodeId, edgeType: String<max=64>) -> EdgeId {
-  return hash("jedit.text.edge.v2", { from, edgeType });
+fn contentId<T>(atom: T, edges: List<OutEdge, max=2>) -> NodeId {   // PROPOSED generic helper
+  return echo.contentAddress(typeId<T>(), echo.attachmentDigest(atom), edges);  // PROPOSED: edict#260
 }
 
 // ---- Text metrics ----

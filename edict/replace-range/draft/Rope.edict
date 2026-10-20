@@ -37,6 +37,7 @@ type Created = {
 // A pure function may fail only with a declared, typed failure. The caller
 // maps it to an obstruction.                                // PROPOSED: `fails` / `expect`
 failure ClosureTooSmall;
+failure ConflictingContent;
 
 // ---- Metrics and constructors ----
 
@@ -63,7 +64,7 @@ fn idOf(t: Tree) -> NodeId fails ClosureTooSmall {
 
 fn leaf(bytes: Bytes<max=4096>) -> Tree {
   let fact = { bytes, lineBreaks: v2.lineBreaks(bytes) };
-  return Tree::Leaf({ id: v2.nodeId("leaf", core.cbor.encode(fact), []), fact, fresh: true });
+  return Tree::Leaf({ id: v2.contentId(fact, []), fact, fresh: true });
 }
 
 // Both sides must be non-empty. Heights must differ by at most one.
@@ -75,7 +76,10 @@ fn branch(l: Tree, r: Tree) -> Tree fails ClosureTooSmall {
     lineBreaks: ml.lineBreaks + mr.lineBreaks,
     height: max(ml.height, mr.height) + 1u8,                 // PROPOSED max
   };
-  let id = v2.nodeId("branch", core.cbor.encode(fact), [expect idOf(l), expect idOf(r)]);
+  let id = v2.contentId(fact, [
+    { edgeType: typeId<v2.Left>(), to: expect idOf(l) },
+    { edgeType: typeId<v2.Right>(), to: expect idOf(r) },
+  ]);
   return Tree::Branch({ id, fact, left: l, right: r, fresh: true });
 }
 
@@ -252,6 +256,16 @@ fn created(t: Tree) -> Created
       }
       else { leaves: [], branches: [] },
     _ => { leaves: [], branches: [] },
+  };
+}
+
+// The proposal Echo receives may not name one target twice (DL-0159, effect
+// normalization). Equal text yields equal content ids, so keep the first of
+// each id, refuse an id whose two occurrences differ, and sort by id.
+fn normalized(c: Created) -> Created fails ConflictingContent {
+  return {
+    leaves: expect dedupeById(c.leaves, _.id, _.fact),          // PROPOSED generic list helper
+    branches: expect dedupeById(c.branches, _.id, _.fact),
   };
 }
 

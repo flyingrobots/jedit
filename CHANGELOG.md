@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Revised DL-0159 (Edict-authored rope) after review. Schema 2's direction
+  stands; identity now follows Echo's `ContentAddressV1`; a new accepted host
+  basis keeps "what Jim works against" apart from import provenance and
+  `lastExport`; filesystem claims are limited to what their evidence supports
+  (a best-effort export profile, recovery that classifies instead of inferring
+  writes, one fenced export per file binding); the v1 resource envelope and its
+  three failure classes are explicit; and acceptance splits into a
+  representation gate and a file-crossing gate. The draft Edict sources and
+  README follow, and every capability the rope needs has an owner issue.
+
 - Jim now runs on current Echo and Edict. The native host had been pinned to
   Echo `90f63ae` (2026-07-17), 1054 commits behind main, so Jim never exercised
   the Echo being built. It now builds against Echo main `0faaf58`, with contract
