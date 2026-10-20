@@ -16,15 +16,15 @@
     "files": [
       {
         "path": "package.json",
-        "sha256": "0b3cd3e406bf712d3adf02cae2188b00e83f47ad6e64515dfdb00969ff375f55"
+        "sha256": "26144daea8201730b87ffb37419f35961d52fa6549373f15b42b81a19fd3a8c3"
       },
       {
         "path": "package-lock.json",
-        "sha256": "645862f8275e1fd7cafb3522dba28d71c92ef0c4440149621d0652f43df29e25"
+        "sha256": "80e8a8fa15b61deead5c79388757ff74629d66a4b42ac38f5c3de21248f713d7"
       },
       {
         "path": ".github/workflows/ci.yml",
-        "sha256": "bc19286ef44ce7d8ba0fd8a3e39a8ec0313d07ed3084fbe15e25ef42d82bc8f1"
+        "sha256": "b85f2e43552dab43dd9d8f87daacc0c73b437fc2bde341eb3fb21fd6e2394c12"
       }
     ]
   },

@@ -16,6 +16,16 @@
   Specs that only asserted the wording of deleted documents were removed with
   them; behavioural checks were kept.
 
+- CI now runs ShellCheck (`scripts/ci/shellcheck.sh`, in the `quality` job) over
+  every tracked shell script and over the pre-commit and pre-push launchers that
+  `scripts/install-hooks.sh` generates, installed into a throwaway repository.
+  The ReplaceRange proof locks were refreshed for the changed workflow bytes.
+
+- Removed the unused direct `@modelcontextprotocol/sdk` dependency declaration.
+  No Jedit code imports it; the SDK remains installed as a dependency of
+  `@flyingrobots/graft`, at the version (1.32.1) the security update selected.
+  The ReplaceRange proof locks were refreshed for the changed package bytes.
+
 - Fixed reopening a file silently reusing a stale rope (#350). Opening a file
   now sends the SHA-256 digest and length of its raw bytes (or its absence) to
   the native Echo host, which records a `jedit.text.ImportAnchor.v1` fact in the
