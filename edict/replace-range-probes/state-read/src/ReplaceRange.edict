@@ -1,0 +1,13 @@
+package jedit.text.replace_range@1;
+use lawpack jedit.text@1 digest "sha256:7d66e6d70629ab25602500ab5802c25114b3691d90e0858b98a3332ec088647c" as text;
+type Input = {bufferId: text.BufferId, basisHeadId: text.HeadId};
+intent replaceRange(input: Input) returns text.HeadId
+  profile text.replaceRange
+  basis input.basisHeadId
+  budget <= text.replaceRangeBudget
+{
+  let canonicalHead: text.HeadId = text.readCanonicalHead(input.bufferId)
+    else { missing(id) => text.FactMissing };
+  require canonicalHead == input.basisHeadId else text.BasisNotCanonical;
+  return canonicalHead;
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "jedit.edict-executable-subject-lock/v1",
+  "reference": {
+    "coordinate": "echo.executable-subject/v1",
+    "digest": "sha256:ea65a7bfa2055644c99783ef5097bdaa84c03245866f20126816b4c33f75d8cf"
+  },
+  "rawSha256": "7d08ef912c7f294c949abddf255423b3f7145d2accf64794dec5acf225e85cf7",
+  "package": {
+    "coordinate": "executable-operation-package.echo",
+    "digest": "sha256:4c2b7859f291e97b6b38fb265086e6cb0581ed030d54d38152b0585152120397"
+  },
+  "targetIr": {
+    "coordinate": "echo.span-ir/v1",
+    "digest": "sha256:4b4049ae9730091d9450a489a22c88519fd8f84c5b74895f07cf86a250afcf86"
+  },
+  "resultProjection": {
+    "coordinate": "jedit.text.replace_range@1.replaceRange",
+    "digest": "sha256:80d1580fac6effe2d4001364ba2d554db5317e2c324ec30965fe866f79ab6348"
+  }
+}

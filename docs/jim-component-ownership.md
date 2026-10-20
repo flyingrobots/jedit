@@ -697,13 +697,28 @@ definitions or test oracles accidentally become fake runtime implementations.
 | Installed release record | Echo | One complete closure was retained, installed, verified, and activated for a worldline under an explicit transition | That a particular command committed |
 | Tick, conflict outcome, reading, receipt, and recovery evidence | Echo realm | What happened under one release, realm, epoch, basis, and admitted or rejected execution | What Jim should decide next |
 
-The schema and oracle are already frozen under
-`contracts/jedit/lawpacks/replace-range-v1/`. `ReplaceRange.edict` and its
-complete application-owned lawpack closure do not yet exist in Jedit. Neither
-does the release manifest that would bind `jim.core`, `jedit.text`, their entry
-points, and the relevant profiles. Edict's generic application-owned lawpack
-authoring and bounded-control prerequisites have landed, but only the real
-application source can reveal the next honest compiler or target-profile gap.
+The schema and independent oracle are frozen under
+`contracts/jedit/lawpacks/replace-range-v1/`. Jedit now owns executable source
+and its complete published lawpack closure under `edict/replace-range/`.
+The public Edict build and independent verifier produce a pinned pure package
+that Echo executes as a flat-text replacement reference, with range, UTF-8,
+offset-boundary, no-op and resource refusals. The package and verifier report
+are byte-identical across the verified macOS and Linux builds. The application
+[README](../edict/replace-range/README.md) owns the exact build and runtime
+reproduction instructions.
+
+This reference computes bytes; it does not construct a persistent rope or
+produce the domain's typed outcomes. Authored graph effects, atomic admission,
+Tick/WAL/receipt/readings and fresh-engine recovery remain unimplemented for
+this package. The standalone runtime host is test-only conformance scaffolding,
+unreachable from the editor's production composition. The proposed persistent
+rope source remains a noncompiling draft outside the application gate.
+
+The release manifest binding `jim.core`, `jedit.text`, their entry points and
+profiles, and the installed release that would activate it, also remain absent.
+This working pure package refines the authored-source stage of the artifact
+chain; it does not establish an installed Jim release or replace the current
+native text-operation authority.
 
 In summary, the artifact chain moves from application definition, to authored
 source and lawpack closure, to compiler-produced package, to installed release,
@@ -1178,7 +1193,7 @@ but contradictory prose.
 | Which TypeScript paths still own semantics? | Vim parsing, motion resolution, coordinate conversion, operation selection, and transition planning are executable today | Classify them explicitly as compatibility authority, not merely import or migration plumbing |
 | Who owns text and rope contracts in target prose? | Some older documents say “Jedit” broadly, while the first draft grouped them under Jim | Name `jedit.text` as the application-owned text capability, `jim.core` as its semantic consumer, and Jedit as the product/body composition |
 | Do documentation tests prove the canonical section? | Some policy tests search required phrases anywhere in a document | Scope tests to the named ownership sections and assert the complete contract, including test-only direct `ReplaceRange` invocation |
-| Does the target exist in code? | `Jim.edict`, `ReplaceRange.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers are absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
+| Does the target exist in code? | A compiler-produced pure flat-text `ReplaceRange.edict` reference exists; the authored persistent-rope operation, `Jim.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers remain absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
 
 There is also a procedural gap. The clean architecture worktree is one commit
 ahead of current Jedit `main`, and PR #300 carries these ownership corrections,

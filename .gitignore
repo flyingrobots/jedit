@@ -7,6 +7,9 @@ title-recordings/
 .wesley-cache/
 .jedit-cache/
 .jedit/
+.build/
+.vendor.edict-lawpack-build.lock
+.jedit-text.edict-lawpack-build.lock
 .obsidian/
 .claude/
 src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts

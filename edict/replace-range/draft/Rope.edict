@@ -1,0 +1,278 @@
+// Draft: persistent AVL rope law, pure (acceptance target 2).
+//
+// Every function here is pure. The intent in ReplaceRange.edict reads the
+// region an edit touches, calls `replace`, and turns the fresh nodes it
+// returns into `ensure` effects. Unchanged subtrees appear as `Stub`s and are
+// reused by identity, never re-created: that is the path copy.
+//
+// Not compiled by the application gate. See README.md for the status of each
+// construct. Lines marked PROPOSED use syntax the Edict spec does not define.
+package jedit.text.rope@1;
+
+use lawpack jedit.text@2 as text;
+use module jedit.text.v2@1 as v2;                           // PROPOSED: source-module import
+
+// ---- Local view of a rope region ----
+
+// A tree read by the boundary closure (ReplaceRange.edict) or built by this
+// edit. `fresh` marks nodes this edit creates.
+type Tree = variant {
+  Empty,
+  Leaf(LeafView),
+  Branch(BranchView),
+  Stub(StubView),
+} depth <= text.maxTreeHeight;                               // PROPOSED: depth-bounded recursion
+
+type LeafView = { id: NodeId, fact: v2.LeafFact, fresh: Bool };
+type BranchView = { id: NodeId, fact: v2.BranchFact, left: Tree, right: Tree, fresh: Bool };
+type StubView = { id: NodeId, byteLength: U64, lineBreaks: U64, height: U8 };
+
+type Metrics = { byteLength: U64, lineBreaks: U64, height: U8 };
+type Pair = { left: Tree, right: Tree };
+type Created = {
+  leaves: List<LeafView, max=text.maxCreatedLeaves>,
+  branches: List<BranchView, max=text.maxCreatedBranches>,
+};
+
+// A pure function may fail only with a declared, typed failure. The caller
+// maps it to an obstruction.                                // PROPOSED: `fails` / `expect`
+failure ClosureTooSmall;
+
+// ---- Metrics and constructors ----
+
+fn metrics(t: Tree) -> Metrics {
+  return match t {
+    Empty => { byteLength: 0u64, lineBreaks: 0u64, height: 0u8 },
+    Leaf(l) => { byteLength: len(l.fact.bytes), lineBreaks: l.fact.lineBreaks, height: 1u8 },
+    Branch(b) => { byteLength: b.fact.byteLength, lineBreaks: b.fact.lineBreaks, height: b.fact.height },
+    Stub(s) => { byteLength: s.byteLength, lineBreaks: s.lineBreaks, height: s.height },
+  };
+}
+
+fn height(t: Tree) -> U8 { return metrics(t).height; }
+fn byteLength(t: Tree) -> U64 { return metrics(t).byteLength; }
+
+fn idOf(t: Tree) -> NodeId fails ClosureTooSmall {
+  return match t {
+    Empty => fail ClosureTooSmall,                           // callers never pass Empty
+    Leaf(l) => l.id,
+    Branch(b) => b.id,
+    Stub(s) => s.id,
+  };
+}
+
+fn leaf(bytes: Bytes<max=4096>) -> Tree {
+  let fact = { bytes, lineBreaks: v2.lineBreaks(bytes) };
+  return Tree::Leaf({ id: v2.nodeId("leaf", core.cbor.encode(fact), []), fact, fresh: true });
+}
+
+// Both sides must be non-empty. Heights must differ by at most one.
+fn branch(l: Tree, r: Tree) -> Tree fails ClosureTooSmall {
+  let ml = metrics(l);
+  let mr = metrics(r);
+  let fact = {
+    byteLength: ml.byteLength + mr.byteLength,               // needs checked +
+    lineBreaks: ml.lineBreaks + mr.lineBreaks,
+    height: max(ml.height, mr.height) + 1u8,                 // PROPOSED max
+  };
+  let id = v2.nodeId("branch", core.cbor.encode(fact), [expect idOf(l), expect idOf(r)]);
+  return Tree::Branch({ id, fact, left: l, right: r, fresh: true });
+}
+
+fn expanded(t: Tree) -> BranchView fails ClosureTooSmall {
+  return match t {
+    Branch(b) => b,
+    _ => fail ClosureTooSmall,                               // the closure read must expand this node
+  };
+}
+
+// ---- AVL balance ----
+
+// `l` and `r` are AVL trees whose heights differ by at most two.
+fn balance(l: Tree, r: Tree) -> Tree fails ClosureTooSmall {
+  return if height(l) > height(r) + 1u8 then expect rotateRight(expect expanded(l), r)
+    else if height(r) > height(l) + 1u8 then expect rotateLeft(l, expect expanded(r))
+    else expect branch(l, r);
+}
+
+fn rotateRight(lb: BranchView, r: Tree) -> Tree fails ClosureTooSmall {
+  return if height(lb.left) >= height(lb.right)
+    then expect branch(lb.left, expect branch(lb.right, r))
+    else expect doubleRight(lb, expect expanded(lb.right), r);
+}
+
+fn doubleRight(lb: BranchView, lrb: BranchView, r: Tree) -> Tree fails ClosureTooSmall {
+  return expect branch(expect branch(lb.left, lrb.left), expect branch(lrb.right, r));
+}
+
+fn rotateLeft(l: Tree, rb: BranchView) -> Tree fails ClosureTooSmall {
+  return if height(rb.right) >= height(rb.left)
+    then expect branch(expect branch(l, rb.left), rb.right)
+    else expect doubleLeft(l, rb, expect expanded(rb.left));
+}
+
+fn doubleLeft(l: Tree, rb: BranchView, rlb: BranchView) -> Tree fails ClosureTooSmall {
+  return expect branch(expect branch(l, rlb.left), expect branch(rlb.right, rb.right));
+}
+
+// ---- Join: concatenate two AVL trees ----
+
+fn join(l: Tree, r: Tree) -> Tree fails ClosureTooSmall
+  decreases height(l) + height(r)                            // PROPOSED termination measure
+{
+  return match (l, r) {                                      // PROPOSED tuple match
+    (Empty, _) => r,
+    (_, Empty) => l,
+    _ => if height(l) > height(r) + 1u8 then expect joinIntoLeft(expect expanded(l), r)
+      else if height(r) > height(l) + 1u8 then expect joinIntoRight(l, expect expanded(r))
+      else expect branch(l, r),
+  };
+}
+
+fn joinIntoLeft(lb: BranchView, r: Tree) -> Tree fails ClosureTooSmall {
+  return expect balance(lb.left, expect join(lb.right, r));
+}
+
+fn joinIntoRight(l: Tree, rb: BranchView) -> Tree fails ClosureTooSmall {
+  return expect balance(expect join(l, rb.left), rb.right);
+}
+
+// ---- Split at a byte offset (a checked character boundary) ----
+
+fn split(t: Tree, at: U64) -> Pair fails ClosureTooSmall
+  where at <= byteLength(t)                                  // PROPOSED: function preconditions
+  decreases height(t)
+{
+  return match t {
+    Empty => { left: Tree::Empty, right: Tree::Empty },
+    Leaf(l) => splitLeaf(l, at),
+    Branch(b) => expect splitBranch(b, at),
+    Stub(s) => if at == 0u64 then { left: Tree::Empty, right: t }
+      else if at == s.byteLength then { left: t, right: Tree::Empty }
+      else fail ClosureTooSmall,
+  };
+}
+
+fn splitLeaf(l: LeafView, at: U64) -> Pair
+  where at <= len(l.fact.bytes)
+{
+  return if at == 0u64 then { left: Tree::Empty, right: Tree::Leaf(l) }
+    else if at == len(l.fact.bytes) then { left: Tree::Leaf(l), right: Tree::Empty }
+    else {
+      left: leaf(slice(l.fact.bytes, 0u64, at)),
+      right: leaf(slice(l.fact.bytes, at, len(l.fact.bytes))),
+    };
+}
+
+fn splitBranch(b: BranchView, at: U64) -> Pair fails ClosureTooSmall
+  where at <= b.fact.byteLength
+{
+  let leftLength = byteLength(b.left);
+  return if at < leftLength then expect splitLeftChild(b, at)
+    else if at > leftLength then expect splitRightChild(b, at - leftLength)   // needs flow-sensitive proof
+    else { left: b.left, right: b.right };
+}
+
+fn splitLeftChild(b: BranchView, at: U64) -> Pair fails ClosureTooSmall {
+  let p = expect split(b.left, at);
+  return { left: p.left, right: expect join(p.right, b.right) };
+}
+
+fn splitRightChild(b: BranchView, at: U64) -> Pair fails ClosureTooSmall {
+  let p = expect split(b.right, at);
+  return { left: expect join(b.left, p.left), right: p.right };
+}
+
+// ---- Build a balanced tree from replacement bytes ----
+
+fn fromBytes(bytes: Bytes<max=1048576>) -> Tree fails ClosureTooSmall
+  decreases len(bytes)
+{
+  return if len(bytes) == 0u64 then Tree::Empty
+    else if len(bytes) <= 4096u64 then leaf(bytes)
+    else expect halves(bytes, boundaryAtOrBefore(bytes, len(bytes) / 2u64));  // PROPOSED U64 /
+}
+
+fn halves(bytes: Bytes<max=1048576>, mid: U64) -> Tree fails ClosureTooSmall {
+  return expect branch(
+    expect fromBytes(slice(bytes, 0u64, mid)),
+    expect fromBytes(slice(bytes, mid, len(bytes))),
+  );
+}
+
+// A UTF-8 scalar is at most four bytes, so a boundary lies within three bytes
+// before any position in valid UTF-8.
+fn boundaryAtOrBefore(bytes: Bytes<max=1048576>, at: U64) -> U64 {
+  return if v2.isCharBoundary(bytes, at) then at
+    else if v2.isCharBoundary(bytes, at - 1u64) then at - 1u64
+    else if v2.isCharBoundary(bytes, at - 2u64) then at - 2u64
+    else at - 3u64;
+}
+
+// ---- Character boundaries in a tree ----
+
+// Leaves end on character boundaries, so a leaf edge is always a boundary and
+// only offsets inside a leaf need its bytes. The closure expands every leaf
+// that contains `start` or `end`.
+fn isCharBoundaryIn(t: Tree, at: U64) -> Bool fails ClosureTooSmall
+  decreases height(t)
+{
+  return match t {
+    Empty => at == 0u64,
+    Leaf(l) => v2.isCharBoundary(l.fact.bytes, at),
+    Branch(b) => if at == byteLength(b.left) then true
+      else if at < byteLength(b.left) then expect isCharBoundaryIn(b.left, at)
+      else expect isCharBoundaryIn(b.right, at - byteLength(b.left)),
+    Stub(s) => if at == 0u64 || at == s.byteLength then true else fail ClosureTooSmall,
+  };
+}
+
+// ---- Replace and collect ----
+
+fn replace(root: Tree, start: U64, end: U64, replacement: Bytes<max=1048576>) -> Tree
+  fails ClosureTooSmall
+  where start <= end, end <= byteLength(root)
+{
+  let head = expect split(root, start);
+  let tail = expect split(head.right, end - start);
+  return expect join(expect join(head.left, expect fromBytes(replacement)), tail.right);
+}
+
+// Fresh nodes only. A node that is not fresh heads an unchanged subtree, so
+// nothing below it is fresh either.
+fn created(t: Tree) -> Created
+  decreases height(t)
+{
+  return match t {
+    Leaf(l) => if l.fresh then { leaves: [l], branches: [] } else { leaves: [], branches: [] },
+    Branch(b) => if b.fresh
+      then {
+        leaves: created(b.left).leaves ++ created(b.right).leaves,      // PROPOSED list concat
+        branches: [b] ++ created(b.left).branches ++ created(b.right).branches,
+      }
+      else { leaves: [], branches: [] },
+    _ => { leaves: [], branches: [] },
+  };
+}
+
+// The bytes in [start, end), for the no-op check. Leaves in the range must be
+// expanded; the closure read expands them only when the range length equals
+// the replacement length, because otherwise the edit cannot be a no-op.
+fn rangeBytes(t: Tree, start: U64, end: U64) -> Bytes<max=1048576> fails ClosureTooSmall
+  decreases height(t)
+{
+  return match t {
+    Empty => b"",
+    Leaf(l) => slice(l.fact.bytes, start, end),
+    Branch(b) => expect rangeBytesBranch(b, start, end),
+    Stub(s) => if start == end then b"" else fail ClosureTooSmall,
+  };
+}
+
+fn rangeBytesBranch(b: BranchView, start: U64, end: U64) -> Bytes<max=1048576>
+  fails ClosureTooSmall
+{
+  let mid = byteLength(b.left);
+  return (if start < mid then expect rangeBytes(b.left, start, min(end, mid)) else b"")
+    + (if end > mid then expect rangeBytes(b.right, max(start, mid) - mid, end - mid) else b"");
+}
