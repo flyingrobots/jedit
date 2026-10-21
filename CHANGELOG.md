@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Revised DL-0159 (Edict-authored rope) after review. Schema 2's direction
+  stands; identity now follows Echo's `ContentAddressV1`; a new accepted host
+  basis keeps "what Jim works against" apart from import provenance and
+  `lastExport`; filesystem claims are limited to what their evidence supports
+  (a best-effort export profile, recovery that classifies instead of inferring
+  writes, one fenced export per file binding); the v1 resource envelope and its
+  three failure classes are explicit; and acceptance splits into a
+  representation gate and a file-crossing gate. The draft Edict sources and
+  README follow, and every capability the rope needs has an owner issue.
+
 - `scripts/deps/echo-edict-relock.mjs` moves Jedit to new Echo and Edict commits in
   one command: Echo pins, regenerated host bindings, the ReplaceRange oracle, the
   republished `jedit.text` lawpack and import digest, and every proof lock,
