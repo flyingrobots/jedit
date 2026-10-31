@@ -461,3 +461,28 @@ test("required_ci_executes_the_exact_package_chain", async () => {
     /needs: \[ plan, build, test-shards, quality, release-gate, edict-replace-range \]/,
   );
 });
+
+test("compiler_selection_helper_is_bound_by_the_build_source_closure", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const build = runBuild(subject.project);
+    assertCommandCompleted(build);
+    assert.equal(build.status, 0, build.stderr);
+    const output = path.join(subject.application, ".build", "application");
+    const checker = path.join(subject.application, "tests", "assert-build-output.mjs");
+    const baseline = spawnSync(process.execPath, [checker, output], {
+      encoding: "utf8",
+    });
+    assertCommandCompleted(baseline);
+    assert.equal(baseline.status, 0, baseline.stderr);
+    const helper = path.join(subject.application, "tests", "compiler.mjs");
+    await writeFile(helper, `${await readFile(helper, "utf8")}\n// changed compiler selection\n`);
+    const checked = spawnSync(process.execPath, [checker, output], { encoding: "utf8" });
+    assertCommandCompleted(checked);
+    assert.notEqual(checked.status, 0, "compiler selection is part of the locked proof inputs");
+    assert.match(checked.stderr, /the exact build closure differs from edict\.build-lock\.json/);
+  } finally {
+    await subject.dispose();
+  }
+});

@@ -166,8 +166,8 @@
         "effectImplementations": {},
         "budgets": {
           "jedit.text@1.replaceRangeBudget": {
-            "maxSteps": 8388608,
-            "maxAllocatedBytes": 16777216,
+            "maxSteps": 134217728,
+            "maxAllocatedBytes": 268435456,
             "maxOutputBytes": 8388608
           },
           "jedit.text@1.maxCreatedLeafCountCost": {
@@ -186,11 +186,11 @@
     },
     "compatibility": {
       "id": "jedit.text.compatibility/v1",
-      "digest": "sha256:1628a34afa7f709e159b373198fc3e632f7ea2c1fb694b63a1f4fde1c6c1509e"
+      "digest": "sha256:5224cedf272a1b01a34f0a0b29f2557bfc1a0e6b4da0b2ce969d38f72d2d7e7e"
     },
     "conformanceFixtureCorpus": {
       "id": "jedit.text.ReplaceRange.oracle@1",
-      "digest": "sha256:7c38a873435d7dd8d785a121ed64ff17fbbdc6875ec20b49c460f538843548dc"
+      "digest": "sha256:89a15993d9317383f8b7bf4c36d6d00a4c9b13e7684f91916a926bea74f1eb01"
     },
     "localResources": [
       {

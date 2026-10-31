@@ -18,6 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { decode } from "cbor-x";
+import { buildCompiler } from "./compiler.mjs";
 
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const applicationRoot = path.resolve(testsDirectory, "..");
@@ -234,22 +235,7 @@ async function verifyVersions(lock) {
     run("cargo", [`+${lock.rust.toolchain}`, "--version"]),
     lock.rust.cargoVersion,
   );
-  const cargoOutput = run(
-    "cargo",
-    [
-      `+${lock.rust.toolchain}`, "build", "--locked", "-p", "edict-cli",
-      "--message-format=json-render-diagnostics",
-    ],
-    { cwd: edictRepository },
-  );
-  const compilerArtifacts = cargoOutput.split("\n")
-    .map((line) => JSON.parse(line))
-    .filter((artifact) => artifact.reason === "compiler-artifact"
-      && artifact.target.name === "edict"
-      && artifact.target.kind.includes("bin")
-      && typeof artifact.executable === "string");
-  assert.equal(compilerArtifacts.length, 1, "Cargo must emit one Edict executable");
-  const edictBinary = compilerArtifacts[0].executable;
+  const edictBinary = buildCompiler(edictRepository, lock.rust.toolchain);
   const version = JSON.parse(run(edictBinary, ["--version"]));
   assert.equal(version.version, lock.edict.cliVersion);
   return edictBinary;

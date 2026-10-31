@@ -15,6 +15,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decode } from 'cbor-x';
+import { buildCompiler } from '../../edict/replace-range/tests/compiler.mjs';
 
 const ECHO_GIT = 'https://github.com/flyingrobots/echo';
 const TEXT_LAWPACK = 'jedit.text@1';
@@ -219,19 +220,6 @@ function regenerateHostBindings(echoRepository) {
   run('cargo', ['build', '--manifest-path', path.join(HOST_ROOT, 'Cargo.toml'), '--all-targets']);
 }
 
-function edictCompiler(edictRepository, toolchain) {
-  const output = run('cargo', [
-    `+${toolchain}`, 'build', '--locked', '-p', 'edict-cli', '--message-format=json-render-diagnostics',
-  ], { cwd: edictRepository });
-  const executables = output.split('\n').filter(Boolean).map((line) => JSON.parse(line))
-    .filter((artifact) => artifact.reason === 'compiler-artifact' && artifact.target.name === 'edict'
-      && artifact.target.kind.includes('bin') && typeof artifact.executable === 'string');
-  if (executables.length !== 1) {
-    throw new Error('Cargo must emit one Edict executable');
-  }
-  return executables[0].executable;
-}
-
 function edictBuild(compiler, settings) {
   run(compiler, [], {
     cwd: APPLICATION_ROOT,
@@ -252,7 +240,7 @@ function relockToolchain(lockPath, { echoRepository, echoCommit, edictCommit, cl
 }
 
 function republishApplication({ echoRepository, edictRepository, toolchain }) {
-  const compiler = edictCompiler(edictRepository, toolchain);
+  const compiler = buildCompiler(edictRepository, toolchain);
   const cliVersion = JSON.parse(run(compiler, ['--version'])).version;
   edictBuild(compiler, { lawpack: 'edict.lawpack.json' });
   const sourcePath = path.join(APPLICATION_ROOT, 'src', 'ReplaceRange.edict');

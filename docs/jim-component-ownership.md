@@ -457,6 +457,17 @@ positive responsibility and the forbidden expansion for each participant.
 | Filesystem | External file storage and ecosystem interchange | Bytes at paths under operating-system authority | Current in-editor buffer truth after import | Import source and export destination, not canonical editor state |
 | Git | External version-control ecosystem | Repository commits, refs, index, and worktree projections | Jim's causal edit history or live buffer authority | Optional adapter/export boundary |
 
+An application lawpack declares admission ceilings for the provider's static
+whole-operation judgment over bounded pure computation. Echo checks those
+ceilings conservatively before accepting the program; each runtime host still
+supplies its own execution limits. Raising a compilation ceiling does not raise
+those host limits, expand source byte bounds, or establish execution cost at the
+maximum input. The current flat-text `ReplaceRange` witness uses this distinction;
+it does not establish the persistent-rope target. This refines the budget
+ownership in the table and the evaluator meter in
+[the rope design](design/0159-edict-rope-representation.md), without transferring
+runtime budget authority to Jedit.
+
 The table also explains why “Echo runs Jim” is acceptable while “Echo
 implements `ReplaceRange`” is not. A CPU can execute an editor without knowing
 what an editor is. Echo should have the same relationship to the complete
