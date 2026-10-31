@@ -47,7 +47,21 @@ component reproducibility, or grant application authority. The default
 `schemas/edict-provider/package/v1` publication remains separate; its schema
 rejects a Core function table.
 
-The probes distinguish useful current capabilities from the remaining blockers:
+Keep unpublished producer measurements in a separately named candidate report;
+do not overwrite `current-default.json` or `current-source-modules.json` with
+unmerged local changes. The runner records the selected producer commits and
+binary/provider hashes, so a candidate result does not become an upstream claim.
+For an explicit candidate component pair, use the publisher's paired
+`--lowerer-component` and `--verifier-component` paths and retain the designated
+build evidence. Selection does not establish independent reproducibility.
+
+The byte-lookup probe returns its exact U8 result. Its older U32-returning form
+was sufficient to expose an unresolved `at` on the historical compiler, but
+cannot classify a compiler that implements the U8 operation. A composed probe
+also applies `at` directly to a raw byte literal, so measuring the prerequisites
+separately cannot hide an integration failure.
+
+The upstream snapshots distinguish useful capabilities from remaining blockers:
 
 - The default flat-text reference remains the positive control.
 - Unsigned literal addition, byte count, UTF-8 checks and a digest-authenticated
@@ -60,6 +74,32 @@ The probes distinguish useful current capabilities from the remaining blockers:
   Those first errors do not classify every later construct in each program.
 
 Accepted helper declarations are deliberately narrow evidence: this inventory
-has not invoked those helpers at runtime. The next ReplaceRange step must add
-execution evidence and preserve the authored-source boundary; it must not replace
+has not invoked those helpers at runtime. The complete ReplaceRange gate still needs
+execution evidence for its authored program; helper declarations must not replace
 the persistent rope with the already proven flat-text reference.
+
+## Unpublished composed byte prerequisites
+
+[Candidate measurement](candidate-composed-bytes.json) selects Amblicit
+`9b5ed1a49c84867d6959e20222b827e4fa7d2789` and Echo
+`162d14a183312bfadd4fd8abac0c4a4919b51dd7`, a regular merge of the byte-literal
+and U8/byte-lookup candidates. The exact compiler binary is
+`db47a8e5c13ba5e47a0e7468ea06aebec146409ca378f82dc33146e644594faa`;
+selected provider manifest is
+`81dabc4af55c459eed6e80ae47a8071d3487a4c3562e13c686d7d4b054683eec`.
+This is local candidate evidence, not checked-component promotion or a statement
+that these changes are on upstream main.
+
+Nine of 28 public-build cases pass: baseline, raw bytes/escapes, unsigned
+addition, U8, count, UTF-8, byte lookup, literal-plus-lookup composition, and the
+digest-authenticated source module. Unsafe addition, variants, recursive
+records/functions, Option, list length/concatenation, function preconditions,
+typed pure failure, division/min/max and generic helpers still refuse in the
+compiler. The list-literal helper reaches the provider and is refused there.
+
+The complete drafts still stop first at `contentId<T>` in `Text.edict` or a
+missing source-module digest in the other three drafts. Later constructs in
+those drafts remain unmeasured by their first failure. The candidate source
+and component checks do not establish the rope's oracle agreement, sharing,
+effects, admission, recovery or editor cutover. The upstream snapshots above
+remain unchanged.

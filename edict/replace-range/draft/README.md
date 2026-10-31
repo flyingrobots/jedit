@@ -48,6 +48,22 @@ compiler refusals from provider refusals. An accepted public build includes
 lowering and independent verification; it does not prove helper invocation,
 rope execution, effects, admission, WAL, recovery or the final editor cutover.
 
+## Unpublished byte-prerequisite candidate
+
+A separate [candidate inventory](../../replace-range-probes/compiler-inventory/candidate-composed-bytes.json)
+measures Amblicit `9b5ed1a` with Echo's composed byte-literal/U8/lookup candidate
+`162d14a1`. These are local branches, not upstream main or promoted checked
+components. The original upstream measurements below remain pinned to their
+named commits.
+
+The candidate clears the isolated raw-byte helper, U8, byte-lookup and composed
+literal-plus-lookup probes. Together with the baseline, addition, count, UTF-8
+and a digest-authenticated module, nine of 28 public builds pass. The whole
+drafts still fail first at the same generic helper or missing module digest
+listed above. Correcting the draft source and identity contract is therefore
+still required before its later rope constructs can be judged as one program.
+No persistent-rope, effects or recovery acceptance follows from these probes.
+
 ## Blockers by class
 
 ### Language expressiveness (Edict source)
