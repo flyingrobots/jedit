@@ -37,10 +37,12 @@ flat-text targets, and the build closure includes both test sources.
 The toolchain pins Edict main `980c3ae3ff2ef96a0d026f9afdd77d61758cd57c`
 and Echo main `9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e`. The generated
 build and executable-subject locks bind the changed source, vendor publication,
-provider and test closure. The pinned Docker build reproduces the locked package and verifier-report
-bytes; cross-platform reproduction has not been established for these pins. The package identity is
+provider and test closure. The local Docker build reproduces the locked package
+and verifier-report bytes; the required CI job checks the package chain on native
+Linux. Cross-platform reproduction has not been established for these pins. The
+package identity is
 `sha256:7502a7a1d6821e56ddb8415f6b3e578e1ab09b14e02e3ce27afffd8e5bc2fb92`.
-The Docker package-chain gate checks the exact clean Git toolchains, rebuilds
+The package-chain gate checks the exact clean Git toolchains, rebuilds
 through the public CLI, verifies the locks, runs both runtime targets and
 refuses mutation of authoritative inputs.
 
@@ -127,10 +129,18 @@ node scripts/deps/echo-edict-relock.mjs --echo-repo /path/to/echo --edict-repo /
 
 It refuses to start unless the files it manages are clean, and any failure (a host that no longer compiles against the new Echo, a refused build, a broken package chain) restores them and removes anything the run created, so a failed relock leaves the tree as it found it. A host that stops compiling is source work, not relocking.
 
-The declared evaluation ceiling covers the provider's whole-operation static
-judgment, including copies and scans at the maximum source byte bounds. The
-current slice/range judgment rejects the previous 8,388,608-step / 16,777,216-byte
-envelope; the public build accepts the 134,217,728-step / 268,435,456-byte envelope.
-These are conservative admission ceilings, not measured execution costs. Each
-runtime host still supplies its own limits and the resource-refusal tests retain
-their smaller limits. This budget does not expand the source byte bounds.
+The provider applies a conservative whole-operation static judgment, including
+copies and scans at the source byte bounds. With the pinned toolchains, public
+builds refused the previous 8,388,608-step / 16,777,216-byte envelope, then
+accepted the selected conservative envelope of 134,217,728 steps and
+268,435,456 allocated bytes. The refusals report generic
+`core.source-functions` unsupported semantics, not a specific budget diagnostic;
+the budget attribution comes from the contrast runs. The minimum sufficient
+envelope and maximum-input runtime cost have not been established.
+
+These are conservative admission ceilings, not measured execution costs. The
+output ceiling remains 8,388,608 bytes, and the source byte bounds are unchanged.
+Each runtime host still supplies its own smaller limits; the resource-refusal
+tests retain theirs. The [component ownership contract](../../docs/jim-component-ownership.md#the-complete-cast-and-each-components-territory)
+owns the distinction between application admission ceilings and Echo runtime
+limits.
