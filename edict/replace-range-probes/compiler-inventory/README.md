@@ -150,3 +150,21 @@ every current draft result hashes that full source-module closure. Full Text
 still first refuses at `contentId<T>` (now line 90); Reference, Rope and
 ReplaceRange retain their `else`, `depth` and enum parser refusals. The older
 snapshots above remain unchanged for their named source revisions.
+
+
+## Acyclic variant declaration graph
+
+[Variant-type candidate measurement](candidate-variant-types.json) selects
+Amblicit `da86ed1` and the same Echo source/component publication. Ten of 28
+public builds accept: the additional accepted case is the source variant type
+declaration. Its exact case and payload graph now enters Core instead of being
+rejected before Core; the selected provider accepts that declaration too.
+
+This probe declares an unused variant. It does not construct a variant value,
+match one, or exercise variant-valued input/results. Native compiler tests also
+cover aliases, original imported module and nominal payload identities,
+canonical order independence, and missing/empty/duplicate/cyclic/deep/wide
+refusals. Constructors and matching remain explicit compiler refusals. Enum
+and recursive-variant support are still separate work, and the whole drafts'
+first generic/read-expression/depth/enum errors are unchanged. The earlier
+snapshots above remain bound to their original compiler/source selections.

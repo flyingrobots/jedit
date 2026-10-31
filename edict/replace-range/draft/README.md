@@ -108,6 +108,17 @@ expression's `else` (55), Rope at `depth` (24), and ReplaceRange at its enum
 predicate cases are separate from the 40 full-operation oracle cases, and no
 rope/effect/admission/recovery/editor acceptance is inferred.
 
+## Variant declaration foundation
+
+With local Amblicit `da86ed1`, the
+[new candidate inventory](../../replace-range-probes/compiler-inventory/candidate-variant-types.json)
+accepts ten of 28 public builds. The new accepted case declares an acyclic
+variant with exact case names and payload references. The compiler preserves
+that type graph in Core, and the current provider accepts the declaration.
+The isolated probe does not construct or match a variant or execute
+variant-valued data. Enum declarations, recursive variants, constructors and
+matching remain open, so the full rope's first failures above are unchanged.
+
 ## Blockers by class
 
 ### Language expressiveness (Edict source)
