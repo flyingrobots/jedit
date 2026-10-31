@@ -38,34 +38,36 @@ retain the minimal construct probes, source hashes and structured diagnostics.
 | `ReplaceRange.edict` | parse: its `use module` import omits the required digest |
 
 The module refusals are draft syntax debt, not evidence that source modules
-are unsupported. A minimal, digest-authenticated module passes public build
-with Echo's explicit source-module publication. The default checked provider
-package rejects Core function tables by schema; it must not be used to infer
-that the compiler lacks source functions or modules.
+are unsupported. A minimal module import carrying the correct digest passes
+public build with Echo's explicit source-module publication. The default checked
+provider rejects the recorded function-bearing Core artifacts at schema admission;
+that must not be used to infer missing compiler support for functions or modules.
 
 Each whole draft stops at its first error. The isolated probes below distinguish
-compiler refusals from provider refusals. An accepted public build includes
-lowering and independent verification; it does not prove helper invocation,
+compiler refusals from provider refusals. These probes record acceptance at the
+public application-build boundary; they do not test a wrong module digest and do
+not prove helper invocation,
 rope execution, effects, admission, WAL, recovery or the final editor cutover.
 
 ## Blockers by class
 
 ### Language expressiveness (Edict source)
 
-All measured entries refer to the exact compiler and Echo revisions above.
+Measured entries refer to the exact compiler and Echo revisions above. Rows
+marked not re-probed retain older evidence or open obligations.
 
 | Construct | Used by | Measured boundary |
 | --- | --- | --- |
 | Integer `+` on `U64` | both | Proved literal sum passes public build; unproved overflow refuses in type checking. General checked arithmetic remains [edict#263](https://github.com/flyingrobots/amblicit/issues/263). |
 | Variant types and `match` | target 2 | Variant declaration parses, then refuses as `UnsupportedSourceShape`; `match` was not separately re-probed. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
 | Recursive types with a depth bound | target 2 | A recursive record refuses as `InvalidCoreTypeIntegrity` (`source type dependency cycle`). |
-| Recursive functions with a termination measure | target 2 | Unbounded recursive helper refuses with `ReferenceCycle`; bounded measures remain [edict#262](https://github.com/flyingrobots/amblicit/issues/262). |
+| Recursive functions with a termination measure | target 2 | Unbounded recursive helper refuses as `UnsupportedSourceShape` (message `ReferenceCycle: functions.probe`); bounded measures remain [edict#262](https://github.com/flyingrobots/amblicit/issues/262). |
 | Expression `if … else if …` | both | Previously confirmed; not separately re-probed. |
 | Bytes slice and concatenation | both | The current flat-text public-build baseline passes. |
-| Source-module import (`use module`) | both | Digest-authenticated module passes with the explicit source-module publication. |
-| Bytes literals and escapes | both | `b"\\n\\r\\x00"` reaches the provider, which refuses the source helper; this is not a lexer refusal. |
+| Source-module import (`use module`) | both | A module import carrying the correct digest passes with the explicit source-module publication; wrong-digest rejection is not tested here. |
+| Bytes literals and escapes | both | The helper returning `b"\n\r\x00"` as `Bytes<exact=3>` reaches the candidate provider and is refused. This does not isolate literal support: `count-bytes` also uses a byte literal and passes. |
 | `Option` and its constructors | target 2 | `Option<U64>` helper result refuses in type checking; constructors were not separately re-probed. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
-| List literals | target 2 | Source compiles to Core; the checked provider refuses the helper. |
+| List literals | target 2 | The list-literal helper compiles to Core; the explicit candidate provider refuses it. |
 | `++` and `len(list)` | target 2 | `++` refuses in parsing; `len(list)` refuses with `TypeMismatch` because implemented `len` requires bounded bytes. |
 | `enum` declarations | target 2 | `UnsupportedSourceShape` at resolve. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
 | Generic source helpers | both | `fn probe<T>` refuses in parsing at `<`. |

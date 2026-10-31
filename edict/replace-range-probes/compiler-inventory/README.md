@@ -6,19 +6,24 @@ the drafts executable or establish graph effects, rope behavior, or recovery.
 
 The [source-module result](current-source-modules.json) records the exact compiler
 and Echo commits, compiler binary hash, lawpack and provider manifest hashes,
-source hashes, exit codes and structured diagnostics. The separate
+source hashes, exit codes and structured diagnostics. Each report has 27 results:
+the baseline, 21 construct probes, one source module and four whole drafts. The separate
 [default-publication control](current-default.json) accepts the function-free
-baseline and rejects source-function tables before provider execution. Diagnostic paths in the
-report are relative to the output directory. Each output case retains its full
-source and raw JSONL diagnostic streams.
+baseline; the source-module candidate accepts five cases. The default publication
+rejects function-bearing probes that pass the compiler at schema admission,
+before provider execution.
+Diagnostic paths in the committed reports are relative to the output directory.
+Each rerun writes full case sources and raw JSONL streams into its owned output
+directory; these generated case directories are not committed with the summaries.
 
 Run with the application's pinned Node and Rust releases, inside the admitted
 resource-guarded worker with its existing Cargo target. Set `EDICT_REPO` to a clean
 compiler checkout (the repository is now called Amblicit) and `ECHO_REPO` to a
 clean Echo checkout. Choose new output paths inside the runner's accounted data
-root; the commands compile code and produce test artifacts.
+root; the commands compile code and produce test artifacts. Set `JEDIT_ROOT` to
+the Jedit checkout root before changing directories.
 
-For source-function and source-module probes, explicitly generate Echo's
+For source-function and source-module probes, first explicitly generate Echo's
 source-module publication from its checked component carriers:
 
 ```sh
@@ -30,6 +35,11 @@ cd "$JEDIT_ROOT"
 node edict/replace-range-probes/compiler-inventory/run.mjs \
   --provider /owned-data/source-modules-provider \
   --output /owned-data/current-source-modules
+
+# Separate control using the checked default publication.
+node edict/replace-range-probes/compiler-inventory/run.mjs \
+  --provider "$ECHO_REPO/schemas/edict-provider/package/v1" \
+  --output /owned-data/current-default
 ```
 
 The runner builds the public compiler selected by Cargo metadata. It copies the
@@ -50,12 +60,14 @@ rejects a Core function table.
 The probes distinguish useful current capabilities from the remaining blockers:
 
 - The default flat-text reference remains the positive control.
-- Unsigned literal addition, byte count, UTF-8 checks and a digest-authenticated
-  source module pass public build with the explicit publication.
-- Byte literal helpers and list literal helpers reach the provider and are refused
-  there; these are not lexer failures.
-- Variants, recursive records/functions, Option, function preconditions and typed
-  pure failures still refuse before provider invocation.
+- Unsigned literal addition, byte count, UTF-8 checks and a source-module import
+  carrying the correct digest pass public build with the explicit publication.
+  The inventory does not test a wrong module digest.
+- The `bytes-escapes` and `list-literal` probes reach the candidate provider and
+  are refused there. The generic diagnostic does not isolate literals from return
+  types or escapes; `count-bytes` contains a byte literal and passes.
+- The probes for variants, recursive records/functions, Option, function
+  preconditions and typed pure failures refuse before provider invocation.
 - Whole drafts fail first at a generic helper or an undigested module import.
   Those first errors do not classify every later construct in each program.
 
