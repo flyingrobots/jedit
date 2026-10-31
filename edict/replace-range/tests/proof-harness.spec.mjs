@@ -462,7 +462,7 @@ test("required_ci_executes_the_exact_package_chain", async () => {
   );
 });
 
-test("compiler_selection_helper_is_bound_by_the_executable_subject", async () => {
+test("compiler_selection_helper_is_bound_by_the_build_source_closure", async () => {
   const subject = await fixture();
   try {
     const build = runBuild(subject.project);
