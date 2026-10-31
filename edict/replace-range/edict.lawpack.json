@@ -166,8 +166,8 @@
         "effectImplementations": {},
         "budgets": {
           "jedit.text@1.replaceRangeBudget": {
-            "maxSteps": 8388608,
-            "maxAllocatedBytes": 16777216,
+            "maxSteps": 134217728,
+            "maxAllocatedBytes": 268435456,
             "maxOutputBytes": 8388608
           },
           "jedit.text@1.maxCreatedLeafCountCost": {

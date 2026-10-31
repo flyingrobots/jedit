@@ -125,3 +125,11 @@ node scripts/deps/echo-edict-relock.mjs --echo-repo /path/to/echo --edict-repo /
 ```
 
 It refuses to start unless the files it manages are clean, and any failure (a host that no longer compiles against the new Echo, a refused build, a broken package chain) restores them and removes anything the run created, so a failed relock leaves the tree as it found it. A host that stops compiling is source work, not relocking.
+
+The declared evaluation ceiling covers the provider's whole-operation static
+judgment, including copies and scans at the maximum source byte bounds. The
+current slice/range judgment rejects the previous 8,388,608-step / 16,777,216-byte
+envelope; the public build accepts the 134,217,728-step / 268,435,456-byte envelope.
+These are conservative admission ceilings, not measured execution costs. Each
+runtime host still supplies its own limits and the resource-refusal tests retain
+their smaller limits. This budget does not expand the source byte bounds.
