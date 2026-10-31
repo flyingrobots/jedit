@@ -24,76 +24,91 @@ complete the rope.
 
 ## Compiler result
 
-Built against Edict main `e60411fc` with this application's lawpack closure:
+Measured again on 2026-10-30 with Amblicit (formerly Edict)
+`980c3ae3ff2ef96a0d026f9afdd77d61758cd57c` and the observed Echo checkout
+`9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e`. The provider bytes are identified
+separately by their manifest hash; the checkout is not a provider-source attestation. The reproducible
+[inventory runner and results](../../replace-range-probes/compiler-inventory/README.md)
+retain the minimal construct probes, source hashes and structured diagnostics.
 
-| File | First refusal |
+| Whole draft | Current first refusal |
 | --- | --- |
-| `Text.edict` | parse: bytes literal `b"\n"` (bytes literals are not lexed; see below) |
-| `Reference.edict` | parse: `use module` is not an import kind |
-| `Rope.edict` | parse: `use module` is not an import kind |
-| `ReplaceRange.edict` | parse: `use module` is not an import kind |
+| `Text.edict` | parse: generic `fn contentId<T>` (`expected LParen, found Lt`) |
+| `Reference.edict` | parse: its `use module` import omits the required digest |
+| `Rope.edict` | parse: its `use module` import omits the required digest |
+| `ReplaceRange.edict` | parse: its `use module` import omits the required digest |
 
-Edict main has since landed bytes literals and explicit escapes (`6e6a0fa`,
-edict#249) and source-module compilation (edict#254), which clear all four
-first refusals above. The next refusals have not been re-measured.
+The module refusals are draft syntax debt, not evidence that source modules
+are unsupported. A minimal module import carrying the correct digest passes
+public build with Echo's explicit source-module publication. The default checked
+provider rejects the recorded function-bearing Core artifacts at schema admission;
+that must not be used to infer missing compiler support for functions or modules.
 
-The parser stops at the first error, so the classification below is per
-construct. **Confirmed** means a build against Edict main was run for that
-construct. **Read** means it was established by reading compiler or runtime
-source on main, not by running it.
+Each whole draft stops at its first error. The isolated probes below distinguish
+compiler refusals from provider refusals. These probes record acceptance at the
+public application-build boundary; they do not test a wrong module digest and do
+not prove helper invocation,
+rope execution, effects, admission, WAL, recovery or the final editor cutover.
 
 ## Blockers by class
 
 ### Language expressiveness (Edict source)
 
-| Construct | Used by | Status on main |
+Measured entries refer to the exact compiler and Echo revisions above. Rows
+marked not re-probed retain older evidence or open obligations.
+
+| Construct | Used by | Measured boundary |
 | --- | --- | --- |
-| Integer `+` on `U64` | both | unsigned addition landed after the measured run (edict#259); checked overflow [edict#263](https://github.com/flyingrobots/edict/issues/263) |
-| Variant types and `match` | target 2 | refused, **confirmed** (`only record type declarations`); [edict#261](https://github.com/flyingrobots/edict/issues/261) |
-| Recursive types with a depth bound | target 2 | refused, **confirmed** (`UnresolvedType`) |
-| Recursive functions with a termination measure | target 2 | refused, **confirmed** (`ReferenceCycle`); [edict#262](https://github.com/flyingrobots/edict/issues/262) |
-| Expression `if … else if …` | both | accepted, **confirmed** |
-| Bytes slice and concatenation | both | accepted, **confirmed** (leaf-slice, range-assembly probes) |
-| Source-module import (`use module`) | both | landed after the measured run (edict#254); not re-measured |
-| Bytes literals `b"…"` | both | landed after the measured run (`6e6a0fa`, edict#249); not re-measured |
-| `\r` and explicit byte escapes | decoder only | landed after the measured run (`6e6a0fa`); not re-measured |
-| `Option`, `some`/`none`/`isSome`/`unwrap` | target 2 | refused, read; [edict#261](https://github.com/flyingrobots/edict/issues/261) |
-| `List` construction, `++`, `len(list)` | target 2 | refused, read; [edict#262](https://github.com/flyingrobots/edict/issues/262) |
-| `enum` declarations | target 2 | refused, read; payload-free variants, [edict#261](https://github.com/flyingrobots/edict/issues/261) |
-| Record spread `{ ...x, f: v }` | none | removed from the drafts: records are built explicitly |
-| Function preconditions and flow-sensitive proofs for `-` and `slice` | both | refused inside functions, read; [edict#264](https://github.com/flyingrobots/edict/issues/264) |
-| Typed failure in pure functions (`fails`, `expect`) | target 2 | not in the spec; proposed; [edict#265](https://github.com/flyingrobots/edict/issues/265) |
-| `U64` division, `min`/`max`, checked `+` and `-` | target 2 | refused, read; [edict#263](https://github.com/flyingrobots/edict/issues/263) |
-| `ContentAddressV1` inputs (type id, attachment digest, ordered edges) | both | absent; [edict#260](https://github.com/flyingrobots/edict/issues/260) |
+| Integer `+` on `U64` | both | Proved literal sum passes public build; unproved overflow refuses in type checking. General checked arithmetic remains [edict#263](https://github.com/flyingrobots/amblicit/issues/263). |
+| Variant types and `match` | target 2 | Variant declaration parses, then refuses as `UnsupportedSourceShape`; `match` was not separately re-probed. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
+| Recursive types with a depth bound | target 2 | A recursive record refuses as `InvalidCoreTypeIntegrity` (`source type dependency cycle`). |
+| Recursive functions with a termination measure | target 2 | Unbounded recursive helper refuses as `UnsupportedSourceShape` (message `ReferenceCycle: functions.probe`); bounded measures remain [edict#262](https://github.com/flyingrobots/amblicit/issues/262). |
+| Expression `if … else if …` | both | Previously confirmed; not separately re-probed. |
+| Bytes slice and concatenation | both | The current flat-text public-build baseline passes. |
+| Source-module import (`use module`) | both | A module import carrying the correct digest passes with the explicit source-module publication; wrong-digest rejection is not tested here. |
+| Bytes literals and escapes | both | The helper returning `b"\n\r\x00"` as `Bytes<exact=3>` reaches the candidate provider and is refused. This does not isolate literal support: `count-bytes` also uses a byte literal and passes. |
+| `Option` and its constructors | target 2 | `Option<U64>` helper result refuses in type checking; constructors were not separately re-probed. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
+| List literals | target 2 | The list-literal helper compiles to Core; the explicit candidate provider refuses it. |
+| `++` and `len(list)` | target 2 | `++` refuses in parsing; `len(list)` refuses with `TypeMismatch` because implemented `len` requires bounded bytes. |
+| `enum` declarations | target 2 | `UnsupportedSourceShape` at resolve. [edict#261](https://github.com/flyingrobots/amblicit/issues/261) |
+| Generic source helpers | both | `fn probe<T>` refuses in parsing at `<`. |
+| `U8` | target 2 | `UnresolvedType`; the draft height and byte types need an explicit language decision. |
+| Record spread `{ ...x, f: v }` | none | Removed from the drafts; not re-probed. |
+| Function preconditions and flow-sensitive proofs | both | Function `where` refuses in parsing; branch-local proof inference was not separately re-probed. [edict#264](https://github.com/flyingrobots/amblicit/issues/264) |
+| Typed failure in pure functions (`fails`, `expect`) | target 2 | `fails` refuses in parsing; `expect` was not separately re-probed. [edict#265](https://github.com/flyingrobots/amblicit/issues/265) |
+| `U64` division and `min`/`max` | target 2 | Division refuses in type checking; `min` and `max` are unresolved helpers. [edict#263](https://github.com/flyingrobots/amblicit/issues/263) |
+| `ContentAddressV1` inputs | both | Not re-probed; the identity-input contract remains [edict#260](https://github.com/flyingrobots/amblicit/issues/260). |
 
 ### Generic data-structure primitives
 
-| Primitive | Used by | Why |
+| Primitive | Used by | Current evidence |
 | --- | --- | --- |
-| `core.bytes.at(bytes, i) -> U8` | both | UTF-8 boundary check |
-| `core.bytes.count(bytes, byte) -> U64` | both | line-break metric |
-| `core.bytes.isUtf8(bytes) -> Bool` | both | replacement validity |
-| `echo.attachmentDigest(value)`, `echo.contentAddress(type, digest, edges)` | both | `ContentAddressV1` inputs, Echo's exact codec profile (edict#260) |
+| Byte lookup (`at`) | both | Minimal source helper refuses with `UnresolvedFunction`; [edict#266](https://github.com/flyingrobots/amblicit/issues/266). |
+| `count(bytes, byte)` | both | Bounded byte-count helper passes public build with the explicit publication. This supersedes the earlier blanket refusal claim. |
+| `isUtf8(bytes)` | both | Bounded helper passes public build with the explicit publication. |
+| `echo.attachmentDigest`, `echo.contentAddress` | both | Not re-probed; [edict#260](https://github.com/flyingrobots/amblicit/issues/260) owns the source inputs. |
 
 None of these knows about text editing. They are byte and codec utilities.
-The byte primitives are [edict#266](https://github.com/flyingrobots/edict/issues/266);
-the identity inputs are [edict#260](https://github.com/flyingrobots/edict/issues/260).
 
 ### Runtime realization (Echo)
 
-All are covered by the Echo design
-[Authored Operation Effects](https://github.com/flyingrobots/echo/blob/main/docs/architecture/authored-operation-effects.md),
-whose implementation is [echo#921](https://github.com/flyingrobots/echo/pull/921) (draft):
+The [Authored Operation Effects design](https://github.com/flyingrobots/echo/blob/main/docs/architecture/authored-operation-effects.md)
+owns the generic bridge. [echo#921](https://github.com/flyingrobots/echo/pull/921)
+has merged; the earlier statement that its implementation was a draft is stale.
+Native bridge work is not by itself a public compiler-to-graph witness for Jim.
+This inventory measures pure public builds, not the effect, scheduler or recovery
+paths below. Treat these as Jim's remaining proof obligations, not blanket claims
+that every underlying primitive is absent from Echo.
 
-| Need | Used by | Status on main |
+| Need | Used by | Jim evidence still required |
 | --- | --- | --- |
-| Evaluated operation → proposed effects → atomic commit | both | absent (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
-| `ensure` node: create, or require identical | both | absent; create obstructs on existing (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
-| Edge read by type, edge `ensure`, edge compare-and-retarget | both | absent (read); edge reads [echo#926](https://github.com/flyingrobots/echo/issues/926) |
-| Atom compare-and-replace from evaluation | both | only with caller-supplied bytes (read); [echo#921](https://github.com/flyingrobots/echo/pull/921) |
-| Guided closure read with a pure Edict selector | target 2 | absent (read); [echo#926](https://github.com/flyingrobots/echo/issues/926) |
-| Buffers reachable from the worldline root | both | absent (read); [echo#927](https://github.com/flyingrobots/echo/issues/927) |
-| `for` with effects lowered to Target IR | target 2 | Target refuses `For` (read); [edict#267](https://github.com/flyingrobots/edict/issues/267), runtime [echo#921](https://github.com/flyingrobots/echo/pull/921) |
+| Evaluated operation → proposed effects → atomic commit | both | Real compiler-produced operation admitted and committed through the generic bridge, with receipt, WAL and fresh-engine recovery. |
+| `ensure` node: create, or require identical | both | Same-content and different-content controls through the authored operation. |
+| Edge read by type, edge `ensure`, edge compare-and-retarget | both | Source/compiler/runtime agreement; typed reads are tracked by [echo#926](https://github.com/flyingrobots/echo/issues/926). |
+| Atom compare-and-replace from evaluation | both | Actual authored result determines the replacement; caller-supplied output is not sufficient evidence. |
+| Guided closure read with a pure selector | target 2 | Closure sufficiency, bounds and actual read evidence; [echo#926](https://github.com/flyingrobots/echo/issues/926). |
+| Buffers reachable from the worldline root | both | Real root-to-buffer reachability witness; [echo#927](https://github.com/flyingrobots/echo/issues/927). |
+| `for` with effects lowered to Target IR | target 2 | Actual authored loop lowering and bounded execution; [edict#267](https://github.com/flyingrobots/amblicit/issues/267). |
 
 ### Performance and resources
 
