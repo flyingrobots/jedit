@@ -462,11 +462,13 @@ test("required_ci_executes_the_exact_package_chain", async () => {
   );
 });
 
-test("compiler_selection_helper_is_bound_by_the_executable_subject", async () => {
+test("compiler_selection_helper_is_bound_by_the_build_source_closure", async () => {
   const subject = await fixture();
   try {
+    const build = runBuild(subject.project);
+    assertCommandCompleted(build);
+    assert.equal(build.status, 0, build.stderr);
     const output = path.join(subject.application, ".build", "application");
-    await cp(path.join(applicationRoot, ".build", "application"), output, { recursive: true });
     const checker = path.join(subject.application, "tests", "assert-build-output.mjs");
     const writeLocks = spawnSync(process.execPath, [checker, output, "--write-locks"], {
       encoding: "utf8",
