@@ -461,3 +461,24 @@ test("required_ci_executes_the_exact_package_chain", async () => {
     /needs: \[ plan, build, test-shards, quality, release-gate, edict-replace-range \]/,
   );
 });
+
+test("compiler_selection_helper_is_bound_by_the_executable_subject", async () => {
+  const subject = await fixture();
+  try {
+    const output = path.join(subject.application, ".build", "application");
+    await cp(path.join(applicationRoot, ".build", "application"), output, { recursive: true });
+    const checker = path.join(subject.application, "tests", "assert-build-output.mjs");
+    const writeLocks = spawnSync(process.execPath, [checker, output, "--write-locks"], {
+      encoding: "utf8",
+    });
+    assertCommandCompleted(writeLocks);
+    assert.equal(writeLocks.status, 0, writeLocks.stderr);
+    const helper = path.join(subject.application, "tests", "compiler.mjs");
+    await writeFile(helper, `${await readFile(helper, "utf8")}\n// changed compiler selection\n`);
+    const checked = spawnSync(process.execPath, [checker, output], { encoding: "utf8" });
+    assertCommandCompleted(checked);
+    assert.notEqual(checked.status, 0, "compiler selection is part of the locked proof inputs");
+  } finally {
+    await subject.dispose();
+  }
+});

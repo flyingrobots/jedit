@@ -10,13 +10,13 @@ publish = false
 anyhow = "1"
 blake3 = "1"
 bytes = "1"
-echo-registry-api = { git = "https://github.com/flyingrobots/echo", rev = "0faaf58a15a4b03036cf36b465d79af76c952193" }
-echo-wasm-abi = { git = "https://github.com/flyingrobots/echo", rev = "0faaf58a15a4b03036cf36b465d79af76c952193" }
+echo-registry-api = { git = "https://github.com/flyingrobots/echo", rev = "9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e" }
+echo-wasm-abi = { git = "https://github.com/flyingrobots/echo", rev = "9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e" }
 hex = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-warp-core = { git = "https://github.com/flyingrobots/echo", rev = "0faaf58a15a4b03036cf36b465d79af76c952193", features = ["native_rule_bootstrap", "trusted_runtime"] }
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e", features = ["native_rule_bootstrap", "trusted_runtime"] }
 
 [dev-dependencies]
 sha2 = "0.10"

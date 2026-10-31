@@ -26,6 +26,7 @@ const SOURCE_CLOSURE_INPUTS = [
   ["application/src/ReplaceRange.edict", "src/ReplaceRange.edict"],
   ["application/tests/assert-build-output.mjs", "tests/assert-build-output.mjs"],
   ["application/tests/build.sh", "tests/build.sh"],
+  ["application/tests/compiler.mjs", "tests/compiler.mjs"],
   ["application/tests/package-chain.mjs", "tests/package-chain.mjs"],
   ["application/tests/proof-harness.spec.mjs", "tests/proof-harness.spec.mjs"],
   ["application/tests/runtime/Cargo.toml", "tests/runtime/Cargo.toml"],

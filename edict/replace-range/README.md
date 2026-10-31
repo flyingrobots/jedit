@@ -73,7 +73,8 @@ request head; ordinary matrix jobs may separately exercise the synthetic merge.
 
 The harness reads Cargo workspace metadata to select exactly one public CLI
 (`edict-cli` / `edict` on historical pins, `amblicit-cli` / `amblicit` after the
-compiler rename). It builds that package and binary with the pinned Rust
+compiler rename). The executable subject lock includes the compiler-selection
+helper, so changing selection invalidates the proof. It builds that package and binary with the pinned Rust
 toolchain and takes the compiler executable path from Cargo's successful
 `compiler-artifact` output. `CARGO_TARGET_DIR` may therefore point outside the
 Edict checkout, as it does in CI; no pre-existing `target/debug/edict` is needed.

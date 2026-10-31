@@ -231,7 +231,7 @@ dependencies = [
 [[package]]
 name = "echo-edict-canonical"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 dependencies = [
  "hex",
  "sha2",
@@ -240,17 +240,17 @@ dependencies = [
 [[package]]
 name = "echo-registry-api"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 
 [[package]]
 name = "echo-runtime-schema"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 
 [[package]]
 name = "echo-wasm-abi"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 dependencies = [
  "blake3",
  "ciborium",
@@ -653,7 +653,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "warp-core"
 version = "0.1.1"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 dependencies = [
  "blake3",
  "bytemuck",
@@ -674,7 +674,7 @@ dependencies = [
 [[package]]
 name = "warp-math"
 version = "0.1.0"
-source = "git+https://github.com/flyingrobots/echo?rev=0faaf58a15a4b03036cf36b465d79af76c952193#0faaf58a15a4b03036cf36b465d79af76c952193"
+source = "git+https://github.com/flyingrobots/echo?rev=9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e#9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e"
 dependencies = [
  "bunny-num",
  "libm",
