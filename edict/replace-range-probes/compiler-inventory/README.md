@@ -5,7 +5,8 @@ provider schema admission, and provider lowering/verification. It does not make
 the drafts executable or establish graph effects, rope behavior, or recovery.
 
 The [source-module result](current-source-modules.json) records the exact compiler
-and Echo commits, compiler binary hash, lawpack and provider manifest hashes,
+commit and observed Echo checkout commit, compiler binary hash, lawpack and
+provider manifest hashes,
 source hashes, exit codes and structured diagnostics. Each report has 27 results:
 the baseline, 21 construct probes, one source module and four whole drafts. The separate
 [default-publication control](current-default.json) accepts the function-free
@@ -15,6 +16,12 @@ before provider execution.
 Diagnostic paths in the committed reports are relative to the output directory.
 Each rerun writes full case sources and raw JSONL streams into its owned output
 directory; these generated case directories are not committed with the summaries.
+
+`echoCheckoutCommit` identifies the clean checkout inspected by the runner. The
+`--provider` directory is selected independently: its manifest hash binds the
+chosen bytes, while the checkout commit does not attest their source revision.
+The recorded snapshots use this label for the original captured checkout value;
+their case results are unchanged.
 
 Run with the application's pinned Node and Rust releases, inside the admitted
 resource-guarded worker with its existing Cargo target. Set `EDICT_REPO` to a clean

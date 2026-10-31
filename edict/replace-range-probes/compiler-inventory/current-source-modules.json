@@ -1,7 +1,7 @@
 {
   "schema": "jedit.compiler-inventory/v1",
   "compilerCommit": "980c3ae3ff2ef96a0d026f9afdd77d61758cd57c",
-  "echoCommit": "9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e",
+  "echoCheckoutCommit": "9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e",
   "compilerBinarySha256": "ce49153945560b1fd855216d5dcd90a386c245271cf87b72dd73fb5f6abff023",
   "compilerVersion": {
     "schema": "edict.cli.info/v1",

@@ -25,8 +25,9 @@ complete the rope.
 ## Compiler result
 
 Measured again on 2026-10-30 with Amblicit (formerly Edict)
-`980c3ae3ff2ef96a0d026f9afdd77d61758cd57c` and Echo
-`9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e`. The reproducible
+`980c3ae3ff2ef96a0d026f9afdd77d61758cd57c` and the observed Echo checkout
+`9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e`. The provider bytes are identified
+separately by their manifest hash; the checkout is not a provider-source attestation. The reproducible
 [inventory runner and results](../../replace-range-probes/compiler-inventory/README.md)
 retain the minimal construct probes, source hashes and structured diagnostics.
 

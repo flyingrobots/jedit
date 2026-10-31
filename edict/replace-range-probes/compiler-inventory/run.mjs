@@ -111,7 +111,7 @@ for (const name of ['Text', 'Reference', 'Rope', 'ReplaceRange']) {
 const report = {
     schema: 'jedit.compiler-inventory/v1',
     compilerCommit: run('git', ['-C', compilerRepository, 'rev-parse', 'HEAD']).stdout.trim(),
-    echoCommit: run('git', ['-C', echoRepository, 'rev-parse', 'HEAD']).stdout.trim(),
+    echoCheckoutCommit: run('git', ['-C', echoRepository, 'rev-parse', 'HEAD']).stdout.trim(),
     compilerBinarySha256: hash(readFileSync(compiler)),
     compilerVersion: JSON.parse(run(compiler, ['--version']).stdout),
     lawpackSha256: hash(readFileSync(path.join(application, 'edict.lawpack.json'))),
