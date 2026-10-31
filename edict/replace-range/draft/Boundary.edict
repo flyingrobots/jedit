@@ -1,0 +1,10 @@
+// Jim-owned character-boundary law; independent of rope shape and graph effects.
+package jedit.text.boundary@1;
+
+// The caller checks UTF-8 validity separately. Offsets beyond the end are false.
+// The strict guard dominates every lookup, including on empty input.
+fn isCharBoundary(bytes: Bytes<max=1048576>, index: U64) -> Bool {
+  return index == 0u64 || index == len(bytes)
+    || (index < len(bytes)
+      && (at(bytes, index) < 128u8 || at(bytes, index) >= 192u8));
+}

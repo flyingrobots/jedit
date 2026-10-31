@@ -16,7 +16,9 @@ test('module digest agrees with the compiler independent canonical-CBOR vector',
 test('a leaf edit repins every dependent module, including the transitive rope import', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'jim-draft-pins-'));
   try {
-    writeFileSync(path.join(root, 'Text.edict'), 'package jedit.text.v2@1;\n');
+    writeFileSync(path.join(root, 'Boundary.edict'), 'package jedit.text.boundary@1;\n');
+    writeFileSync(path.join(root, 'Text.edict'),
+      'package jedit.text.v2@1;\nuse module jedit.text.boundary@1 as boundary;\n');
     writeFileSync(path.join(root, 'Rope.edict'), 'package jedit.text.rope@1;\nuse module jedit.text.v2@1 as v2;\n');
     for (const name of ['Reference', 'ReplaceRange']) {
       const rope = name === 'ReplaceRange' ? 'use module jedit.text.rope@1 as rope;\n' : '';
@@ -25,13 +27,15 @@ test('a leaf edit repins every dependent module, including the transitive rope i
     const before = pinnedDrafts(root);
     for (const [name, source] of before) writeFileSync(path.join(root, `${name}.edict`), source);
     assert.deepEqual(pinnedDrafts(root), before);
-    writeFileSync(path.join(root, 'Text.edict'), 'package jedit.text.v2@1;\n// new source bytes\n');
+    writeFileSync(path.join(root, 'Boundary.edict'), 'package jedit.text.boundary@1;\n// new source bytes\n');
     const after = pinnedDrafts(root);
-    for (const name of ['Rope', 'Reference', 'ReplaceRange']) assert.notEqual(after.get(name), before.get(name));
+    for (const name of ['Text', 'Rope', 'Reference', 'ReplaceRange']) {
+      assert.notEqual(after.get(name), before.get(name));
+    }
     const ropePin = sourceDigest(after.get('Rope'));
     assert.ok(after.get('ReplaceRange').includes(`digest "${ropePin}" as rope;`));
     assert.deepEqual(draftSourcePaths('ReplaceRange'),
-      ['draft/ReplaceRange.edict', 'draft/Text.edict', 'draft/Rope.edict']);
+      ['draft/ReplaceRange.edict', 'draft/Text.edict', 'draft/Boundary.edict', 'draft/Rope.edict']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

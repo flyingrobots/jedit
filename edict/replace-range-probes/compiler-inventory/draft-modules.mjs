@@ -7,11 +7,11 @@ import { fileURLToPath } from 'node:url';
 import { encode } from 'cbor-x';
 
 const dependencies = new Map([
-  ['Text', []], ['Rope', ['Text']], ['Reference', ['Text']],
+  ['Boundary', []], ['Text', ['Boundary']], ['Rope', ['Text']], ['Reference', ['Text']],
   ['ReplaceRange', ['Text', 'Rope']],
 ]);
 const coordinates = new Map([
-  ['Text', 'jedit.text.v2@1'], ['Rope', 'jedit.text.rope@1'],
+  ['Boundary', 'jedit.text.boundary@1'], ['Text', 'jedit.text.v2@1'], ['Rope', 'jedit.text.rope@1'],
 ]);
 
 export function sourceDigest(source) {

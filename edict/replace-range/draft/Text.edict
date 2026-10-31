@@ -3,6 +3,7 @@
 // construct. Lines marked PROPOSED use syntax the Edict spec does not define.
 package jedit.text.v2@1;
 
+use module jedit.text.boundary@1 digest "sha256:fabc38f6c506c7da2eb8766e51fa4ea2c57508e87702956e37653138ed80c971" as boundary;
 use lawpack jedit.text@2 as text;
 use target echo.dpo@1 as echo;
 
@@ -98,10 +99,6 @@ fn lineBreaks(bytes: Bytes<max=1048576>) -> U64 {
 
 // A position is a character boundary when it is an end of the text or the
 // byte there is not a UTF-8 continuation byte (10xxxxxx).
-fn isCharBoundary(bytes: Bytes<max=1048576>, at: U64) -> Bool
-  where at <= len(bytes)
-{
-  return at == 0u64 || at == len(bytes)
-    || core.bytes.at(bytes, at) < 0x80u8                   // PROPOSED generic primitive
-    || core.bytes.at(bytes, at) >= 0xC0u8;
+fn isCharBoundary(bytes: Bytes<max=1048576>, index: U64) -> Bool {
+  return boundary.isCharBoundary(bytes, index);
 }

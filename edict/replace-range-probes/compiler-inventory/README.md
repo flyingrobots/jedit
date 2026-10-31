@@ -133,3 +133,20 @@ inside the reference read expression (line 55), the rope's recursive `depth`
 clause (line 24), and the operation draft's enum declaration (line 49). No
 missing-digest error remains. Later constructs and schema-2 lawpack resolution
 are still unproven; a first parse error cannot classify their support.
+
+
+## Proven boundary helper in the authored closure
+
+[Current draft measurement](candidate-boundary-drafts.json) keeps the same
+compiler/component selection and nine of 28 accepted builds. The new
+[Boundary module witness](../text-boundary/README.md) separately invokes the
+exact Jim-authored character-boundary predicate through public build and the
+generic runtime. Its 61 predicate cases and ten refusal controls do not replace
+the 40 retained ReplaceRange oracle cases.
+
+Boundary is now a leaf dependency of Text. The pin check and mutation test
+propagate changes through Text and Rope into Reference and ReplaceRange, and
+every current draft result hashes that full source-module closure. Full Text
+still first refuses at `contentId<T>` (now line 90); Reference, Rope and
+ReplaceRange retain their `else`, `depth` and enum parser refusals. The older
+snapshots above remain unchanged for their named source revisions.

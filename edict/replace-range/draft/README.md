@@ -3,11 +3,14 @@
 These files are the whole `ReplaceRange` program written the way it should
 read, against the schema 2 representation in
 [DL-0159](../../../docs/design/0159-edict-rope-representation.md). They are not
-part of the application gate and they do not compile yet. Their job is to let
-the program drive the language and runtime work instead of isolated probes.
+part of the application gate. The main Text/Reference/Rope/ReplaceRange drafts
+do not compile yet; Boundary is a separately compiled and executed helper.
+Their job is to let the program drive language and runtime work instead of
+isolated probes.
 
 | File | Target | Content |
 | --- | --- | --- |
+| `Boundary.edict` | shared | bounded character-boundary predicate, separately compiled and executed |
 | `Text.edict` | shared | schema 2 facts, edge types, `ContentAddressV1` identity, text metrics |
 | `Reference.edict` | 1: semantic correctness | flat-text `ReplaceRange`; deliberately inefficient |
 | `Rope.edict` | 2: persistent rope | pure AVL split, join, balance, build, collect, normalize |
@@ -64,7 +67,7 @@ above. The follow-up below fixes the import syntax; the identity contract and
 later rope constructs still need their own evidence.
 No persistent-rope, effects or recovery acceptance follows from these probes.
 
-## Authenticated imports and current draft failures
+## Authenticated imports before the boundary-helper extraction
 
 The drafts now carry source-module digests derived from the exact imported
 bytes. The inventory supplies Text to Reference and Rope, and Text plus Rope
@@ -74,7 +77,7 @@ names compiler `9b5ed1a`, Echo witness revision `158714ce`, the unchanged select
 component hashes, and every source file's hash. The earlier measurements above
 remain exact evidence for their original source revisions.
 
-| Current authored draft | Next measured parse refusal |
+| Authored draft at that measurement | Next measured parse refusal |
 | --- | --- |
 | `Text.edict` | generic `contentId<T>` at line 89: expected `LParen`, found `Lt` |
 | `Reference.edict` | read-expression obstruction at line 55: expected `RParen`, found `else` |
@@ -88,11 +91,30 @@ rope obligations remain open. See the inventory's
 after changing an imported draft. The current check verifies only the import
 bytes, not the semantics or compilation of the imported program.
 
+## Current character-boundary helper and remaining failures
+
+The exact [Boundary module](Boundary.edict) is now independently buildable and
+executed by the [public compiler/runtime witness](../../replace-range-probes/text-boundary/README.md).
+Text delegates its boundary predicate to that digest-authenticated module.
+The predicate is total on its bounded input: it safely handles empty input,
+returns false beyond the end, and performs byte lookups only under strict
+bounds. UTF-8 validity remains a separate rope invariant.
+
+The [current complete-closure inventory](../../replace-range-probes/compiler-inventory/candidate-boundary-drafts.json)
+retains nine of 28 accepted builds. Text still first refuses at the generic
+`contentId<T>` helper, now line 90. Reference still refuses at the read
+expression's `else` (55), Rope at `depth` (24), and ReplaceRange at its enum
+(49). The new helper does not make the whole Text module compilable. Its 61
+predicate cases are separate from the 40 full-operation oracle cases, and no
+rope/effect/admission/recovery/editor acceptance is inferred.
+
 ## Blockers by class
 
 ### Language expressiveness (Edict source)
 
-All measured entries refer to the exact compiler and Echo revisions above.
+The table below retains the upstream measurement at compiler `980c3ae3` and
+Echo `9c32e0b5`. The named local candidate results above supersede only the
+capabilities they actually measure; they do not change upstream support.
 
 | Construct | Used by | Measured boundary |
 | --- | --- | --- |

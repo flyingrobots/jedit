@@ -238,6 +238,16 @@ mistakes in the proposal Echo is meant to witness.
 - Edits path-copy: only nodes on the affected paths, fresh leaves, and the new
   head are new.
 
+The application-owned character-boundary predicate is total on its bounded
+byte input and U64 offset: zero and the byte length are boundaries, offsets
+beyond the end are false, and an interior offset is a boundary when its byte
+is outside the continuation range 128 through 191. UTF-8 validity is a separate
+check; this predicate does not make arbitrary octets valid text. Every byte
+lookup is dominated by a strict in-range guard. This refines the boundary
+check used by the rope law without moving text semantics into Echo. The
+[authored module and conformance witness](../../edict/replace-range-probes/text-boundary/README.md)
+prove that helper separately; the complete rope remains unproved.
+
 ### Coordinates
 
 Byte offsets into the UTF-8 text are the only authoritative coordinates.

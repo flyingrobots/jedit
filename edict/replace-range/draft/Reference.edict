@@ -10,7 +10,7 @@ package jedit.text.reference@1;
 
 use lawpack jedit.text@2 as text;
 use target echo.dpo@1 as echo;
-use module jedit.text.v2@1 digest "sha256:46755cee083ab0376931a04185b036e183cbd10ff5738d9c6e04fb4a243aa361" as v2;
+use module jedit.text.v2@1 digest "sha256:240bf409b69939003c04da69cf508a6efac354008f52ff665376fb60fa0ec3e3" as v2;
 
 type TextFact = {
   bytes: Bytes<max=1048576>,
