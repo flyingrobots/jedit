@@ -63,7 +63,8 @@ const cases = [
     ['u8', 'type Probe = U8;'],
     ['count-bytes', 'fn probe(v: Bytes<max=4>) -> U64 { return count(v, b"\\n"); }'],
     ['utf8', 'fn probe(v: Bytes<max=4>) -> Bool { return isUtf8(v); }'],
-    ['byte-at', 'fn probe(v: Bytes<exact=1>) -> U32 { return at(v, 0u64); }'],
+    ['byte-at', 'fn probe(v: Bytes<exact=1>) -> U8 { return at(v, 0u64); }'],
+    ['composed-byte-lookup', 'fn probe() -> U8 { return at(b"\\x00\\xff", 1u64); }'],
     ['generic-helper', 'fn probe<T>(v: T) -> T { return v; }'],
 ];
 function run(cmd, args, options = {}) {
