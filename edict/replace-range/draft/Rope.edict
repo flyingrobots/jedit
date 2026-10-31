@@ -10,7 +10,7 @@
 package jedit.text.rope@1;
 
 use lawpack jedit.text@2 as text;
-use module jedit.text.v2@1 as v2;                           // PROPOSED: source-module import
+use module jedit.text.v2@1 digest "sha256:46755cee083ab0376931a04185b036e183cbd10ff5738d9c6e04fb4a243aa361" as v2;
 
 // ---- Local view of a rope region ----
 

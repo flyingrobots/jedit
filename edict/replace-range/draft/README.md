@@ -22,7 +22,7 @@ admission and effect behavior are validated separately, because two programs
 can agree on text while both emitting an invalid graph. Target 1 does not
 complete the rope.
 
-## Compiler result
+## Historical upstream result before module pinning
 
 Measured again on 2026-10-30 with Amblicit (formerly Edict)
 `980c3ae3ff2ef96a0d026f9afdd77d61758cd57c` and Echo
@@ -30,7 +30,7 @@ Measured again on 2026-10-30 with Amblicit (formerly Edict)
 [inventory runner and results](../../replace-range-probes/compiler-inventory/README.md)
 retain the minimal construct probes, source hashes and structured diagnostics.
 
-| Whole draft | Current first refusal |
+| Whole draft at that measurement | First refusal |
 | --- | --- |
 | `Text.edict` | parse: generic `fn contentId<T>` (`expected LParen, found Lt`) |
 | `Reference.edict` | parse: its `use module` import omits the required digest |
@@ -58,11 +58,35 @@ named commits.
 
 The candidate clears the isolated raw-byte helper, U8, byte-lookup and composed
 literal-plus-lookup probes. Together with the baseline, addition, count, UTF-8
-and a digest-authenticated module, nine of 28 public builds pass. The whole
-drafts still fail first at the same generic helper or missing module digest
-listed above. Correcting the draft source and identity contract is therefore
-still required before its later rope constructs can be judged as one program.
+and a digest-authenticated module, nine of 28 public builds pass. At that source revision, the whole
+drafts failed first at the same generic helper or missing module digest listed
+above. The follow-up below fixes the import syntax; the identity contract and
+later rope constructs still need their own evidence.
 No persistent-rope, effects or recovery acceptance follows from these probes.
+
+## Authenticated imports and current draft failures
+
+The drafts now carry source-module digests derived from the exact imported
+bytes. The inventory supplies Text to Reference and Rope, and Text plus Rope
+to ReplaceRange, with each application's own coordinate. The
+[authenticated-closure result](../../replace-range-probes/compiler-inventory/candidate-authenticated-drafts.json)
+names compiler `9b5ed1a`, Echo witness revision `158714ce`, the unchanged selected
+component hashes, and every source file's hash. The earlier measurements above
+remain exact evidence for their original source revisions.
+
+| Current authored draft | Next measured parse refusal |
+| --- | --- |
+| `Text.edict` | generic `contentId<T>` at line 89: expected `LParen`, found `Lt` |
+| `Reference.edict` | read-expression obstruction at line 55: expected `RParen`, found `else` |
+| `Rope.edict` | recursive depth clause at line 24: expected `Semi`, found `depth` |
+| `ReplaceRange.edict` | enum declaration at line 49: expected `Semi`, found `LBrace` |
+
+The module syntax debt is removed; these programs still do not compile. The
+schema-2 lawpack and identity contract, later language constructs, and runtime
+rope obligations remain open. See the inventory's
+[repinning commands](../../replace-range-probes/compiler-inventory/README.md#authenticated-draft-source-closures)
+after changing an imported draft. The current check verifies only the import
+bytes, not the semantics or compilation of the imported program.
 
 ## Blockers by class
 

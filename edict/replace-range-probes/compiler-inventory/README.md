@@ -103,3 +103,33 @@ those drafts remain unmeasured by their first failure. The candidate source
 and component checks do not establish the rope's oracle agreement, sharing,
 effects, admission, recovery or editor cutover. The upstream snapshots above
 remain unchanged.
+
+
+## Authenticated draft source closures
+
+[Follow-up candidate measurement](candidate-authenticated-drafts.json) uses the
+same Amblicit `9b5ed1a` and component pair, with Echo witness source `158714ce`.
+The component production code remains `162d14a1`; the later commit changes only
+the witness selection and its documentation. Nine of 28 cases still pass.
+
+The authored drafts now pin their imported source bytes. `run.mjs` checks those
+pins before building and supplies each root's complete source-module closure,
+sets its declared package coordinate, and records every source hash. To repin
+after an intentional dependency edit, run from the repository root:
+
+```sh
+node edict/replace-range-probes/compiler-inventory/draft-modules.mjs --write
+node edict/replace-range-probes/compiler-inventory/draft-modules.mjs --check
+node --test edict/replace-range-probes/compiler-inventory/draft-modules.test.mjs
+```
+
+The tests check an independent compiler digest vector and an actual leaf-source
+mutation that must repin both direct imports and the transitive rope import.
+These commands do not compile the drafts. The public inventory measures that
+separately, preserving the earlier snapshots unchanged.
+
+The next actual parse refusals are `contentId<T>` in Text (line 89), an `else`
+inside the reference read expression (line 55), the rope's recursive `depth`
+clause (line 24), and the operation draft's enum declaration (line 49). No
+missing-digest error remains. Later constructs and schema-2 lawpack resolution
+are still unproven; a first parse error cannot classify their support.
