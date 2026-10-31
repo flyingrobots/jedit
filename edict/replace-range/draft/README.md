@@ -117,7 +117,17 @@ variant with exact case names and payload references. The compiler preserves
 that type graph in Core, and the current provider accepts the declaration.
 The isolated probe does not construct or match a variant or execute
 variant-valued data. Enum declarations, recursive variants, constructors and
-matching remain open, so the full rope's first failures above are unchanged.
+matching remain open at that compiler revision, so the full rope's first
+failures above are unchanged.
+
+The later [constructor inventory](../../replace-range-probes/compiler-inventory/candidate-variant-constructors.json)
+uses Amblicit `2e24840` and the unchanged Echo `158714ce` publication: ten of
+30 public builds accept. A helper returning `Probe::Data(value)` now reaches
+the provider's `core.source-functions` refusal; a Boolean payload for its U8
+case refuses earlier with source `TypeMismatch`. These are distinct boundaries.
+The valid helper is unused by the baseline operation, and no variant-valued
+package or runtime witness is claimed. Matching, recursive variants, enum
+syntax and the whole rope's first failures above remain open.
 
 ## Blockers by class
 

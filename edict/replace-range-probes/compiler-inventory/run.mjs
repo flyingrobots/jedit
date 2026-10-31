@@ -54,6 +54,8 @@ const cases = [
     ['unsigned-addition', 'fn probe() -> U64 { return 1u64 + 2u64; }'],
     ['unproved-overflow', 'fn probe(v: U64) -> U64 { return v + 1u64; }'],
     ['variant', 'type Probe = variant { Leaf(Bytes<max=4>), Branch(U64) };'],
+    ['variant-constructor', 'type Probe = variant { Empty, Data(U8) }; fn probe(value: U8) -> Probe { return Probe::Data(value); }'],
+    ['variant-invalid-payload', 'type Probe = variant { Empty, Data(U8) }; fn probe() -> Probe { return Probe::Data(true); }'],
     ['enum', 'enum Probe { Empty }'],
     ['recursive-type', 'type Probe = { next: Probe, };'],
     ['recursive-function', 'fn probe(v: U64) -> U64 { return probe(v); }'],

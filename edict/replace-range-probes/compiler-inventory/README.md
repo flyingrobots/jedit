@@ -164,7 +164,31 @@ This probe declares an unused variant. It does not construct a variant value,
 match one, or exercise variant-valued input/results. Native compiler tests also
 cover aliases, original imported module and nominal payload identities,
 canonical order independence, and missing/empty/duplicate/cyclic/deep/wide
-refusals. Constructors and matching remain explicit compiler refusals. Enum
+refusals. At that compiler revision, constructors and matching remain explicit
+compiler refusals. Enum
 and recursive-variant support are still separate work, and the whole drafts'
 first generic/read-expression/depth/enum errors are unchanged. The earlier
 snapshots above remain bound to their original compiler/source selections.
+
+## Checked source constructors and the provider boundary
+
+[Constructor candidate measurement](candidate-variant-constructors.json) selects
+Amblicit `2e24840` with the unchanged Echo `158714ce` publication. Ten of 30
+public builds accept; the two additional cases separate a valid constructor
+from an invalid payload. Existing 28-case snapshots remain unchanged.
+
+The valid helper `Probe::Data(value)` with `value: U8` now passes source/Core
+checking and reaches `ProviderLowererRefused` for `core.source-functions`.
+The diagnostic identifies the checked pure-function profile; it does not
+identify which variant type or expression check refused first. This helper is
+unused by the baseline operation. No variant-valued package or runtime
+execution is established. `Probe::Data(true)` instead refuses during source
+type checking with `TypeMismatch` before provider invocation.
+
+The compiler candidate separately checks constructor tags, payload presence,
+payload types/bounds, original imported coordinates, exact named union
+identity through helper calls, and payload capture/cycles/depth/totality.
+Its full local gate passes 1,350 tests with two ignored. This compiler evidence
+does not establish Echo admission, execution, wire representation, matching,
+recursive variants, or full rope acceptance. The whole drafts' first failures
+remain generic `contentId<T>`, read-expression `else`, `depth`, and enum syntax.
