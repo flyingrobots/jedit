@@ -46,10 +46,11 @@ hash in the validation evidence, and remove that temporary copy after execution:
 
 ```sh
 (
+set -eu
 boundary_consumer="$ECHO_REPO/xtask/examples/jim_text_boundary.rs"
 test ! -e "$boundary_consumer"
-cp edict/replace-range-probes/text-boundary/runtime.rs "$boundary_consumer"
 trap 'rm -f "$boundary_consumer"' EXIT
+cp edict/replace-range-probes/text-boundary/runtime.rs "$boundary_consumer"
 cargo run --locked --manifest-path "$ECHO_REPO/Cargo.toml" -p xtask \
   --example jim_text_boundary -- /jim-recovery/jim-text-boundary-green \
   447aacab9c55838deb0fa6c7c5d2eea9a9f6a84b31379fd2784eb5ad68255589
