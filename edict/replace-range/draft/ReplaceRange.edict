@@ -12,8 +12,8 @@ package jedit.text.replace_range@2;
 
 use lawpack jedit.text@2 as text;
 use target echo.dpo@1 as echo;
-use module jedit.text.v2@1 as v2;                           // PROPOSED: source-module import
-use module jedit.text.rope@1 as rope;
+use module jedit.text.v2@1 digest "sha256:240bf409b69939003c04da69cf508a6efac354008f52ff665376fb60fa0ec3e3" as v2;
+use module jedit.text.rope@1 digest "sha256:b32d0b3424763a09cf1618b7a001e007824ab219741b655acdb5ffae0fbf1a59" as rope;
 
 type Input = {
   bufferId: text.BufferId,
