@@ -1,0 +1,89 @@
+{"checked":1,"command":"build","errors":0,"exitCode":0,"schema":"edict.cli.event/v1","status":"ok","type":"status"}
+TAP version 13
+# Subtest: rejects_non_git_toolchain_inputs
+ok 1 - rejects_non_git_toolchain_inputs
+  ---
+  duration_ms: 54.46366
+  type: 'test'
+  ...
+# Subtest: rejects_wrong_commit_toolchain_inputs
+ok 2 - rejects_wrong_commit_toolchain_inputs
+  ---
+  duration_ms: 33.707625
+  type: 'test'
+  ...
+# Subtest: lawpack_check_only_rejects_drift_without_repairing_it
+ok 3 - lawpack_check_only_rejects_drift_without_repairing_it
+  ---
+  duration_ms: 11678.911275
+  type: 'test'
+  ...
+# Subtest: rejects_package_whose_recomputed_identity_differs_from_report_subject
+ok 4 - rejects_package_whose_recomputed_identity_differs_from_report_subject
+  ---
+  duration_ms: 22744.317314
+  type: 'test'
+  ...
+# Subtest: preserves_nominal_exact_length_buffer_and_head_identities
+ok 5 - preserves_nominal_exact_length_buffer_and_head_identities
+  ---
+  duration_ms: 12694.276177
+  type: 'test'
+  ...
+# Subtest: freshly_compiled_package_must_execute_in_echo
+ok 6 - freshly_compiled_package_must_execute_in_echo
+  ---
+  duration_ms: 23106.528309
+  type: 'test'
+  ...
+# Subtest: repeated_public_builds_preserve_core_and_package_bytes
+ok 7 - repeated_public_builds_preserve_core_and_package_bytes
+  ---
+  duration_ms: 31595.208626
+  type: 'test'
+  ...
+# Subtest: rejects_buffer_id_head_id_substitution
+ok 8 - rejects_buffer_id_head_id_substitution
+  ---
+  duration_ms: 508.059657
+  type: 'test'
+  ...
+# Subtest: verification_report_identity_is_verifier_specific
+ok 9 - verification_report_identity_is_verifier_specific
+  ---
+  duration_ms: 0.687377
+  type: 'test'
+  ...
+# Subtest: rejects_drifted_build_and_executable_subject_locks
+ok 10 - rejects_drifted_build_and_executable_subject_locks
+  ---
+  duration_ms: 12153.529095
+  type: 'test'
+  ...
+# Subtest: rejects_drifted_executable_subject_lock
+ok 11 - rejects_drifted_executable_subject_lock
+  ---
+  duration_ms: 14065.369502
+  type: 'test'
+  ...
+# Subtest: required_ci_executes_the_exact_package_chain
+ok 12 - required_ci_executes_the_exact_package_chain
+  ---
+  duration_ms: 0.335043
+  type: 'test'
+  ...
+# Subtest: compiler_selection_helper_is_bound_by_the_build_source_closure
+ok 13 - compiler_selection_helper_is_bound_by_the_build_source_closure
+  ---
+  duration_ms: 12771.436689
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 141434.405445

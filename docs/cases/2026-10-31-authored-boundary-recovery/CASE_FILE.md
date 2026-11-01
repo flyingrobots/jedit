@@ -100,3 +100,16 @@ the harness, not printed in the outer log. No new public compiler run occurred.
 - Raw reviewer transcripts are retained locally under the shared log budget;
   closed sessions may be losslessly compressed. Restoring a session requires
   restoring its transcript and accounting registration before CLI resume.
+
+## CI lock repair after the initial case bundle
+
+Hosted run 41269735928 rejected the new workflow hash against the old validation
+lock. The workflow edit needed both the toolchain validation hash and dependent
+build-source closure regenerated. The pinned public compiler built the package
+again; `assert-build-output.mjs --write-locks` regenerated the build lock and
+all 13 package-proof harness cases passed in the guarded Docker worker.
+Package artifact identities and the executable-subject lock are byte-identical
+to the prior candidate. Only validation/source-closure lock metadata changes.
+The parent retained the CI RED log separately; [Docker GREEN](authored-workflow-lock-green.txt)
+records the full proof harness. This repairs a delivery omission, not a runtime
+semantic change. Sonnet approval and hosted CI must cover the final commit.
