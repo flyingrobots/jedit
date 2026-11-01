@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Defined the schema-1 to schema-2 ReplaceRange acceptance obligations in
+  DL-0159 for all 40 retained oracle cases. Representation-specific fault
+  counterparts remain explicit gaps; text agreement or resource refusals do
+  not satisfy physical graph acceptance. The frozen oracle is unchanged.
+
 - Recovered the authored rope character-boundary helper and digest-pinned draft
   module closures. The test-only helper witness now preserves the inventory's
   observed Echo checkout identity across current and historical field names,

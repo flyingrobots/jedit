@@ -7,7 +7,7 @@ status: "draft"
 owners:
   - "@flyingrobots"
 created: "2026-10-15"
-updated: "2026-10-20"
+updated: "2026-10-31"
 ---
 
 # DL-0159 - Edict-Authored Rope Representation
@@ -685,6 +685,115 @@ File-crossing gate:
    retained material.
 9. Divergence settlements.
 
+## ReplaceRange acceptance across representations
+
+This section owns the reconciliation between #296 and the approved schema-2
+representation. It does not freeze schema 2, change the retained schema-1
+oracle, or certify any execution. #296 proves the authored operation; final
+`Jim.edict` observer cutover, deletion of the transitional host, and the
+file-crossing gate remain later work. The full representation gate above is
+broader than that operation proof.
+
+The retained [schema-1 oracle](../../contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json)
+has 40 cases: six committable and 34 obstructed. Its concrete node ids, JSON
+atoms, patches, footprints, Rewrite/Diff facts, and stored UTF-16 metrics are
+schema-1 expectations. They remain frozen evidence for that representation;
+they are not executable input and must not be rewritten to match a new
+implementation. Schema 2 cannot satisfy those physical expectations literally.
+
+A schema-2 conformance result therefore needs two independent comparisons:
+
+1. Preserve each retained case's invocation intent, valid text outcome or
+   fault condition, and absence of mutation on obstruction. Define the
+   schema-2 fixture explicitly; do not feed schema-1 JSON facts into the new
+   operation or use the native planner to compute its expected behavior.
+2. Validate the schema-2 consequence against separately specified physical
+   expectations: canonical facts and typed edges, ContentAddressV1 identity,
+   reachability, path-copy sharing, exact observed footprint, normalized
+   effects, checked counters, atomic admission, and receipt/WAL/restart
+   evidence. Agreement on text or a generic refusal is insufficient.
+
+The mapping below is an obligation register, not a result table. Every row is
+currently **unproved**. `carry` means the fault or operation has a direct
+schema-2 obligation; it does not assert the fixture or runner exists.
+`counterpart` means the old representation-specific fixture cannot be copied
+literally and its replacement still needs an explicit decision and independent
+expected result. Such a row cannot be dropped, called inapplicable, or counted
+passing merely because the old field no longer exists.
+
+| Retained case id | Mapping | Required schema-2 obligation |
+| --- | --- | --- |
+| empty-unicode-insert | carry | Empty root to Unicode text; head/root edges and line metrics |
+| middle-ascii-insert | carry | Exact insertion position; unaffected subtrees retain identity |
+| whole-buffer-delete | carry | Empty text, absent root edge, correct head metrics and counters |
+| unicode-replacement | carry | Exact UTF-8 replacement and unaffected content/sharing |
+| cross-leaf-rebalance | carry | Cross-leaf edit, AVL invariants, path-copy sharing |
+| replacement-larger-than-leaf | carry | Character-aligned leaf partition and branch metrics within a measured envelope |
+| reversed-range | carry | Range-order obstruction; no graph mutation |
+| out-of-bounds-range | carry | Out-of-bounds obstruction; no graph mutation |
+| start-inside-codepoint | carry | Reject a start offset inside a code point |
+| end-inside-codepoint | carry | Reject an end offset inside a code point |
+| empty-range-inside-codepoint | carry | Reject even an empty range inside a code point |
+| empty-no-op | carry | NoOp; no graph mutation or successful edit receipt |
+| identical-no-op | carry | Byte-identical replacement is NoOp, not an edit |
+| stale-basis | carry | Canonical-head comparison rejects a stale basis atomically |
+| foreign-basis | carry | A different buffer's head cannot authorize this edit |
+| head-sequence-overflow | carry | Checked head sequence; no partial effects on overflow |
+| buffer-version-overflow | carry | Checked buffer version; no partial effects on overflow |
+| missing-buffer | carry | Missing required Buffer fact is a typed obstruction |
+| malformed-buffer | counterpart | Malformed canonical atom/type fixture, replacing JSON parse failure |
+| bad-blob-content-hash | counterpart | Corrupt content identity on a schema-2 content node; no Blob type exists |
+| branch-extent-mismatch-at-zero | carry | Validate branch/children extent before a zero-offset edit |
+| branch-extent-mismatch-at-exact-end | carry | Validate branch/children extent at the end boundary |
+| branch-extent-mismatch-at-internal-boundary | carry | Validate branch/children extent at a child boundary |
+| branch-truncated-no-op-mask | carry | Malformed materialization must not be hidden by NoOp |
+| cyclic-right-endpoint | counterpart | Cyclic structural edges: define admission-versus-read rejection and prove non-acceptance |
+| empty-root-nonzero-length-no-op-mask | carry | Missing root with nonzero head length cannot become NoOp |
+| empty-root-nonzero-length-zero-insert | carry | Reject inconsistent empty-root metrics before insertion |
+| leaf-ends-inside-codepoint-at-exact-end | counterpart | Invalid UTF-8 leaf bytes replacing a partial Blob slice; specify fault precedence |
+| leaf-exceeds-blob-at-zero | counterpart | Define equivalent malformed-leaf extent coverage without Blob ranges |
+| leaf-exceeds-blob-at-exact-end | counterpart | Preserve exact-end validation coverage without Blob ranges |
+| leaf-exceeds-blob-at-internal-boundary | counterpart | Preserve internal-boundary validation coverage without Blob ranges |
+| coordinate-above-graphql-int | carry | Preserve U64 coordinates and reject inconsistent head/root metrics without narrowing |
+| leaf-range-start-overflow | counterpart | Blob offset addition is removed; specify the surviving arithmetic obligation |
+| leaf-range-end-overflow | counterpart | Blob range-end addition is removed; specify the surviving arithmetic obligation |
+| rope-node-end-overflow | carry | Checked traversal position plus subtree extent |
+| leaf-extent-u64-max-at-zero | counterpart | Bounded inline leaves cannot carry that Blob extent; specify malformed-extent rejection coverage |
+| rope-utf16-length-overflow | counterpart | Stored UTF-16 metric is removed; resolve derived-reading versus operation coverage explicitly |
+| rope-line-break-count-overflow | carry | Checked aggregate line-break count |
+| branch-height-u32-max-at-zero | counterpart | Height is bounded U8, not U32; specify malformed height/codec and child consistency checks |
+| head-line-count-overflow | carry | Checked line-break count plus one |
+
+An impossible malformed state under normal schema-2 admission still needs a
+negative admission witness and a stated boundary. Rejecting the fixture before
+execution is not evidence that the authored operation produced the old typed
+obstruction. Where identity, codec, structure, and arithmetic checks overlap,
+the counterpart must specify which boundary rejects first; a different generic
+failure does not silently satisfy the original case.
+
+For every executable row, retain the schema-2 fixture, independent expected
+result, exact compiler package/verification identities, selected runtime, and
+execution evidence. Record resource-domain membership separately: outside the
+measured envelope or lacking a counterpart is a gap, never a pass. A resource
+refusal does not satisfy an expected edit or semantic obstruction. The mapping
+must cover all 40 ids exactly once before the full-operation gate can close;
+new schema-2-specific cases supplement it rather than replacing retained cases.
+
+#296 must not be closed by reinterpreting “all retained oracle cases agree” as
+text-only agreement. Its acceptance wording and the executable schema-2 oracle
+must adopt this representation-specific comparison explicitly, with the
+counterpart decisions reviewed before any affected row can pass. Until then,
+full oracle acceptance remains unresolved, even if individual source helpers
+compile or some graph edits succeed.
+
+The remaining operation gates are unchanged: exact public Core/Target/package,
+manifest and codecs with separate verification; generic Echo consumption with
+no application-specific dispatch; a runtime path sharing no native planner;
+negative gates for handwritten packages, caller graph patches, MutationPlan,
+native callbacks, fake transports and fallback; basis/budget/footprint/Tick,
+WAL, receipt, reading and recovery evidence; and test scaffolding unreachable
+from the final production composition.
+
 ## Tests To Write First
 
 Representation gate:
@@ -757,6 +866,13 @@ None yet.
   edit costs (#381).
 
 ## Retrospective
+
+The acceptance reconciliation now enumerates all 40 retained cases without
+changing the frozen oracle. It exposes representation-specific counterpart
+choices instead of treating text equality, absent fields, or early admission
+refusals as full conformance. This is a design refinement only: counterparts,
+executable fixtures, and complete authored-rope evidence remain unfinished.
+
 
 The recovered boundary-helper slice has a public compiler/runtime conformance
 witness and authenticated transitive module pins. Its historical evidence is
