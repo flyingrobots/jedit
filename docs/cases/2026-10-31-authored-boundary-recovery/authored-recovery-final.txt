@@ -1,0 +1,42 @@
+TAP version 13
+# Subtest: module digest agrees with the compiler independent canonical-CBOR vector
+ok 1 - module digest agrees with the compiler independent canonical-CBOR vector
+  ---
+  duration_ms: 0.727255
+  type: 'test'
+  ...
+# Subtest: a leaf edit repins every dependent module, including the transitive rope import
+ok 2 - a leaf edit repins every dependent module, including the transitive rope import
+  ---
+  duration_ms: 1.441427
+  type: 'test'
+  ...
+# Subtest: current inventory keeps its observed Echo checkout identity
+ok 3 - current inventory keeps its observed Echo checkout identity
+  ---
+  duration_ms: 0.722546
+  type: 'test'
+  ...
+# Subtest: historical inventory normalizes the captured checkout label without changing the report
+ok 4 - historical inventory normalizes the captured checkout label without changing the report
+  ---
+  duration_ms: 0.487045
+  type: 'test'
+  ...
+# Subtest: missing, malformed or contradictory checkout identities refuse
+ok 5 - missing, malformed or contradictory checkout identities refuse
+  ---
+  duration_ms: 0.246793
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35.408403
+e6c94f58f16eba252d16865c4c167ff2d0917618abd7dd33a4a326c57ac5549f  edict/replace-range/draft/Boundary.edict
+447aacab9c55838deb0fa6c7c5d2eea9a9f6a84b31379fd2784eb5ad68255589  edict/replace-range-probes/text-boundary/candidate-evidence.json

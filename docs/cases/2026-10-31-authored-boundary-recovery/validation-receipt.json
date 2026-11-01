@@ -1,0 +1,66 @@
+{
+  "candidate": "93fbad2620b0b4d9cd2066bb9d8a868f5f93ecb8",
+  "source_identity": "After execution, isolated Docker files match committed candidate byte for byte. This is a post-run comparison, not an execution-time attestation.",
+  "files": [
+    {
+      "path": "edict/replace-range-probes/text-boundary/build.mjs",
+      "sha256": "c25d59bbbcfc3608464ad42f0201b89425ac3de977e20784a343d102c7e17598"
+    },
+    {
+      "path": "edict/replace-range-probes/text-boundary/inventory-provenance.mjs",
+      "sha256": "1e96ba8c8ac9332243902d8f2e984d7167222fa34d0beb444fe93f12246af07d"
+    },
+    {
+      "path": "edict/replace-range-probes/text-boundary/inventory-provenance.test.mjs",
+      "sha256": "1099480484aeb7fbc8c2ecbc96ba8b440d8f40a5d7525a33eff8684a3623047f"
+    },
+    {
+      "path": "edict/replace-range-probes/text-boundary/check-retained-inputs.mjs",
+      "sha256": "6b681a4e593b773bcf2cc1bda7d8dc88d712f418e2b3c8e2d3a0314518fd914f"
+    },
+    {
+      "path": "edict/replace-range-probes/text-boundary/candidate-evidence.json",
+      "sha256": "447aacab9c55838deb0fa6c7c5d2eea9a9f6a84b31379fd2784eb5ad68255589"
+    },
+    {
+      "path": "edict/replace-range-probes/compiler-inventory/draft-modules.mjs",
+      "sha256": "88c90e49091c9da9554caf05286cbfd15277e6cd52e902af157617a154ef34fb"
+    },
+    {
+      "path": "edict/replace-range-probes/compiler-inventory/draft-modules.test.mjs",
+      "sha256": "f30ad59ecb58aee149571bc583a1b2910379ea087536fd3b7eed38ddaf70e5bb"
+    },
+    {
+      "path": "edict/replace-range/draft/Boundary.edict",
+      "sha256": "e6c94f58f16eba252d16865c4c167ff2d0917618abd7dd33a4a326c57ac5549f"
+    }
+  ],
+  "logs": {
+    "authored-provenance-red": {
+      "sha256": "f3854c3efe09b4dc632332d1bd7b1279c9b98f14a944b04affa8cf37546b206a",
+      "command": "cd /jim-recovery/jedit-authored-review\nnode --test edict/replace-range-probes/text-boundary/inventory-provenance.test.mjs\n",
+      "worker": "echo-read-runtime",
+      "timeout_seconds": 120
+    },
+    "authored-provenance-green": {
+      "sha256": "9d7b94b476565121642921135cdd00f3c0cb6d68a3d68391dc77c58d3d86fa94",
+      "command": "cd /jim-recovery/jedit-authored-review\nnode --test edict/replace-range-probes/text-boundary/inventory-provenance.test.mjs\n",
+      "worker": "echo-read-runtime",
+      "timeout_seconds": 120
+    },
+    "authored-recovery-final": {
+      "sha256": "210ca7c65abb2f589aefca882d39933d4429a346234e5cac34ed0e8da9b1ce64",
+      "command": "cd /jim-recovery/jedit-authored-review\nnode --test edict/replace-range-probes/text-boundary/inventory-provenance.test.mjs edict/replace-range-probes/compiler-inventory/draft-modules.test.mjs\nnode edict/replace-range-probes/compiler-inventory/draft-modules.mjs --check\nnode --check edict/replace-range-probes/text-boundary/build.mjs\nsha256sum edict/replace-range/draft/Boundary.edict edict/replace-range-probes/text-boundary/candidate-evidence.json\n",
+      "worker": "echo-read-runtime",
+      "timeout_seconds": 120
+    },
+    "authored-recovery-retained-replay": {
+      "sha256": "bc3dd6cf060976bc09c857a96b9700b0ccb87c168dd9744ee3adaebe2fa5ecea",
+      "command": "cd /jim-recovery/jedit-authored-review\nsha256sum /lease-target/debug/examples/jim_text_boundary\ncmp edict/replace-range/draft/Boundary.edict /jim-recovery/jim-text-boundary-green/src/Boundary.edict\nnode edict/replace-range-probes/text-boundary/check-retained-inputs.mjs /lease-target/debug/examples/jim_text_boundary /jim-recovery/jim-text-boundary-green 447aacab9c55838deb0fa6c7c5d2eea9a9f6a84b31379fd2784eb5ad68255589\n",
+      "worker": "echo-read-runtime",
+      "timeout_seconds": 180
+    }
+  },
+  "red_limit": "RED used extracted original field lookup; source bytes were not separately retained at execution. Assertion failure is retained; no exact RED binary/source attestation claimed.",
+  "runtime_limit": "Retained runtime binary replay, not rebuild with the current compiler."
+}
