@@ -8,7 +8,13 @@ import { encode } from 'cbor-x';
 import { fileURLToPath } from 'node:url';
 import { buildCompiler } from '../../replace-range/tests/compiler.mjs';
 import { adapterTargets, withAdapterTargets, withImportDigest, lawpackManifestDigest } from '../../../scripts/deps/echo-edict-relock.mjs';
+import { draftSourcePaths, pinnedDrafts } from './draft-modules.mjs';
 const applicationRoot = fileURLToPath(new URL('../../replace-range/', import.meta.url));
+const draftRoot = path.join(applicationRoot, 'draft');
+for (const [name, source] of pinnedDrafts(draftRoot)) {
+    if (readFileSync(path.join(draftRoot, `${name}.edict`), 'utf8') !== source)
+        throw new Error(`Stale draft module pin: run draft-modules.mjs --write (${name})`);
+}
 const args = process.argv.slice(2);
 if (args.length !== 4 || args[0] !== '--provider' || args[2] !== '--output') {
     throw new Error('usage: run.mjs --provider DIR --output NEW_DIR');
@@ -48,6 +54,8 @@ const cases = [
     ['unsigned-addition', 'fn probe() -> U64 { return 1u64 + 2u64; }'],
     ['unproved-overflow', 'fn probe(v: U64) -> U64 { return v + 1u64; }'],
     ['variant', 'type Probe = variant { Leaf(Bytes<max=4>), Branch(U64) };'],
+    ['variant-constructor', 'type Probe = variant { Empty, Data(U8) }; fn probe(value: U8) -> Probe { return Probe::Data(value); }'],
+    ['variant-invalid-payload', 'type Probe = variant { Empty, Data(U8) }; fn probe() -> Probe { return Probe::Data(true); }'],
     ['enum', 'enum Probe { Empty }'],
     ['recursive-type', 'type Probe = { next: Probe, };'],
     ['recursive-function', 'fn probe(v: U64) -> U64 { return probe(v); }'],
@@ -63,7 +71,8 @@ const cases = [
     ['u8', 'type Probe = U8;'],
     ['count-bytes', 'fn probe(v: Bytes<max=4>) -> U64 { return count(v, b"\\n"); }'],
     ['utf8', 'fn probe(v: Bytes<max=4>) -> Bool { return isUtf8(v); }'],
-    ['byte-at', 'fn probe(v: Bytes<exact=1>) -> U32 { return at(v, 0u64); }'],
+    ['byte-at', 'fn probe(v: Bytes<exact=1>) -> U8 { return at(v, 0u64); }'],
+    ['composed-byte-lookup', 'fn probe() -> U8 { return at(b"\\x00\\xff", 1u64); }'],
     ['generic-helper', 'fn probe<T>(v: T) -> T { return v; }'],
 ];
 function run(cmd, args, options = {}) {
@@ -82,6 +91,10 @@ function record(name, source, sources = ['src/ReplaceRange.edict'], extra) {
     cpSync(path.join(application, '.build/echo-provider'), path.join(root, '.build/echo-provider'), { recursive: true });
     const config = JSON.parse(readFileSync(path.join(application, 'edict.application.json')));
     config.sources = sources;
+    if (sources[0].startsWith('draft/')) {
+        const source = readFileSync(path.join(application, sources[0]), 'utf8');
+        config.coordinate = source.match(/^package ([^;]+);/m)[1];
+    }
     writeFileSync(path.join(root, 'edict.application.json'), JSON.stringify(config, null, 2) + '\n');
     if (source !== null)
         writeFileSync(path.join(root, 'src/ReplaceRange.edict'), source);
@@ -93,7 +106,8 @@ function record(name, source, sources = ['src/ReplaceRange.edict'], extra) {
     writeFileSync(path.join(root, 'stderr.jsonl'), r.stderr);
     const rawDiagnostics = r.stderr.split('\n').filter(Boolean).map(line => JSON.parse(line)).filter(value => value.type === 'diagnostic');
     const diagnostics = JSON.parse(JSON.stringify(rawDiagnostics).replaceAll(destination, '.'));
-    const result = { name, status: r.status, sourceSha256: hash(readFileSync(path.join(root, sources[0]))), diagnostics };
+    const sourceHashes = Object.fromEntries(sources.map(item => [item, hash(readFileSync(path.join(root, item)))]));
+    const result = { name, status: r.status, sourceSha256: sourceHashes[sources[0]], sourceHashes, diagnostics };
     console.log(JSON.stringify(result));
     return result;
 }
@@ -106,7 +120,7 @@ const digest = 'sha256:' + hash(encode(['edict.digest/v1', 'edict.source/v1', Bu
 const moduleSource = baseline.replace('\n\nuse lawpack', `\nuse module jedit.probe.library@1 digest "${digest}" as library;\n\nuse lawpack`);
 results.push(record('source-module', moduleSource, ['src/ReplaceRange.edict', 'src/Library.edict'], root => writeFileSync(path.join(root, 'src/Library.edict'), library)));
 for (const name of ['Text', 'Reference', 'Rope', 'ReplaceRange']) {
-    results.push(record('draft-' + name, null, ['draft/' + name + '.edict'], root => cpSync(path.join(application, 'draft'), path.join(root, 'draft'), { recursive: true })));
+    results.push(record('draft-' + name, null, draftSourcePaths(name), root => cpSync(path.join(application, 'draft'), path.join(root, 'draft'), { recursive: true })));
 }
 const report = {
     schema: 'jedit.compiler-inventory/v1',
