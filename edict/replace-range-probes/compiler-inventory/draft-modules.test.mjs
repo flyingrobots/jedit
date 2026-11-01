@@ -40,3 +40,23 @@ test('a leaf edit repins every dependent module, including the transitive rope i
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test('missing or duplicate boundary imports refuse before dependent pins are computed', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'jim-draft-refusals-'));
+  try {
+    writeFileSync(path.join(root, 'Boundary.edict'), 'package jedit.text.boundary@1;\n');
+    const declaration = 'package jedit.text.v2@1;\n';
+    const dependency = 'use module jedit.text.boundary@1 as boundary;\n';
+    for (const source of [declaration, declaration + dependency + dependency]) {
+      writeFileSync(path.join(root, 'Text.edict'), source);
+      assert.throws(() => pinnedDrafts(root), /Expected one jedit\.text\.boundary@1 import in Text/);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('an unregistered draft name refuses rather than inventing a closure', () => {
+  assert.throws(() => draftSourcePaths('Nope'), /Unknown draft Nope/);
+});
