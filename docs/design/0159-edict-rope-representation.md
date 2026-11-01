@@ -675,7 +675,9 @@ Representation gate:
    between resource limits is never reported as an editing disagreement.
    Representation invariants and admission/effect behavior are validated
    separately. Stored-buffer size and the complete encoded invocation size are
-   separate limits.
+   separate limits. The [40-case obligation register](#replacerange-acceptance-across-representations)
+   is part of this slice; #296 tracks its counterpart decisions, executable
+   fixtures, and acceptance-wording reconciliation.
 6. Cutover, then deletion of the native schema 1 law.
 
 File-crossing gate:
@@ -713,8 +715,13 @@ A schema-2 conformance result therefore needs two independent comparisons:
    effects, checked counters, atomic admission, and receipt/WAL/restart
    evidence. Agreement on text or a generic refusal is insufficient.
 
-The mapping below is an obligation register, not a result table. Every row is
-currently **unproved**. `carry` means the fault or operation has a direct
+This register binds the persistent-rope target. The simple Reference target
+supplies differential text/outcome evidence only in its shared supported
+semantic domain; it cannot discharge branch, leaf, or sharing obligations for
+the persistent target. A Reference-only pass never closes a persistent row.
+
+The mapping below is an obligation register, not a result table. Its 28 `carry`
+and 12 `counterpart` rows are all **unproved**. `carry` means the fault or operation has a direct
 schema-2 obligation; it does not assert the fixture or runner exists.
 `counterpart` means the old representation-specific fixture cannot be copied
 literally and its replacement still needs an explicit decision and independent
@@ -737,7 +744,7 @@ passing merely because the old field no longer exists.
 | empty-no-op | carry | NoOp; no graph mutation or successful edit receipt |
 | identical-no-op | carry | Byte-identical replacement is NoOp, not an edit |
 | stale-basis | carry | Canonical-head comparison rejects a stale basis atomically |
-| foreign-basis | carry | A different buffer's head cannot authorize this edit |
+| foreign-basis | carry | Reject a basis id unequal to the named Buffer's canonical target; use a distinct-id foreign fixture |
 | head-sequence-overflow | carry | Checked head sequence; no partial effects on overflow |
 | buffer-version-overflow | carry | Checked buffer version; no partial effects on overflow |
 | missing-buffer | carry | Missing required Buffer fact is a typed obstruction |
@@ -764,6 +771,26 @@ passing merely because the old field no longer exists.
 | branch-height-u32-max-at-zero | counterpart | Height is bounded U8, not U32; specify malformed height/codec and child consistency checks |
 | head-line-count-overflow | carry | Checked line-break count plus one |
 
+Content-identical Heads may be shared by two Buffers under ContentAddressV1.
+The foreign-basis fixture must therefore use a different head id; sharing the
+same canonical node is not itself a basis fault. Add a positive shared-Head
+case to prevent accidental buffer-ownership constraints on content identity.
+
+For every obstructed row, including `carry`, the executable oracle must name
+the retained `semanticCode`, its schema-2 typed outcome, and the rejecting
+boundary. NoOp remains an obstruction rather than a successful edit. An
+invocation precondition refusal is not automatically a typed semantic outcome.
+The same requirement applies when several checks could reject the fixture;
+the oracle must specify their observable precedence.
+
+#296 owns the counterpart decisions under slice 5. Record each decision here
+and in its executable fixture/expected result, and review them in that change.
+If a `carry` fixture proves representation-specific, reclassify it explicitly
+with a reason; never count it passing by relabelling it. Moving an obligation
+to another surface, such as a UTF-16 derived reading, requires a reviewed
+record of that surface and its evidence; the row remains a gap until that
+obligation is discharged.
+
 An impossible malformed state under normal schema-2 admission still needs a
 negative admission witness and a stated boundary. Rejecting the fixture before
 execution is not evidence that the authored operation produced the old typed
@@ -771,7 +798,7 @@ obstruction. Where identity, codec, structure, and arithmetic checks overlap,
 the counterpart must specify which boundary rejects first; a different generic
 failure does not silently satisfy the original case.
 
-For every executable row, retain the schema-2 fixture, independent expected
+For every row when it becomes executable, retain the schema-2 fixture, independent expected
 result, exact compiler package/verification identities, selected runtime, and
 execution evidence. Record resource-domain membership separately: outside the
 measured envelope or lacking a counterpart is a gap, never a pass. A resource
@@ -800,6 +827,10 @@ Representation gate:
 
 | Fixture | Required result |
 | --- | --- |
+| Shared Head across two Buffers | Shared identity remains valid; a distinct non-canonical basis is refused |
+| Invalid UTF-8 replacement bytes | Typed outcome and rejection boundary match the declared oracle |
+| Missing, duplicate or wrong-type structural edges | Declared typed rejection, no partial effects; intentional subtree aliasing remains valid |
+| Replacement beyond the measured envelope | ResourceLimitExceeded at its declared boundary; not counted as an oracle edit pass |
 | Codec vectors for every fact type | canonical bytes; non-canonical encodings rejected |
 | Empty and non-empty Head identity vectors | authored source and bridge compute identical ids from the actual stored fact and edges |
 | Identity | equal subtrees have equal ids within one warp; any atom or child change changes the id |
@@ -830,7 +861,9 @@ File-crossing gate:
 ## Acceptance Criteria
 
 - Representation gate: slices 1–6 green, with identity vectors matched by both
-  implementations and the envelope recorded with its cost model.
+  implementations and the envelope recorded with its cost model. Slice 5 must
+  also discharge every row of the 40-case obligation register, including its
+  reviewed counterpart decisions and representation-specific evidence.
 - File-crossing gate: slices 7–9 green, with every claim recorded at the
   strength its evidence supports.
 - Every needed generic capability has an owner issue (listed above and in the
@@ -872,7 +905,6 @@ changing the frozen oracle. It exposes representation-specific counterpart
 choices instead of treating text equality, absent fields, or early admission
 refusals as full conformance. This is a design refinement only: counterparts,
 executable fixtures, and complete authored-rope evidence remain unfinished.
-
 
 The recovered boundary-helper slice has a public compiler/runtime conformance
 witness and authenticated transitive module pins. Its historical evidence is
