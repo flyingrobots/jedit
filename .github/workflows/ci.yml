@@ -232,6 +232,12 @@ jobs:
         working-directory: jedit
         run: npm ci
 
+      - name: Verify authored draft module pins and inventory provenance
+        working-directory: jedit
+        run: |
+          node --test edict/replace-range-probes/compiler-inventory/draft-modules.test.mjs edict/replace-range-probes/text-boundary/inventory-provenance.test.mjs
+          node edict/replace-range-probes/compiler-inventory/draft-modules.mjs --check
+
       - name: Compile the pinned test-only pure runtime host
         working-directory: jedit
         env:

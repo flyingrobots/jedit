@@ -13,7 +13,7 @@ This document owns how Jedit CI decides what to run. The executable rules live i
 | `test / <shard>` | One job per planned shard, using the uploaded `dist` with `JEDIT_DIST_PREBUILT=1`. |
 | `quality` | `scripts/quality-gate.mjs`, then `scripts/ci/shellcheck.sh` (see [ShellCheck](#shellcheck)). |
 | `release-gate / jedit-echo` | The Echo host witness, when the plan requires it. |
-| `edict / replace-range package and pure runtime chain` | The pinned Edict and Echo package chain for `edict/replace-range`, on every change. |
+| `edict / replace-range package and pure runtime chain` | The pinned Edict and Echo package chain for `edict/replace-range`, plus authored draft module-pin and inventory-provenance checks, on every change. |
 | `check` | The required aggregate. It fails if plan, build, quality, or the Edict chain did not succeed, or if shards or the release gate failed rather than being skipped. |
 
 ## Shards
@@ -57,3 +57,9 @@ naming the file: use a plain shebang or a `.sh` extension. The classifier is
 ## Title-scene freeze
 
 Pull requests that change frozen title-scene paths fail in `plan` unless they carry the `title-unfreeze` label. `scripts/ci/frozen-paths.mjs` defines the frozen patterns, and [title-scene-freeze.md](title-scene-freeze.md) records why the surface is frozen and how the freeze ends.
+
+The authored draft checks run the canonical digest vector, transitive repinning,
+current/historical inventory provenance regressions, and `draft-modules.mjs
+--check`. The standalone historical character-boundary runtime replay is a
+manual guarded Docker witness: its retained compiler/provider inputs are not
+part of the CI checkout. It is not counted as full ReplaceRange acceptance.
