@@ -25,6 +25,14 @@ admission and effect behavior are validated separately, because two programs
 can agree on text while both emitting an invalid graph. Target 1 does not
 complete the rope.
 
+## Recovery scope
+
+This checkout contains the authored Boundary helper and authenticated module
+closure. The retained reports below are historical measurements at their named
+compiler/provider revisions. They do not measure today's upstream compiler.
+The whole Text, Reference, Rope and ReplaceRange drafts remain uncompiled;
+61 helper conformance cases do not satisfy the 40 full-operation oracle cases.
+
 ## Historical upstream result before module pinning
 
 Measured again on 2026-10-30 with Amblicit (formerly Edict)
@@ -58,7 +66,7 @@ rope execution, effects, admission, WAL, recovery or the final editor cutover.
 A separate [candidate inventory](../../replace-range-probes/compiler-inventory/candidate-composed-bytes.json)
 measures Amblicit `9b5ed1a` with Echo's composed byte-literal/U8/lookup candidate
 `162d14a1`. These are local branches, not upstream main or promoted checked
-components. The original upstream measurements below remain pinned to their
+components. The historical upstream measurements above remain pinned to their
 named commits.
 
 The candidate clears the isolated raw-byte helper, U8, byte-lookup and composed
@@ -98,7 +106,7 @@ bytes, not the semantics or compilation of the imported program.
 The exact [Boundary module](Boundary.edict) is now independently buildable and
 executed by the [public compiler/runtime witness](../../replace-range-probes/text-boundary/README.md).
 Text delegates its boundary predicate to that digest-authenticated module.
-The predicate is total on its bounded input: it safely handles empty input,
+Under left-to-right short-circuit evaluation, the predicate is defined on every bounded input: it safely handles empty input,
 returns false beyond the end, and performs byte lookups only under strict
 bounds. UTF-8 validity remains a separate rope invariant.
 

@@ -238,15 +238,18 @@ mistakes in the proposal Echo is meant to witness.
 - Edits path-copy: only nodes on the affected paths, fresh leaves, and the new
   head are new.
 
-The application-owned character-boundary predicate is total on its bounded
-byte input and U64 offset: zero and the byte length are boundaries, offsets
+The application-owned character-boundary predicate is defined for every bounded
+byte input and U64 offset under left-to-right short-circuit evaluation: zero and the byte length are boundaries, offsets
 beyond the end are false, and an interior offset is a boundary when its byte
 is outside the continuation range 128 through 191. UTF-8 validity is a separate
 check; this predicate does not make arbitrary octets valid text. Every byte
 lookup is dominated by a strict in-range guard. This refines the boundary
 check used by the rope law without moving text semantics into Echo. The
 [authored module and conformance witness](../../edict/replace-range-probes/text-boundary/README.md)
-prove that helper separately; the complete rope remains unproved.
+exercise that helper separately with finite conformance cases; the complete
+rope remains unproved. This predicate does not discharge callers' range
+obligations: `boundaryAtOrBefore` still requires an offset at most the byte
+length, even though an out-of-range predicate call returns false.
 
 ### Coordinates
 
@@ -755,4 +758,10 @@ None yet.
 
 ## Retrospective
 
-Not yet.
+The recovered boundary-helper slice has a public compiler/runtime conformance
+witness and authenticated transitive module pins. Its historical evidence is
+kept at exact identities; the compiler-inventory handoff now rejects missing or
+conflicting checkout provenance. Independent review found that handoff bug and
+prompted clearer evidence scope. This is a completed helper slice only: neither
+the representation gate nor the file-crossing gate has passed, and the full
+cycle remains open under #296.

@@ -8,10 +8,10 @@ a test-only pure intent. No native Jedit planner or rope implementation is
 linked. The boundary rule is owned by
 [DL-0159](../../../docs/design/0159-edict-rope-representation.md#rope-law-and-text-invariants).
 
-The predicate returns true at zero and the byte length, false beyond the end,
+Under left-to-right short-circuit Boolean evaluation, the predicate returns true at zero and the byte length, false beyond the end,
 and otherwise checks that the byte is outside 128 through 191. A strict
-`index < len(bytes)` guard dominates every lookup. This makes empty input and
-out-of-range U64 values safe without function-precondition syntax. It does
+`index < len(bytes)` guard dominates every lookup. The strict guard keeps empty input and
+out-of-range U64 lookups unreachable under that evaluation rule. It does
 not validate UTF-8; the rope's validity checks remain separate.
 
 ## Build and execute
@@ -19,10 +19,10 @@ not validate UTF-8; the rope's validity checks remain separate.
 Run inside an existing guarded Docker validation worker, using its existing
 target and caches. The inventory directory must contain a completed public
 inventory's `report.json` and selected `basis/` publication. The public compiler
-binary must match that report's exact hash. The current local witness selects
+binary must match that report's exact hash. The retained historical witness selected
 Amblicit `9b5ed1a`, Echo source `158714ce`, and the composed components built
-from production source `162d14a1`; these are unpublished candidates, not a
-checked-provider promotion.
+from production source `162d14a1`; these identities describe that measurement, not the current state of upstream
+branches or a checked-provider promotion.
 
 ```sh
 node edict/replace-range-probes/text-boundary/build.mjs \
@@ -34,14 +34,18 @@ node edict/replace-range-probes/text-boundary/build.mjs \
 The driver copies the publication, imports the exact helper, invokes the public
 compiler twice, and retains unchanged package and independent verifier-report
 bytes. Its evidence binds the compiler, prior inventory, source bytes, module
-digest, application configuration, complete vendor/provider input trees, and
+digest, application configuration, every listed file in the vendor/provider trees, and
 both builds' artifact hashes. No executable IR or package is synthesized.
+
+Acquire the canonical `git locks` keys for the shared worker and its caches
+before running these commands. Use only its isolated validation snapshot.
 
 The standalone Rust consumer uses the selected Echo API as a trusted test host.
 Temporarily copy it only into the owned validation snapshot, preserve its source
 hash in the validation evidence, and remove that temporary copy after execution:
 
 ```sh
+(
 boundary_consumer="$ECHO_REPO/xtask/examples/jim_text_boundary.rs"
 test ! -e "$boundary_consumer"
 cp edict/replace-range-probes/text-boundary/runtime.rs "$boundary_consumer"
@@ -49,7 +53,14 @@ trap 'rm -f "$boundary_consumer"' EXIT
 cargo run --locked --manifest-path "$ECHO_REPO/Cargo.toml" -p xtask \
   --example jim_text_boundary -- /jim-recovery/jim-text-boundary-green \
   447aacab9c55838deb0fa6c7c5d2eea9a9f6a84b31379fd2784eb5ad68255589
+)
 ```
+
+The committed [candidate-evidence.json](candidate-evidence.json) is the verbatim
+retained `evidence.json`; its SHA-256 is the selector shown above. Its
+`inventorySha256` names the prior inventory's external `report.json`, which is
+not committed here. Reproduction requires that retained inventory and its
+`basis/`, or a newly generated inventory with a newly selected evidence hash.
 
 That external SHA-256 selects this exact compiler evidence; a new compiler,
 source, publication or inventory requires inspecting and selecting the new
@@ -76,9 +87,11 @@ JSON remains unchanged.
 
 ## Evidence boundaries
 
-The original `where` form refused in source parsing. The guarded helper passes
-public build twice with identical artifacts, actual runtime execution, and
-strict scoped Clippy. Text delegates to this exact imported helper, and the
+The original `where` form refused in source parsing. The recorded compiler/runtime pair passed
+two public builds with identical artifacts, runtime conformance cases, and
+strict scoped Clippy. These are historical validation results, not a current
+compiler build or a formal proof. The consumer checks listed input files; it
+does not reject additional files in those directories. Text delegates to this exact imported helper, and the
 draft pinning tool propagates Boundary edits through Text and Rope into their
 dependents. Earlier inventory snapshots remain exact evidence for their older
 source revisions; the current snapshot is linked from the inventory README.

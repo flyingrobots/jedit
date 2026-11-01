@@ -21,6 +21,7 @@ if (existsSync(output)) throw new Error('output must be new');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const priorBytes = readFileSync(path.join(inventory, 'report.json'));
 const prior = JSON.parse(priorBytes);
+const provenance = inventoryProvenance(prior);
 if (hash(readFileSync(compiler)) !== prior.compilerBinarySha256) throw new Error('compiler substitution');
 const basis = path.join(inventory, 'basis');
 const root = fileURLToPath(new URL('../../replace-range/draft/Boundary.edict', import.meta.url));
@@ -68,7 +69,9 @@ function tree(directory) {
 }
 const selectedInputs = {
   compilerBinarySha256: prior.compilerBinarySha256, inventorySha256: hash(priorBytes),
-  ...inventoryProvenance(prior),
+  ...provenance,
+  // Preserve the v1 observation alias; neither field attests provider source.
+  echoCommit: provenance.echoCheckoutCommit,
   helperSourceSha256: hash(Buffer.from(helper)), helperModuleDigest: sourceDigest(helper),
   rootSourceSha256: hash(Buffer.from(source)),
   configSha256: hash(readFileSync(path.join(output, 'edict.application.json'))),

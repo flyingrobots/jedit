@@ -154,7 +154,7 @@ missing-digest error remains. Later constructs and schema-2 lawpack resolution
 are still unproven; a first parse error cannot classify their support.
 
 
-## Proven boundary helper in the authored closure
+## Witnessed boundary helper in the authored closure
 
 [Current draft measurement](candidate-boundary-drafts.json) keeps the same
 compiler/component selection and nine of 28 accepted builds. The new
