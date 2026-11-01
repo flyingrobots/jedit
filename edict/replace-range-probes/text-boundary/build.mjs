@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { decode } from 'cbor-x';
 import { sourceDigest } from '../compiler-inventory/draft-modules.mjs';
+import { inventoryProvenance } from './inventory-provenance.mjs';
 
 const args = process.argv.slice(2);
 if (args.length !== 6 || args[0] !== '--inventory' || args[2] !== '--compiler' || args[4] !== '--output') {
@@ -67,7 +68,7 @@ function tree(directory) {
 }
 const selectedInputs = {
   compilerBinarySha256: prior.compilerBinarySha256, inventorySha256: hash(priorBytes),
-  compilerCommit: prior.compilerCommit, echoCommit: prior.echoCommit,
+  ...inventoryProvenance(prior),
   helperSourceSha256: hash(Buffer.from(helper)), helperModuleDigest: sourceDigest(helper),
   rootSourceSha256: hash(Buffer.from(source)),
   configSha256: hash(readFileSync(path.join(output, 'edict.application.json'))),

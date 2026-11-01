@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Recovered the authored rope character-boundary helper and digest-pinned draft
+  module closures. The test-only helper witness now preserves the inventory's
+  observed Echo checkout identity across current and historical field names,
+  rejecting missing or conflicting provenance. Full rope acceptance remains open.
+
 - Revised DL-0159 (Edict-authored rope) after review. Schema 2's direction
   stands; identity now follows Echo's `ContentAddressV1`; a new accepted host
   basis keeps "what Jim works against" apart from import provenance and

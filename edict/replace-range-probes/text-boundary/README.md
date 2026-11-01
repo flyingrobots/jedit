@@ -68,6 +68,12 @@ report and evidence bytes one at a time in an owned temporary copy. All five
 substitutions must refuse before a runtime success marker. The retained
 original evidence remains untouched, and the temporary copy is removed.
 
+The build driver records `echoCheckoutCommit` as an observed checkout, not a
+provider-source attestation. It accepts the historical inventory's `echoCommit`
+label for reproduction, normalizes that observation, and rejects missing,
+malformed or contradictory compiler/checkout identities. Historical evidence
+JSON remains unchanged.
+
 ## Evidence boundaries
 
 The original `where` form refused in source parsing. The guarded helper passes
