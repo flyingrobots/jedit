@@ -32,10 +32,10 @@ test('Shrinking the source viewport keeps its bottom cursor visible and refreshe
 test('A dangling jimrc link is preserved and an existing writer lock refuses a save',async()=>{
  const {createFooterPreferences}=await importDist('adapters','footer-preferences.js');
  const root=mkdtempSync(join(tmpdir(),'jim-prefs-review-'));const path=join(root,'.jimrc');symlinkSync(join(root,'missing'),path);
- assert.equal(createFooterPreferences(path).save('compact').ok,false);assert.ok(lstatSync(path).isSymbolicLink());
+ assert.equal(createFooterPreferences(path).saveLayout('compact').ok,false);assert.ok(lstatSync(path).isSymbolicLink());
  unlinkSync(path);writeFileSync(path,'{"leader":" "}');writeFileSync(`${path}.lock`,'held');
- assert.equal(createFooterPreferences(path).save('compact').ok,false);assert.equal(readFileSync(path,'utf8'),'{"leader":" "}');
- unlinkSync(`${path}.lock`);assert.equal(createFooterPreferences(path).save('compact').ok,true);
+ assert.equal(createFooterPreferences(path).saveLayout('compact').ok,false);assert.equal(readFileSync(path,'utf8'),'{"leader":" "}');
+ unlinkSync(`${path}.lock`);assert.equal(createFooterPreferences(path).saveLayout('compact').ok,true);
 });
 test('Filename clipping never keeps part of a grapheme cluster',async()=>{
  const {clipFooterIdentity}=await importDist('ui','footer-layout-view.js');

@@ -6,6 +6,8 @@ interface ValueSpan { readonly start: number; readonly end: number }
 const FOOTER_PROPERTY = 'footerLayout';
 const FILEPATH_PROPERTY = 'filepathStyle';
 const EMPTY_DOCUMENT = '{}\n';
+const LF = '\n';
+const CRLF = '\r\n';
 
 /** Validate JSON, then edit only this preference's raw span. */
 export function footerPreferenceDocument(source: string = EMPTY_DOCUMENT) {
@@ -36,7 +38,11 @@ function replacePreference(source: string, replacement: PreferenceReplacement): 
   if (span != null) return source.slice(0, span.start) + encoded + source.slice(span.end);
   const end = source.lastIndexOf('}');
   const separator = properties === 0 ? '' : ',';
-  return `${source.slice(0, end)}${separator}\n  "${property}": ${encoded}\n${source.slice(end)}`;
+  // The new member follows the document's own line endings and keeps its trailing whitespace.
+  const newline = source.includes(CRLF) ? CRLF : LF;
+  const body = source.slice(0, end).trimEnd();
+  const trailing = source.slice(body.length, end);
+  return `${body}${separator}${newline}  "${property}": ${encoded}${trailing.length === 0 ? newline : trailing}${source.slice(end)}`;
 }
 
 function footerSpans(source: string, property: string): ValueSpan[] {

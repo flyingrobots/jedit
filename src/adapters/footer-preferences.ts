@@ -9,12 +9,13 @@ import type { FooterPreferencesPort } from '../ports/footer-preferences.js';
 import { footerPreferenceDocument } from './footer-preference-json.js';
 
 const PRIVATE_MODE = 0o600;
-const PERMISSION_MASK = 0o777;
+const PERMISSION_MASK = 0o7777;
+const STALE_LOCK_MS = 30_000;
 const DEFAULT_DOCUMENT = '{}\n';
 
 export function createFooterPreferences(path = join(homedir(), '.jimrc')): FooterPreferencesPort {
   return {
-    load: () => {
+    loadLayout: () => {
       try { return footerPreferenceDocument(readDocument(path)).layout; }
       catch { return FOOTER_LAYOUT.Focused; }
     },
@@ -22,7 +23,7 @@ export function createFooterPreferences(path = join(homedir(), '.jimrc')): Foote
       try { return footerPreferenceDocument(readDocument(path)).filepathStyle; }
       catch { return FILEPATH_STYLE.GitRoot; }
     },
-    save: (layout) => savePreference(path, (document) => document.withLayout(layout)),
+    saveLayout: (layout) => savePreference(path, (document) => document.withLayout(layout)),
     saveFilepaths: (style) => savePreference(path, (document) => document.withFilepaths(style)),
   };
 }
@@ -77,10 +78,25 @@ function preferenceTarget(path: string): string {
 
 function withPreferenceLock(path: string, write: () => void): void {
   const lock = `${path}.lock`;
-  const fd = openSync(lock, 'wx', PRIVATE_MODE);
+  const fd = acquireLock(lock);
   try { write(); }
   finally {
     try { closeSync(fd); }
     finally { unlinkSync(lock); }
   }
+}
+
+// A lock left behind by an interrupted writer must not refuse every later save.
+function acquireLock(lock: string): number {
+  try { return openSync(lock, 'wx', PRIVATE_MODE); }
+  catch (cause) {
+    if (!isStaleLock(lock)) throw cause;
+    unlinkSync(lock);
+    return openSync(lock, 'wx', PRIVATE_MODE);
+  }
+}
+
+function isStaleLock(lock: string): boolean {
+  const entry = statSync(lock, { throwIfNoEntry: false });
+  return entry != null && Date.now() - entry.mtimeMs > STALE_LOCK_MS;
 }

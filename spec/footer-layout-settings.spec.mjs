@@ -86,13 +86,13 @@ test('Saving a footer choice updates the model only on success and reports failu
   const { updateSettingsKey } = await importDist('app', 'workspace', 'settings-key-bindings.js');
   const { model } = await setup({ settingsOpen: true });
   const calls = [];
-  const footerPreferences = { load: () => 'focused', save: (value) => { calls.push(value); return { ok: true }; } };
+  const footerPreferences = { loadLayout: () => 'focused', saveLayout: (value) => { calls.push(value); return { ok: true }; } };
   const handlers = workspaceSettingsHandlers({ footerPreferences });
   assert.equal(handlers.cycleFooterLayout(model, 1)[0].footerLayout, 'per-pane');
   assert.deepEqual(calls, ['per-pane']);
   const before = { ...model, settingsFocusIndex: settingsRows(model).findIndex((row) => row.id === 'footer-layout') };
   const [failed, commands] = updateSettingsKey(key('right'), before, {
-    deps: { footerPreferences: { ...footerPreferences, save: () => ({ ok: false }) } },
+    deps: { footerPreferences: { ...footerPreferences, saveLayout: () => ({ ok: false }) } },
     nowMs: () => 100, createNotificationTickCmd: () => () => undefined,
   });
   assert.equal(failed.footerLayout, 'focused');

@@ -77,8 +77,8 @@ function workspaceRuntimeDependencies(
     profileOnStartup: options.profileEnabled ?? false,
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory)),
-      footerLayout: footerPreferences.load(),
-      filepathStyle: footerPreferences.loadFilepaths?.(),
+      footerLayout: footerPreferences.loadLayout(),
+      filepathStyle: footerPreferences.loadFilepaths(),
     },
     nowMs,
     createTimeTickCmd: createWorkspaceTimeTickCmd,

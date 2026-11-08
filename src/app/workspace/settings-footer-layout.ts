@@ -23,7 +23,7 @@ export function cycleWorkspaceFooterLayout(
   context: FooterLayoutSettingsContext,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const layout = nextFooterLayout(model.footerLayout, delta);
-  if (context.footerPreferences?.save(layout).ok !== false) return reconcileFooterViewport(model, { ...model, footerLayout: layout }, context);
+  if (context.footerPreferences?.saveLayout(layout).ok !== false) return reconcileFooterViewport(model, { ...model, footerLayout: layout }, context);
   return footerPreferenceFailure(model, context);
 }
 

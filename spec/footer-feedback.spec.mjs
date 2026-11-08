@@ -40,7 +40,7 @@ test('Filepath preference survives restart independently of layout with raw JSON
  const path=join(mkdtempSync(join(tmpdir(),'jim-paths-')),'.jimrc');
  const original='{"footerLayout":"compact","counter":9007199254740993123,"leader":" "}\n';writeFileSync(path,original);
  const port=createFooterPreferences(path);assert.equal(port.loadFilepaths(),'git-root');assert.deepEqual(port.saveFilepaths('absolute'),{ok:true});
- assert.equal(createFooterPreferences(path).loadFilepaths(),'absolute');assert.equal(port.load(),'compact');
+ assert.equal(createFooterPreferences(path).loadFilepaths(),'absolute');assert.equal(port.loadLayout(),'compact');
  assert.ok(readFileSync(path,'utf8').includes('9007199254740993123'));
  writeFileSync(path,'{bad');assert.equal(port.saveFilepaths('git-root').ok,false);assert.equal(readFileSync(path,'utf8'),'{bad');
 });
@@ -68,6 +68,14 @@ test('Explorer opens a temporary footer filter, retains a header indicator, and 
  next=runtime.update({type:'key',key:'/'},{...next,footerVisible:false})[0];assert.equal(workspaceFooterRows(next),1);
  assert.match(text(runtime.view(next)).split('\n').at(-1),/\//);
  next=runtime.update({type:'key',key:'escape'},next)[0];assert.equal(workspaceFooterRows(next),0);
+});
+test('Leaving the filter prompt through Ctrl+G releases the temporary footer row',async()=>{
+ const {runtime,model}=await setup({columns:100,rows:24,fileDrawerOpen:true,fileDrawerProgress:1,focusPane:'files',
+  entries:[{kind:'file',name:'alpha.ts',path:'/repo/alpha.ts'}]});
+ const {workspaceFooterRows}=await importDist('app','workspace','viewport.js');
+ let next=runtime.update({type:'key',key:'/'},{...model,footerVisible:false})[0];assert.equal(workspaceFooterRows(next),1);
+ next=runtime.update({type:'key',key:'g',ctrl:true},next)[0];
+ assert.equal(next.fileSearchEditing,false);assert.equal(workspaceFooterRows(next),0);
 });
 test('Mode badges meet contrast in every built-in theme and nonzero counts use normal foreground',async()=>{
  const {availableJeditThemes,oppositeJeditTheme}=await importDist('ui','jedit-themes.js');
