@@ -10,6 +10,8 @@ import type { JeditSettingsActivationDelta } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 
+const SAVE_FAILED_COPY = Object.freeze({ Title: 'settings.toast.save_failed_title', Message: 'settings.toast.save_failed_message' } as const);
+
 export interface FooterLayoutSettingsContext {
   readonly footerPreferences?: FooterPreferencesPort;
   readonly sourceHighlighter?: SourceHighlighter;
@@ -30,8 +32,8 @@ export function cycleWorkspaceFooterLayout(
 function footerPreferenceFailure(model: WorkspaceModel, context: FooterLayoutSettingsContext): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (context.createNotificationTickCmd == null) return [model, []];
   return pushNotificationToast(model, {
-    title: model.i18n.t('settings.toast.save_failed_title'),
-    message: model.i18n.t('settings.toast.save_failed_message'),
+    title: model.i18n.t(SAVE_FAILED_COPY.Title),
+    message: model.i18n.t(SAVE_FAILED_COPY.Message),
     variant: NotificationVariants.Toast,
     tone: NotificationTones.Error,
     placement: NotificationPlacements.LowerRight,

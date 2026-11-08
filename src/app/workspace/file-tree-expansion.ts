@@ -16,7 +16,7 @@ export interface FileTreeNode {
 const CHILD_DEPTH = 1;
 const FIRST_CHILD_OFFSET = 1;
 const COLLAPSE_KEYS = new Set<string>([WorkspaceKeys.ArrowLeft, WorkspaceKeys.H]);
-const TOGGLE_KEYS = new Set<string>([WorkspaceKeys.Enter, WorkspaceKeys.Return]);
+const TOGGLE_KEYS = new Set<string>([WorkspaceKeys.Enter]);
 const EXPAND_KEYS = new Set<string>([WorkspaceKeys.ArrowRight, WorkspaceKeys.L]);
 type Result = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 

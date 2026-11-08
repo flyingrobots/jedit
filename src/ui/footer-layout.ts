@@ -7,7 +7,9 @@ export interface FooterGlobalWidthOptions {
   readonly summary: string;
   readonly compact: boolean;
 }
-const GLOBAL_GAP_WIDTH = 2;
+/** The gap painted between footer segments. */
+export const FOOTER_GAP = '  ';
+const GLOBAL_GAP_WIDTH = FOOTER_GAP.length;
 const HALVES = 2;
 
 /** Footer segments split a row at its midpoint; the right half keeps the odd cell. */

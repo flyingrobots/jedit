@@ -5,7 +5,7 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
 import { emphasizeFooterPhrases } from './footer-cell-style.js';
 import { FILE_FILTER_PROMPT_LABEL, renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
-import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, halfFooterWidth, type FooterLayout } from './footer-layout.js';
+import { FOOTER_GAP, FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, halfFooterWidth, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
 const PANE_DIVIDER = '│';
@@ -38,7 +38,7 @@ export interface FooterLayoutViewOptions {
 const ONE_ROW = 1;
 const LOCAL_ROW = 0;
 const GLOBAL_ROW = 1;
-const GAP = '  ';
+const GAP = FOOTER_GAP;
 
 export function renderFooterLayout(options: FooterLayoutViewOptions): Surface {
   options = { ...options, background: options.presentation.mutedToken };

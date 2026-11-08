@@ -12,6 +12,9 @@ import { applyBackground, fillSurface } from './surface-fill.js';
 const PAD_MULTIPLIER = 2;
 const MIN_WIDTH = 1;
 const SEARCH_EMPTY_KEY = 'fileExplorer.empty';
+const HEADER_COPY = Object.freeze({ Files: 'footer.mode.files', FilterHint: 'footer.hints.slash_filter', Filter: 'footer.status.filter' } as const);
+const HEADER_GAP = '  ';
+const QUERY_SEPARATOR = ': ';
 
 export { fileSearchInputOptions } from '../../ui/workspace-file-filter-prompt.js';
 
@@ -20,8 +23,8 @@ export function renderFileExplorer(model: WorkspaceModel, width: number, height:
   fillSurface(surface, model.jeditTheme.surface.drawer);
   const innerWidth = Math.max(MIN_WIDTH, width - DRAWER_INNER_PAD * PAD_MULTIPLIER);
   const query = fileSearchState(model).input;
-  const header = query.length === 0 ? `${model.i18n.t('footer.mode.files')}  ${model.i18n.t('footer.hints.slash_filter')}`
-    : `${model.i18n.t('footer.status.filter')}: ${query}`;
+  const header = query.length === 0 ? `${model.i18n.t(HEADER_COPY.Files)}${HEADER_GAP}${model.i18n.t(HEADER_COPY.FilterHint)}`
+    : `${model.i18n.t(HEADER_COPY.Filter)}${QUERY_SEPARATOR}${query}`;
   const title = stringToSurface(fitBlock(header, innerWidth, 1), innerWidth, 1);
   applyBackground(title, model.jeditTheme.surface.drawer);
   surface.blit(title, DRAWER_INNER_PAD, FILE_SEARCH_ROW);
