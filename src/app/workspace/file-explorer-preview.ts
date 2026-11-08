@@ -58,7 +58,7 @@ function clearFileExplorerPreview(result: Result): Result {
 // silently previewing stale disk text.
 function bufferPreview(model: WorkspaceModel, path: string): FilePreviewResult | undefined {
   const buffer = openedBuffer(model, path);
-  if (buffer != null) return readingPreview(buffer.authority.cache) ?? unsavedBufferPreview(buffer);
+  if (buffer != null) return pendingProjectionPreview(buffer) ?? readingPreview(buffer.authority.cache) ?? unsavedBufferPreview(buffer);
   return model.editor?.path === path ? linesPreview(model.editor.lines, model.editor.lines.length) : undefined;
 }
 
@@ -78,6 +78,12 @@ function openedBuffer(model: WorkspaceModel, path: string): OpenedBuffer | undef
 // `dirty` on the authority is the durability view (a pending edit is not yet
 // dirty); the editor projection's own flag is also honoured. Disk is only a
 // faithful preview when neither reports unsaved text.
+// A dirty projection over a clean authority means an edit is still pending: the
+// authority's reading, even at the file head, does not contain it yet.
+function pendingProjectionPreview(buffer: OpenedBuffer): FilePreviewResult | undefined {
+  return buffer.projection?.dirty === true && !buffer.authority.dirty ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
+}
+
 function unsavedBufferPreview(buffer: OpenedBuffer): FilePreviewResult | undefined {
   return buffer.authority.dirty || buffer.projection?.dirty === true ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
 }
