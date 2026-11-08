@@ -48,8 +48,12 @@ test('Compact returns a body row and hiding the footer preserves the selected la
 
 test('Focused follows Files mode and retains observed workspace counts', async () => {
   const { runtime, model } = await setup({
-    fileDrawerOpen: true, fileDrawerProgress: 1, focusPane: 'files', fileSearchEditing: true,
-    entries: [{ kind: 'file', name: 'one.ts', path: '/repo/one.ts' }], selectedIndex: 0,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    focusPane: 'files',
+    fileSearchEditing: true,
+    entries: [{ kind: 'file', name: 'one.ts', path: '/repo/one.ts' }],
+    selectedIndex: 0,
   });
   const surface = runtime.view(model);
   assert.match(row(surface, model.rows - 2), /\//);
@@ -58,8 +62,13 @@ test('Focused follows Files mode and retains observed workspace counts', async (
 
 test('Per-pane segments align with visible pane boundaries', async () => {
   const { runtime, model } = await setup({
-    footerLayout: 'per-pane', columns: 100, fileDrawerOpen: true, fileDrawerProgress: 1,
-    graftDrawerOpen: true, graftDrawerProgress: 1, focusPane: 'files',
+    footerLayout: 'per-pane',
+    columns: 100,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    graftDrawerOpen: true,
+    graftDrawerProgress: 1,
+    focusPane: 'files',
   });
   const { resolveWorkspaceLayout } = await importDist('ui', 'drawer-layout.js');
   const layout = resolveWorkspaceLayout(100, 1, 1);
@@ -73,7 +82,9 @@ test('Per-pane segments align with visible pane boundaries', async () => {
 
 test('Compact retains global counts during command entry at narrow width', async () => {
   const { runtime, model } = await setup({
-    footerLayout: 'compact', columns: 60, rows: 16,
+    footerLayout: 'compact',
+    columns: 60,
+    rows: 16,
     commandLine: { active: true, input: 'edit src/', cursorIndex: 9, selectedCompletionIndex: 0 },
   });
   const line = row(runtime.view(model), 15);
@@ -86,14 +97,21 @@ test('Saving a footer choice updates the model only on success and reports failu
   const { updateSettingsKey } = await importDist('app', 'workspace', 'settings-key-bindings.js');
   const { model } = await setup({ settingsOpen: true });
   const calls = [];
-  const footerPreferences = { loadLayout: () => 'focused', saveLayout: (value) => { calls.push(value); return { ok: true }; } };
+  const footerPreferences = {
+    loadLayout: () => 'focused',
+    saveLayout: (value) => {
+      calls.push(value);
+      return { ok: true };
+    },
+  };
   const handlers = workspaceSettingsHandlers({ footerPreferences });
   assert.equal(handlers.cycleFooterLayout(model, 1)[0].footerLayout, 'per-pane');
   assert.deepEqual(calls, ['per-pane']);
   const before = { ...model, settingsFocusIndex: settingsRows(model).findIndex((row) => row.id === 'footer-layout') };
   const [failed, commands] = updateSettingsKey(key('right'), before, {
     deps: { footerPreferences: { ...footerPreferences, saveLayout: () => ({ ok: false }) } },
-    nowMs: () => 100, createNotificationTickCmd: () => () => undefined,
+    nowMs: () => 100,
+    createNotificationTickCmd: () => () => undefined,
   });
   assert.equal(failed.footerLayout, 'focused');
   assert.equal(failed.textAuthority, before.textAuthority);
@@ -105,56 +123,114 @@ test('Saving a footer choice updates the model only on success and reports failu
 });
 
 test('The extra Compact body row uses the same list mapping for pointer selection', async () => {
-  const entries = Array.from({ length: 30 }, (_, i) => ({ kind: 'file', name: `file-${i}.ts`, path: `/repo/file-${i}.ts` }));
-  const { runtime, model } = await setup({ columns: 60, rows: 16, entries, selectedIndex: 10,
-    footerLayout: 'compact', fileDrawerOpen: true, fileDrawerProgress: 1, focusPane: 'files' });
-  const { workspaceBodyHeight, fileSearchListHeight, listScrollOffset, FILE_SEARCH_LIST_TOP, WORKSPACE_BODY_TOP_OFFSET } = await importDist('app', 'workspace', 'viewport.js');
+  const entries = Array.from({ length: 30 }, (_, i) => ({
+    kind: 'file',
+    name: `file-${i}.ts`,
+    path: `/repo/file-${i}.ts`,
+  }));
+  const { runtime, model } = await setup({
+    columns: 60,
+    rows: 16,
+    entries,
+    selectedIndex: 10,
+    footerLayout: 'compact',
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    focusPane: 'files',
+  });
+  const {
+    workspaceBodyHeight,
+    fileSearchListHeight,
+    listScrollOffset,
+    FILE_SEARCH_LIST_TOP,
+    WORKSPACE_BODY_TOP_OFFSET,
+  } = await importDist('app', 'workspace', 'viewport.js');
   const listHeight = fileSearchListHeight(workspaceBodyHeight(model));
   const rowIndex = listHeight - 1;
   const expectedIndex = listScrollOffset(10, entries.length, listHeight) + rowIndex;
-  const selected = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 2,
-    row: WORKSPACE_BODY_TOP_OFFSET + FILE_SEARCH_LIST_TOP + rowIndex }, model)[0];
+  const selected = runtime.update(
+    {
+      type: 'mouse',
+      action: 'press',
+      button: 'left',
+      col: 2,
+      row: WORKSPACE_BODY_TOP_OFFSET + FILE_SEARCH_LIST_TOP + rowIndex,
+    },
+    model,
+  )[0];
   assert.equal(selected.selectedIndex, expectedIndex);
   assert.equal(selected.fileSearchEditing, false);
 });
 
 test('All layouts preserve observations and mode ownership at narrow and RTL sizes', async () => {
   const { workspaceFooterPresentation } = await importDist('ui', 'workspace-footer-presentation.js');
-  const { model, runtime } = await setup({ columns: 60, rows: 16,
-    fileDrawerOpen: true, fileDrawerProgress: 1, graftDrawerOpen: true, graftDrawerProgress: 1, focusPane: 'files',
-    editor: { path: '/repo/very-long-name-that-can-clip.ts', lines: ['test'], cursorRow: 80, cursorCol: 40, mode: 'normal', dirty: true, readOnly: true },
-    fileSearch: { input: 'test', cursorIndex: 4 }, entries: [{ kind: 'file', name: 'test.ts', path: '/repo/test.ts' }],
+  const { model, runtime } = await setup({
+    columns: 60,
+    rows: 16,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    graftDrawerOpen: true,
+    graftDrawerProgress: 1,
+    focusPane: 'files',
+    editor: {
+      path: '/repo/very-long-name-that-can-clip.ts',
+      lines: ['test'],
+      cursorRow: 80,
+      cursorCol: 40,
+      mode: 'normal',
+      dirty: true,
+      readOnly: true,
+    },
+    fileSearch: { input: 'test', cursorIndex: 4 },
+    entries: [{ kind: 'file', name: 'test.ts', path: '/repo/test.ts' }],
   });
-  for (const locale of ['en', 'ar', 'me']) for (const footerLayout of ['focused', 'per-pane', 'compact']) {
-    const next = { ...model, footerLayout, i18n: model.i18n.withLocale(locale) };
-    const facts = workspaceFooterPresentation(next);
-    assert.equal(facts.focused.identity, '/repo/test.ts');
-    assert.doesNotMatch(facts.focused.detail, /81:41/);
-    const surface = runtime.view(next);
-    assert.equal(surface.width, 60);
-    assert.equal(surface.height, 16);
-    assert.equal(next.editor, model.editor);
-    assert.equal(next.textAuthority, model.textAuthority);
-    assert.equal(next.fileSearch, model.fileSearch);
-    assert.doesNotMatch(row(surface, 15), /footer\.status|settings\.values/);
-  }
+  for (const locale of ['en', 'ar', 'me'])
+    for (const footerLayout of ['focused', 'per-pane', 'compact']) {
+      const next = { ...model, footerLayout, i18n: model.i18n.withLocale(locale) };
+      const facts = workspaceFooterPresentation(next);
+      assert.equal(facts.focused.identity, '/repo/test.ts');
+      assert.doesNotMatch(facts.focused.detail, /81:41/);
+      const surface = runtime.view(next);
+      assert.equal(surface.width, 60);
+      assert.equal(surface.height, 16);
+      assert.equal(next.editor, model.editor);
+      assert.equal(next.textAuthority, model.textAuthority);
+      assert.equal(next.fileSearch, model.fileSearch);
+      assert.doesNotMatch(row(surface, 15), /footer\.status|settings\.values/);
+    }
 });
 
 test('Compact separates cursor and global counts and keeps the filename when its parent path clips', async () => {
-  const { runtime, model } = await setup({ footerLayout: 'compact', columns: 60, rows: 16,
-    editor: { path: '/repo/a-very-long-parent-directory/another-directory/main.ts', lines: ['text'],
-      cursorRow: 0, cursorCol: 0, scrollRow: 0, scrollCol: 0, mode: 'normal', dirty: false, readOnly: false } });
+  const { runtime, model } = await setup({
+    footerLayout: 'compact',
+    columns: 60,
+    rows: 16,
+    editor: {
+      path: '/repo/a-very-long-parent-directory/another-directory/main.ts',
+      lines: ['text'],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: 'normal',
+      dirty: false,
+      readOnly: false,
+    },
+  });
   const line = row(runtime.view(model), 15);
   assert.match(line, /main\.ts/);
   assert.match(line, /1:1  0 modified/);
 });
 
 test('Command completion moves down with Compact and stays above the input row', async () => {
-  const { runtime, model } = await setup({ columns: 60, rows: 16,
+  const { runtime, model } = await setup({
+    columns: 60,
+    rows: 16,
     entries: [{ kind: 'file', name: 'alpha.ts', path: '/repo/alpha.ts' }],
-    commandLine: { active: true, input: 'edit ', cursorIndex: 5, selectedCompletionIndex: 0 } });
-  const markerRow = (surface) => Array.from({ length: surface.height }, (_, y) => y)
-    .find((y) => row(surface, y).includes('› alpha.ts'));
+    commandLine: { active: true, input: 'edit ', cursorIndex: 5, selectedCompletionIndex: 0 },
+  });
+  const markerRow = (surface) =>
+    Array.from({ length: surface.height }, (_, y) => y).find((y) => row(surface, y).includes('› alpha.ts'));
   const focused = markerRow(runtime.view({ ...model, footerLayout: 'focused' }));
   const pane = markerRow(runtime.view({ ...model, footerLayout: 'per-pane' }));
   const compact = markerRow(runtime.view({ ...model, footerLayout: 'compact' }));
