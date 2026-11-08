@@ -42,10 +42,8 @@ filter; Esc exits filtering. Enter on the file opens it. Ctrl+C exits.
 Validation: captures were taken at `26bba006`, where 47 focused explorer/Graft
 tests passed, the selection-index correction passed 24 focused
 navigation/tree/syntax tests, and the full local check passed 907 tests (895
-passed, 12 existing skips, zero failures) with 140 specs in CI shards. After
-merging `origin/main` and two review rounds, the full check at code head
-`287415c` passed 916 tests (908 passed, 8 existing skips,
-zero failures) with no quality regressions and 136 specs in CI shards; the
-dispatched hosted run on that head passed all 12 jobs: https://github.com/flyingrobots/jedit/actions/runs/42467430293. These
+passed, 12 existing skips, zero failures) with 140 specs in CI shards. Validation of
+later heads, after the `origin/main` merge and the review rounds, is recorded on
+the PR. These
 captures were not retaken after those changes; see DX-0164's retrospective for
 which behaviours are proven by spec instead.

@@ -327,16 +327,18 @@ paths. A bounded startup Git query discovers the root; outside-root paths and
 non-repository workspaces keep absolute paths. Formatting changes display only,
 preserving native open/save and buffer identity. Its three layouts derive the
 same focused-surface observations and known-buffer counts. They reserve two,
-two, or one rows; a hidden footer reserves none. This setting does not advance
+two, or one rows; a hidden footer reserves none, except one row while the Files
+filter prompt owns input. This setting does not advance
 a Jim worldline, submit an Echo Tick, or change buffer history.
 
-`~/.jimrc` currently has two writers, which share the file name and permission
-policy in `src/adapters/jimrc-file.ts`. The footer adapter edits only the owned
+`~/.jimrc` currently has two writers, which share the file name, create mode and
+permission mask in `src/adapters/jimrc-file.ts` (not a write protocol), and both
+apply the preserved mode after writing so setuid and sticky bits survive. The footer adapter edits only the owned
 `footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes, line
 endings and file permissions (including setuid and sticky bits), and refuses
 malformed or ambiguous documents. The leader-key adapter in
 `src/adapters/jim-settings.ts` rewrites the whole document for
-`keybindings.leader`. Neither reads or drops the other's keys; a leader save
+`keybindings.leader`. Neither interprets or drops the other's keys; a leader save
 reformats the file. Neither takes a lock: the footer adapter re-reads the
 document just before its atomic rename and refuses the save if it changed,
 while the leader-key adapter does neither, so concurrent saves from two

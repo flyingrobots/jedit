@@ -42,4 +42,4 @@ normal emphasis versus muted text, opaque Settings cells, filepath save failure
 and restart, raw JSON preservation, nested and linked Git worktree roots,
 non-repository fallback, retained queries, Unicode caret clicks, list/preview
 ownership and the one-row Compact viewport. Shard coverage assigns all 137 specs.
-Final-head evidence is recorded under DX-0162 Slice 9.
+Final-head validation is recorded on PR #344.

@@ -39,7 +39,8 @@ renders syntax colors in the main preview while buffer authority remains intact.
 
 ## Current Truth
 
-The fetched base is
+Before this cycle (kept as the starting point; see the Retrospective for the
+result): the fetched base is
 [af1fad8ab3356fa6d96548c8793aa6f2afea8c6b](https://github.com/flyingrobots/jedit/commit/af1fad8ab3356fa6d96548c8793aa6f2afea8c6b),
 footer PR #344. `file-tree.ts` changes cwd for a directory. `mouse.ts` only selects
 rows. `file-explorer-preview-view.ts` builds an uncolored text Surface.
@@ -229,7 +230,19 @@ must parse the same sanitized text it paints, without coloring the notice row.
 
 ## Follow-On Debt
 
-None introduced by this scope. Global recursive search remains outside this cycle.
+Review of this cycle filed its deferred findings as issues:
+[#391](https://github.com/flyingrobots/jedit/issues/391) (one `~/.jimrc` writer),
+[#392](https://github.com/flyingrobots/jedit/issues/392) (CI for stacked PRs),
+[#393](https://github.com/flyingrobots/jedit/issues/393) (dead legacy footer path),
+[#394](https://github.com/flyingrobots/jedit/issues/394) (naming),
+[#395](https://github.com/flyingrobots/jedit/issues/395) (explorer edge policy:
+dotfiles, symlinked directories, duplicate paths dropped on expansion),
+[#396](https://github.com/flyingrobots/jedit/issues/396) (footer-view cleanups),
+[#397](https://github.com/flyingrobots/jedit/issues/397) (witness scripts writing to
+system `/tmp`), [#398](https://github.com/flyingrobots/jedit/issues/398) (app→ui
+imports), [#399](https://github.com/flyingrobots/jedit/issues/399) (post-landing doc
+lifecycle) and [#400](https://github.com/flyingrobots/jedit/issues/400) (spec
+readability). Global recursive search remains outside this cycle.
 
 ## Retrospective
 
@@ -250,23 +263,30 @@ never leave the tree, a filtered collapse keeps the folder selected, a modified
 buffer reports unsaved state instead of previewing disk, `~/.jimrc` saves keep
 special mode bits and line endings (the port's layout methods became
 `loadLayout`/`saveLayout`), Ctrl+G releases the filter prompt, and the
-leader-capture hint renders through the live footer. Commit `c7916e5` added the
+leader-capture hint renders through the live footer (per-pane and compact
+footers may clip it; the Settings drawer always shows it in full). Commit
+`c7916e5` added the
 Ctrl+G spec one commit before its fix in `9e79b4e`. Round two
 (`ce82d0d`..`287415c`): closing an open Graft drawer also releases the prompt,
 the footer adapter's lock file is removed in favour of its re-read before
 rename, the preserved mode is applied after writing so setuid survives, a dirty
-editor projection also reports unsaved changes, the unsaved notice fits the
-60-column preview, the `..` row behaviour is pinned, remaining literals are
-named, and the footer specs are formatted one statement per line.
+editor projection also reports unsaved changes, the `..` row behaviour is
+pinned, several literals are named, and the footer specs are formatted one
+statement per line. Round three (after `af506b5`): the unsaved notice fits the
+36 text cells of a 60-column terminal's preview in every locale (a spec renders
+each locale at that width), a dirty projection over a clean head reading also
+reports unsaved changes, every focus change away from Files ends filter
+editing, the footer observation and explorer header name their copy keys, the
+leader-key writer applies the preserved mode after writing, and the explorer
+and preview specs are formatted one statement per line.
 
 The merge changed the spec inventory: `origin/main` deleted 12 specs that read
 documentation or audited deleted documents (`c508964`, `9ee2435`; they included
-`graph-rope-runtime-red-matrix.spec.mjs` and its skipped cases) and added 8. At
-code head `287415c` the full check passed 916 tests (908 passed,
-8 existing skips, zero failures), the quality gate reports no regressions,
-and all 136 specs belong to a CI shard. CI does not trigger for a PR whose
-base is not `main`; a dispatched run on `287415c` passed all 12 jobs:
-https://github.com/flyingrobots/jedit/actions/runs/42467430293. Deferred findings are issues #391-#400.
+`graph-rope-runtime-red-matrix.spec.mjs` and its skipped cases) and added 8.
+Validation of the reviewed head (full local check, quality gate, shard coverage
+and a dispatched hosted run, since CI does not trigger for a PR whose base is
+not `main`) is recorded on the PR rather than in this file. Deferred findings
+are listed under Follow-On Debt.
 
 [Native evidence](0164-explorer-witness/README.md) covers mouse and Enter toggles,
 root preservation, nested/filtered rows, dark 100x32 and minimum 60x12, and Arabic

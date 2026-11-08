@@ -126,7 +126,9 @@ Layouts format these observations without collecting new authority.
 
 ## Lower Modes
 
-A and B reserve two rows; C reserves one; hidden footer reserves zero. Very
+A and B reserve two rows; C reserves one; hidden footer reserves zero (later
+refined: one row while the Files filter prompt owns input, see the accepted modal
+explorer refinement). Very
 small terminal notices retain their current priority. Plain terminal cells and
 translated text remain usable without custom fonts, graphics or animation.
 
@@ -194,7 +196,8 @@ Preferences tests first demonstrated missing-adapter failures, then cover restar
 raw JSON preservation, malformed/duplicate refusal, file mode and symlinks.
 
 - [x] Settings cycles A/B/C both ways and preserves the selected control.
-- [x] A/B reserve two rows, C one, and hidden footer zero.
+- [x] A/B reserve two rows, C one, and hidden footer zero (one while the filter
+  prompt owns input, from the modal explorer refinement).
 - [x] B segments follow actual pane boundaries and active focus.
 - [x] Files filter/nav facts never reuse editor coordinates.
 - [x] Compact preserves global counts during command input.
@@ -241,7 +244,7 @@ produce an error toast. No text/history authority moved into the preferences fil
 The final full local check passed 882 tests with 12 existing skips and no quality
 regressions. A further focused acceptance test confirms the real completion popup
 moves down one row with Compact and stays above input. The final CI run includes
-that test. Shard coverage passes for 136 specification files. Native production
+that test. Shard coverage passed for 136 specification files at `fcb12be2`. Native production
 Echo terminal witnesses cover all layouts at 100×32 and 60×16, filtered selection,
 preview, mouse events, opening/editing, command completion and mirrored locale.
 See the [witness gallery and receipt](0162-footer-witness/README.md).
@@ -254,7 +257,7 @@ separate durability posture helpers retain their own coverage.
 
 CI on implementation `fcb12be2` passed all twelve jobs in
 [run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
-Final-head evidence is recorded under Slice 9 below.
+Final-head validation is recorded on PR #344.
 
 
 ## Accepted footer feedback refinement
@@ -295,7 +298,8 @@ Remove the permanent search field and separator. The drawer header shows
 localized); the
 list begins immediately below it. `/` activates a
 footer filter prompt that owns typing and cursor movement. Escape/Enter return
-to navigation and keep the query. `/`, Ctrl+U, Escape clears it. Clicking the
+to navigation and keep the query. While the prompt is open, Ctrl+U clears the
+query. Clicking the
 active-filter header re-enters editing; clicking a list item still selects only.
 The footer prompt temporarily appears even when footer visibility is disabled,
 and disappears on exit, so hidden footers cannot produce invisible text input.
@@ -330,11 +334,12 @@ identity preservation are covered. Display formatting creates no Echo command.
 
 The final full local check passed 892 tests, 880 passed and 12 existing skips;
 quality reported no regressions. Forty-nine focused UI/preferences tests passed
-and all 137 specs have a CI shard. Native checks used production Echo at 100×32
+and all 137 specs had a CI shard at that point. Native checks used production Echo at 100×32
 and 60×16, in light/dark themes, with real keys, mouse events and restart.
 See the [current witness gallery and receipts](0162-footer-feedback/README.md).
 Implementation CI run [38764169878](https://github.com/flyingrobots/jedit/actions/runs/38764169878)
-passed all twelve jobs; final-head evidence is recorded under Slice 9 below.
+passed all twelve jobs on `82060e45`, before the `c9ef3063` and `8a10e9a6`
+refinements above; final-head validation is recorded on PR #344.
 
 
 ### Review hardening
@@ -345,15 +350,19 @@ footer-writer lock file, later replaced by the re-read before rename because the
 leader-key writer takes no lock),
 dangling-symlink refusal and grapheme-safe filename clipping. These are required
 corrections within this cycle. New runtime tests first reproduced RTL, viewport,
-lock/symlink and grapheme failures. Application observations will remain free of
-terminal geometry/style contracts; UI composition owns their placement.
+lock/symlink and grapheme failures. Application observations carry no terminal
+geometry or style; UI composition owns their placement. Some app modules still
+import UI geometry and painting helpers; that reversed direction is tracked in
+[#398](https://github.com/flyingrobots/jedit/issues/398).
 
 - [x] Slice 9: Address review boundaries and runtime edge cases; validate final
   head. After `origin/main` merged in, review on the stacked explorer branch
   renamed the port's layout methods to `loadLayout`/`saveLayout`, removed the
   footer-writer lock file, applied the preserved mode (including setuid and
   sticky bits) after writing, kept CRLF line endings, shared the `~/.jimrc`
-  constants with the leader-key writer, and released the filter prompt on every
-  Graft toggle. Validated at code head `287415c`: full check 916
-  tests, 908 passed, 8 existing skips, zero failures; dispatched CI
-  run https://github.com/flyingrobots/jedit/actions/runs/42467430293 passed all 12 jobs.
+  constants with the leader-key writer (which now also applies the mode after
+  writing), named the footer copy keys, and ended filter editing whenever focus
+  leaves Files (Graft toggles, Graft outline jumps, buffer switches and
+  completed opens). The footer's leader-capture hint can be clipped in narrow
+  per-pane and compact footers; the Settings drawer always shows it in full.
+  Validation of the reviewed head is recorded on PR #344.

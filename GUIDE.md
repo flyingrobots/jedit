@@ -66,6 +66,7 @@ readable plain-text preview.
 Press / to filter known visible paths; matching children retain their folder
 ancestors, and the matching file stays selected. Esc/Enter exits filter editing
 and keeps the query, Ctrl+U clears it, and Ctrl+G leaves the prompt for Graft.
+While the prompt is open, Backspace edits the query instead of moving the root.
 Closed directories are loaded only when expanded.
 
 ## Validate The Workspace
