@@ -31,6 +31,8 @@ export interface WorkspaceTextOpenedResult {
   readonly materialization: WorkspaceMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
+  /** The head the host anchored to the opened file bytes; never the current head when they differ. */
+  readonly importHeadId: string;
   readonly initialLines: readonly string[];
   readonly cache: WorkspaceTextReadingCache;
 }

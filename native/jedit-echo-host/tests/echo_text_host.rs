@@ -1,13 +1,24 @@
 use jedit_echo_host::host::JeditEchoHost;
-use jedit_echo_host::protocol::{HostRequest, HostResponse};
+use jedit_echo_host::protocol::{HostBasis, HostRequest, HostResponse};
 use jedit_echo_host::records::CheckpointReason;
+use sha2::{Digest, Sha256};
 
+/// The basis of a file whose bytes are exactly `text`.
+fn file_basis_of(text: &str) -> HostBasis {
+    HostBasis::File {
+        sha256: hex::encode(Sha256::digest(text.as_bytes())),
+        byte_length: text.len() as u64,
+    }
+}
+
+/// Opens witness.txt as a file whose bytes are exactly `initial_text`.
 fn open_request(request_id: u64, initial_text: &str) -> HostRequest {
     HostRequest::Open {
         request_id,
         buffer_key: "witness.txt".to_owned(),
         initial_text: initial_text.to_owned(),
         projection_path: Some("/tmp/witness.txt".to_owned()),
+        host_basis: file_basis_of(initial_text),
     }
 }
 
@@ -117,6 +128,7 @@ fn checkpoint_declaration_rejects_missing_or_foreign_basis_before_echo_admission
         buffer_key: "first.txt".to_owned(),
         initial_text: "first".to_owned(),
         projection_path: None,
+        host_basis: file_basis_of("first"),
     }) else {
         panic!("first buffer should open");
     };
@@ -125,6 +137,7 @@ fn checkpoint_declaration_rejects_missing_or_foreign_basis_before_echo_admission
         buffer_key: "second.txt".to_owned(),
         initial_text: "second".to_owned(),
         projection_path: None,
+        host_basis: file_basis_of("second"),
     }) else {
         panic!("second buffer should open");
     };
@@ -196,15 +209,21 @@ fn generated_operations_tick_in_echo_and_recover_from_the_runtime_wal() {
         (buffer_id, initial_head_id)
     };
 
+    // The file still holds the imported "hello", so the recovered buffer,
+    // with its edit, is reused; its anchor still names the imported head.
     let mut recovered = JeditEchoHost::open(root.path()).expect("Echo WAL should recover");
     let HostResponse::Opened {
-        buffer, receipt_id, ..
-    } = recovered.handle(open_request(3, "ignored after recovery"))
+        buffer,
+        import_anchor,
+        receipt_id,
+        ..
+    } = recovered.handle(open_request(3, "hello"))
     else {
         panic!("recovered buffer should open");
     };
     assert_eq!(buffer.buffer_id, buffer_id);
     assert_ne!(buffer.head_id, initial_head_id);
+    assert_eq!(import_anchor.head_id, initial_head_id);
     assert_eq!(receipt_id, None);
 
     let HostResponse::Observed {
@@ -362,7 +381,7 @@ fn empty_replace_is_obstructed_without_advancing_the_causal_head() {
 
     let HostResponse::Opened {
         buffer: unchanged, ..
-    } = host.handle(open_request(3, "ignored after initial open"))
+    } = host.handle(open_request(3, "hello"))
     else {
         panic!("existing buffer should reopen");
     };
@@ -390,7 +409,7 @@ fn text_equivalent_replace_is_obstructed_without_advancing_the_causal_head() {
 
     let HostResponse::Opened {
         buffer: unchanged, ..
-    } = host.handle(open_request(3, "ignored after initial open"))
+    } = host.handle(open_request(3, "hello"))
     else {
         panic!("existing buffer should reopen");
     };

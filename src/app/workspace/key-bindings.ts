@@ -2,6 +2,7 @@ import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
 import { updateCommandLineKey } from './command-line-key-bindings.js';
 import { updateFocusedPaneKey } from './focused-pane-key-bindings.js';
 import {
+  updateForceQuitWorkspaceKey,
   updateGlobalWorkspaceKey,
   updateHardGlobalWorkspaceKey,
   updateQuitConfirmationKey,
@@ -24,7 +25,7 @@ export function updateFromKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
-  const result = updateQuitConfirmationKey(msg, model)
+  const result = updatePriorityKey(msg, model, context)
     ?? updateFileSearchInputKey(msg, model)
     ?? updateHardGlobalWorkspaceKey(msg, model)
     ?? updateWorkspaceOverlayKey(msg, model, context)
@@ -34,6 +35,17 @@ export function updateFromKey(
     clearWorkspaceInlinePanelAfterKey(msg, result[0]),
     result[1],
   ];
+}
+
+// Ctrl+C must quit even while Leader capture owns every other key.
+function updatePriorityKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult | undefined {
+  return updateQuitConfirmationKey(msg, model)
+    ?? updateForceQuitWorkspaceKey(msg, model)
+    ?? (model.settingsOpen && model.leaderCaptureActive ? updateSettingsKey(msg, model, context) : undefined);
 }
 
 function updateWorkspaceOverlayKey(

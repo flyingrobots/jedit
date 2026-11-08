@@ -1,0 +1,72 @@
+{
+  "schema": "jedit.text-boundary-witness/v1",
+  "selectedInputs": {
+    "compilerBinarySha256": "db47a8e5c13ba5e47a0e7468ea06aebec146409ca378f82dc33146e644594faa",
+    "inventorySha256": "d0ba1c84c4d1e0d60107e4e39f1fb075da629ad849529f839877d4b0c11ef9e1",
+    "compilerCommit": "9b5ed1a49c84867d6959e20222b827e4fa7d2789",
+    "echoCommit": "158714ce97db120efb4f746914cf7daf95bbfa83",
+    "helperSourceSha256": "e6c94f58f16eba252d16865c4c167ff2d0917618abd7dd33a4a326c57ac5549f",
+    "helperModuleDigest": "sha256:fabc38f6c506c7da2eb8766e51fa4ea2c57508e87702956e37653138ed80c971",
+    "rootSourceSha256": "12931f28462c0aea920b7b161b177f8c37521764df76405c62b0eb002dc68a67",
+    "configSha256": "763adc2b82b825ca92de010afbe9632ab4c9069c6ecac72b48ae6d6f4900de68",
+    "vendor": {
+      ".jedit-text.edict-lawpack-build.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "jedit-text/adapter.cbor": "d520a1a9837d5a1215aed76de5ae1c6861328b37cae3bd90ef2c764bd65bc68e",
+      "jedit-text/adapter.sha256": "06355a72a6db1bdc59f081a887c23f36366e3312ce6271fdcd183490f0b53476",
+      "jedit-text/echo-operation-configuration.cbor": "ea787368881f448021f2d71c72cbadbc487e59a09e9638acfc25ec3579a3609d",
+      "jedit-text/echo-operation-configuration.sha256": "583070043579837cfffb4949867bb672f71f935a45e20e6ecbf7caf7483d600c",
+      "jedit-text/edict.lawpack-output.json": "450769b2362bf95d2f46550f93131f5836792dd9e5fb8bc251bd4e2b73a6c80b",
+      "jedit-text/exports.cbor": "3a4438fc0a6faed371c5aebfe512299b464fc08f70b4640454538772750644e1",
+      "jedit-text/exports.sha256": "42f20048fdedb25fdb8700790bae1dd009de8a0f677da300d93016abee8ab7ac",
+      "jedit-text/manifest.cbor": "4cba21c9edbb57c83c32f27507a174ccb050fee09618c6ea19a8db0c756d090f",
+      "jedit-text/manifest.sha256": "0a311988ff5b66c22c5cb467a37733916767d659884cbbf89bf1597a69abf3f5",
+      "jedit-text/verifier-rules.cbor": "e6d445fe8b4428307c274dd1a883b848d1aa72d1194730e75928cd1f375b2464",
+      "jedit-text/verifier-rules.sha256": "4fd69ab96251d649e9c9528bac6188839f0210b128ffc54701b9ee4ef6e7f7b7"
+    },
+    "provider": {
+      "components/lowerer.echo-dpo.component.wasm": "648c7c73ce7649dbb7e3128686900057f3a0d9fff5448213a2887e1e0304bb03",
+      "components/verifier.echo-dpo.component.wasm": "7cb2287cec3e0c3cbbb5f61ff03a1759a41733f7796962c1cc64b4c63ef005dd",
+      "generated/evidence/provenance.provider-generation.json": "2d54fbdbf5b515871d52773dac0b210888df7a3a2c27438aeccc7c8f843a85b3",
+      "generated/evidence/review.provider-generation.json": "01b8a35c70a7ea7e074aa029bf78980725dcb0049b85afa6f8b8acf2e300cf3a",
+      "generated/primary/authority-facts.echo-dpo.cbor": "e2a6a539a7156296c18ff1bc02f80dcabf62b42bb4314d0737527869e43986d6",
+      "generated/primary/authority-facts.echo-lawpack.cbor": "ce1af559551f8b8242c4b290b620c5a28323b9e43f8bc6bb161a191001b6f4b9",
+      "generated/primary/generated-artifact-profile.echo-dpo-registration.cbor": "4ef3aaad0d2131ba7129a3e2ae178d10c44f7e9b062af2c1fe211de781462f34",
+      "generated/primary/lawpack.echo-dpo.cbor": "8c570362671a0b1cd1a992d8210e4a90ffd153ad06dcdf1e0cb36033cc971e2c",
+      "generated/primary/schema.echo-provider-artifacts.cddl": "200526e14aed85899148495c93e4f1ca781ee6c3df5e0e5fa8716886aa3377f0",
+      "generated/primary/target-profile.echo-dpo.cbor": "1b105d1b1f6cdf5fecdef98b7adeb238525047d43581fe9fd8c44fd213e1788e",
+      "generated/resources/resource.conformance-corpus.cbor": "f1f29d990f83c5af33952a69b16e9c9bbb7c2feb1d3989860b74c9e6c2c19b08",
+      "generated/resources/resource.lawpack-compatibility.cbor": "642945761cb7d60e133008620dc2a6b48fd0f77901b985e02b1d3398fb1411af",
+      "generated/resources/resource.lawpack-exports.cbor": "e80f3597830f30079bae7428cc6fe1ca27e9f2626614284338c5f5c7bfd9f8b8",
+      "generated/resources/resource.lawpack-target-adapter.cbor": "d0cf6a5310c7aa3d5bf291e40221a50a9be676d0e7f9947b71de0c52f03f9a41",
+      "generated/resources/resource.lawpack-verifier.cbor": "a0ca53486f2e1181027cab255792150735a68fc01a93669ab90b58e7c32bd36e",
+      "generated/resources/resource.target-bundle-profile.cbor": "95cc3aab106f0d6d77ec76e88591ee24acac58f4345c031b77cfd1ecf2aa0db8",
+      "generated/resources/resource.target-cost-algebra.cbor": "29cc941cc96ffdb420a24a377146f0e9d5409a89f84cdbb2ad597e78dfde3503",
+      "generated/resources/resource.target-footprint-algebra.cbor": "c08b853b22fa1920cb8971b60a6622e4d8f400c68b8027a9c4f246c5cb4a222c",
+      "generated/resources/resource.target-intrinsics.cbor": "d4080b044ad95d88763f605d25d678dad0d44bbfdc32c212334a962eaf456588",
+      "generated/resources/resource.target-ir.cbor": "f0ead7a5dcb41532d5df9067a9735d7078456b59cc267b3a9f6bb6437431000c",
+      "generated/resources/resource.target-lowerer-contract.cbor": "c4d788a8ae876cfe8c9e9875144014d551d38ff13b4d90bb9dfc46bc562bf280",
+      "generated/resources/resource.target-obstruction-taxonomy.cbor": "5eb85dc3fbb53890f4f5accf6a7a3c03889bd25bf00e7c2a23c43e497652328e",
+      "generated/resources/resource.target-operation-profiles.cbor": "3d560e8df1bfb38e8ba9b70b0a4bc843c848a7900e3af76d8f798db51b6b1077",
+      "generated/resources/resource.target-verifier-contract.cbor": "9cef12fac8190156e152e7c8ab5adeed077bf2bdadf3add2225ce90ab4be8710",
+      "provider-manifest.echo.json": "81dabc4af55c459eed6e80ae47a8071d3487a4c3562e13c686d7d4b054683eec"
+    }
+  },
+  "builds": [
+    {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": {
+        "executable-operation-package.cbor": "0743f3c7bce0860deb46f47aa7868cf175f0b6f305f943d3b6b650d3b72ebd09",
+        "verification-report.cbor": "abdadf60cc4e07de47f05961e065b9b384d5baf7b398386a87c2f65665deeca5"
+      }
+    },
+    {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": {
+        "executable-operation-package.cbor": "0743f3c7bce0860deb46f47aa7868cf175f0b6f305f943d3b6b650d3b72ebd09",
+        "verification-report.cbor": "abdadf60cc4e07de47f05961e065b9b384d5baf7b398386a87c2f65665deeca5"
+      }
+    }
+  ]
+}

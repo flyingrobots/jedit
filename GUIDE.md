@@ -26,6 +26,16 @@ workspace launches that trusted Rust host as a child process. Set
 host is missing or exits, text operations fail closed. Jim does not fall back to
 a local text runtime.
 
+### Startup flags
+
+`jedit --version` (or `-V`) prints `jedit <version>`, where the version is
+`package.json`'s, and exits. `jedit --help` (or `-h`) prints that line, the
+usage `jedit [--version|-V] [--help|-h]`, and the two options, and exits. Both
+return before the workspace module is loaded, so they never start the terminal
+UI or the native Echo host. A flag counts only as the sole argument; any other
+arguments start the editor. `src/adapters/jedit-startup-cli.ts` implements this
+and `spec/jedit-startup-cli.spec.mjs` pins it.
+
 Build the app:
 
 ```sh
@@ -71,8 +81,8 @@ Jim command
 ```
 
 The implemented surface is intentionally narrow: create/open a buffer,
-single-range replace/insert/delete, and bounded text-window observation. Other
-operations return typed obstructions. Edict will replace the transitional Rust
+single-range replace/insert/delete, checkpoint declaration, and bounded
+text-window observation. Other operations return typed obstructions. Edict will replace the transitional Rust
 operation law and invocation seam operation by operation; do not widen this
 compatibility path merely to regain feature parity.
 

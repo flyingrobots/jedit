@@ -1,0 +1,938 @@
+{
+  "schema": "jedit.compiler-inventory/v1",
+  "compilerCommit": "9b5ed1a49c84867d6959e20222b827e4fa7d2789",
+  "echoCommit": "158714ce97db120efb4f746914cf7daf95bbfa83",
+  "compilerBinarySha256": "db47a8e5c13ba5e47a0e7468ea06aebec146409ca378f82dc33146e644594faa",
+  "compilerVersion": {
+    "schema": "edict.cli.info/v1",
+    "topic": "version",
+    "type": "info",
+    "version": "0.11.0-alpha.1"
+  },
+  "lawpackSha256": "cf8f19b72290c3b04532d3b33e1c7ab1189c13f129b1e6035b673fe68481cf15",
+  "providerManifestSha256": "81dabc4af55c459eed6e80ae47a8071d3487a4c3562e13c686d7d4b054683eec",
+  "results": [
+    {
+      "name": "baseline",
+      "status": 0,
+      "sourceSha256": "0ed3af32abc97b4c35931ef16ce1688240db4f6bd3deec66ff630f3c5d6579a2",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "0ed3af32abc97b4c35931ef16ce1688240db4f6bd3deec66ff630f3c5d6579a2"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "bytes-escapes",
+      "status": 0,
+      "sourceSha256": "248088895fa910c74754ac5527732eec4d250ca3168222d7536c741ef2955310",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "248088895fa910c74754ac5527732eec4d250ca3168222d7536c741ef2955310"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "unsigned-addition",
+      "status": 0,
+      "sourceSha256": "2751113e742950d99bb8aa4ff46217e03c2d0fabc11117e178d267fac39bc9ec",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "2751113e742950d99bb8aa4ff46217e03c2d0fabc11117e178d267fac39bc9ec"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "unproved-overflow",
+      "status": 2,
+      "sourceSha256": "9d249be1018e0da9d3a7e69529d802fd3ee38d39ab19efcc56515fcc34536ba8",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "9d249be1018e0da9d3a7e69529d802fd3ee38d39ab19efcc56515fcc34536ba8"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./unproved-overflow/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "unsigned addition requires a dominating proof of no overflow",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 34,
+            "line": 49,
+            "path": "./unproved-overflow/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1695,
+            "start": 1687
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "variant",
+      "status": 2,
+      "sourceSha256": "e4f0dce3a85d7a95346bd7e17d0581cd9597c85e715b19c7c9ca5f9cab727112",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "e4f0dce3a85d7a95346bd7e17d0581cd9597c85e715b19c7c9ca5f9cab727112"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./variant/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "variant type declarations are outside the current lowerable subset",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 1,
+            "line": 49,
+            "path": "./variant/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1711,
+            "start": 1654
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "enum",
+      "status": 2,
+      "sourceSha256": "20f55e4e071dc627dfebeb21382c99bc954bc867b2008c2267204d8f17f93557",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "20f55e4e071dc627dfebeb21382c99bc954bc867b2008c2267204d8f17f93557"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./enum/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "enum declarations are not in the initial lowerable subset",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 1,
+            "line": 49,
+            "path": "./enum/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1674,
+            "start": 1654
+          },
+          "stage": "resolve",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "recursive-type",
+      "status": 2,
+      "sourceSha256": "9ece8d4c2d4e66ebd3e92ef5cae9ba84b28295cfe1f13285e4b889c560601c15",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "9ece8d4c2d4e66ebd3e92ef5cae9ba84b28295cfe1f13285e4b889c560601c15"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./recursive-type/src/ReplaceRange.edict"
+          },
+          "kind": "InvalidCoreTypeIntegrity",
+          "message": "source type dependency cycle",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 1,
+            "line": 49,
+            "path": "./recursive-type/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1684,
+            "start": 1654
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./recursive-type/src/ReplaceRange.edict"
+          },
+          "kind": "UnresolvedType",
+          "message": "type `ReplaceRangeInput` is not declared in this module",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 21,
+            "line": 25,
+            "path": "./recursive-type/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 627,
+            "start": 603
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "recursive-function",
+      "status": 2,
+      "sourceSha256": "a7edbddceb27c605616cd4ef5db70884d3c3f74ea7b0143d0520a32f602b7109",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "a7edbddceb27c605616cd4ef5db70884d3c3f74ea7b0143d0520a32f602b7109"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./recursive-function/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "ReferenceCycle: functions.probe",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 1,
+            "line": 49,
+            "path": "./recursive-function/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1698,
+            "start": 1654
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "option",
+      "status": 2,
+      "sourceSha256": "09663c93b3c5c0b0d62f0fcbb515717446bccf9ff28a58a176ddc3ed35f4e45a",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "09663c93b3c5c0b0d62f0fcbb515717446bccf9ff28a58a176ddc3ed35f4e45a"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./option/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "type is outside the initial lowerable subset",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 1,
+            "line": 49,
+            "path": "./option/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1696,
+            "start": 1654
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "list-literal",
+      "status": 2,
+      "sourceSha256": "f3bebdeda4ef158c14d315bfe58b14178a7a7771a68ceada5716c2326f65c860",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "f3bebdeda4ef158c14d315bfe58b14178a7a7771a68ceada5716c2326f65c860"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ProviderLowererRefused",
+          "message": "provider lowerer refused application semantics: ProviderRefusal { kind: UnsupportedSemantics, subject: Some(\"core.source-functions\"), diagnostics: [ProviderDiagnostic { code: \"echo.provider.unsupported-semantics\", severity: Error, message: \"unsupported semantics: Core source functions are outside the checked pure-function profile\", repair: None }] }",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "list-length",
+      "status": 2,
+      "sourceSha256": "e5e2599795c5e1274318f22ecde03445a655bed7b1a3edcd405d15d4839bf4fa",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "e5e2599795c5e1274318f22ecde03445a655bed7b1a3edcd405d15d4839bf4fa"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./list-length/src/ReplaceRange.edict"
+          },
+          "kind": "TypeMismatch",
+          "message": "the implemented len specialization requires bounded Bytes",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 46,
+            "line": 49,
+            "path": "./list-length/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1705,
+            "start": 1699
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "list-concat",
+      "status": 2,
+      "sourceSha256": "243a710a91fd7735080597604911d86378677d421289a761f1dff176d8a0b5a2",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "243a710a91fd7735080597604911d86378677d421289a761f1dff176d8a0b5a2"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./list-concat/src/ReplaceRange.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected expression, found Plus",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 81,
+            "line": 49,
+            "path": "./list-concat/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1735,
+            "start": 1734
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "function-precondition",
+      "status": 2,
+      "sourceSha256": "aa64244f6ef161af7ea57c483c35e8318cf525e519c62282b94d9abe06dc2458",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "aa64244f6ef161af7ea57c483c35e8318cf525e519c62282b94d9abe06dc2458"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./function-precondition/src/ReplaceRange.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected LBrace, found Ident(\"where\")",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 25,
+            "line": 49,
+            "path": "./function-precondition/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1683,
+            "start": 1678
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "typed-pure-failure",
+      "status": 2,
+      "sourceSha256": "b0316ceed5a05decec28f28fac1fced5d8d73c1ad5b0d7e372a64b14fc2df8b9",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "b0316ceed5a05decec28f28fac1fced5d8d73c1ad5b0d7e372a64b14fc2df8b9"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./typed-pure-failure/src/ReplaceRange.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected LBrace, found Ident(\"fails\")",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 25,
+            "line": 49,
+            "path": "./typed-pure-failure/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1683,
+            "start": 1678
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "division",
+      "status": 2,
+      "sourceSha256": "e0f97ccbcc1ca27a8baabd038441cd4b41c4604d1ff3e4d792697480b1ad573e",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "e0f97ccbcc1ca27a8baabd038441cd4b41c4604d1ff3e4d792697480b1ad573e"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./division/src/ReplaceRange.edict"
+          },
+          "kind": "UnsupportedSourceShape",
+          "message": "expression is outside the initial lowerable subset",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 28,
+            "line": 49,
+            "path": "./division/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1692,
+            "start": 1681
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "minimum",
+      "status": 2,
+      "sourceSha256": "0d45d7bf3b531846614f8a984429a70fe61c7ce3ade0815d8508717223ef9cbf",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "0d45d7bf3b531846614f8a984429a70fe61c7ce3ade0815d8508717223ef9cbf"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./minimum/src/ReplaceRange.edict"
+          },
+          "kind": "UnresolvedFunction",
+          "message": "pure helper `min` has no compiler context fact",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 28,
+            "line": 49,
+            "path": "./minimum/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1696,
+            "start": 1681
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "maximum",
+      "status": 2,
+      "sourceSha256": "825901a576c2a85cef52276296647671307701ed25977ae6fa492ee1be2cfd87",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "825901a576c2a85cef52276296647671307701ed25977ae6fa492ee1be2cfd87"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./maximum/src/ReplaceRange.edict"
+          },
+          "kind": "UnresolvedFunction",
+          "message": "pure helper `max` has no compiler context fact",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 28,
+            "line": 49,
+            "path": "./maximum/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1696,
+            "start": 1681
+          },
+          "stage": "typeCheck",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "u8",
+      "status": 0,
+      "sourceSha256": "7ee41f90a54150db8976e51bc247f05c46cccc341871f64200299770e8e31783",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "7ee41f90a54150db8976e51bc247f05c46cccc341871f64200299770e8e31783"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "count-bytes",
+      "status": 0,
+      "sourceSha256": "ed01a1f2acbbcbbc97be63c2c77ec1a071e6efe28a5d4865f9b4485612651166",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "ed01a1f2acbbcbbc97be63c2c77ec1a071e6efe28a5d4865f9b4485612651166"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "utf8",
+      "status": 0,
+      "sourceSha256": "2610187697c13537d9578884d02e1f6686292fe16bdde5f87bb7d326bd9ff729",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "2610187697c13537d9578884d02e1f6686292fe16bdde5f87bb7d326bd9ff729"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "byte-at",
+      "status": 0,
+      "sourceSha256": "481693276f2f30e22ac2c0841cfb071bf7bdd8ccb3e1f4bfa45d3bd0da471673",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "481693276f2f30e22ac2c0841cfb071bf7bdd8ccb3e1f4bfa45d3bd0da471673"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "composed-byte-lookup",
+      "status": 0,
+      "sourceSha256": "82d8aa1f743234d411b47a3101e9922d4bac82a52ca8cc05788269333ae7e6a2",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "82d8aa1f743234d411b47a3101e9922d4bac82a52ca8cc05788269333ae7e6a2"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "generic-helper",
+      "status": 2,
+      "sourceSha256": "cf01f4336bdd723faa95df807e5bef382a46b97d849241abfbf4fea23d57ed55",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "cf01f4336bdd723faa95df807e5bef382a46b97d849241abfbf4fea23d57ed55"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./generic-helper/src/ReplaceRange.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected LParen, found Lt",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 9,
+            "line": 49,
+            "path": "./generic-helper/src/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1663,
+            "start": 1662
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "source-module",
+      "status": 0,
+      "sourceSha256": "e22be403e1976581cfaf479846910f9c21e40b7396febd8a702527cd568cb5e4",
+      "sourceHashes": {
+        "src/ReplaceRange.edict": "e22be403e1976581cfaf479846910f9c21e40b7396febd8a702527cd568cb5e4",
+        "src/Library.edict": "88b3df55072257062e8ee362d5c0e60dc2926752b7233b1969b94d5281c012b6"
+      },
+      "diagnostics": []
+    },
+    {
+      "name": "draft-Text",
+      "status": 2,
+      "sourceSha256": "a638b4c3b71df13a83ee54758a4a0aff52f185849018752477c708db31222d13",
+      "sourceHashes": {
+        "draft/Text.edict": "a638b4c3b71df13a83ee54758a4a0aff52f185849018752477c708db31222d13"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./draft-Text/draft/Text.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected LParen, found Lt",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 13,
+            "line": 89,
+            "path": "./draft-Text/draft/Text.edict"
+          },
+          "span": {
+            "end": 3219,
+            "start": 3218
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "draft-Reference",
+      "status": 2,
+      "sourceSha256": "29b936bb198512fc07552cae44e6bbfcdda466ee717fe31e0ca8dc587293963f",
+      "sourceHashes": {
+        "draft/Reference.edict": "29b936bb198512fc07552cae44e6bbfcdda466ee717fe31e0ca8dc587293963f",
+        "draft/Text.edict": "a638b4c3b71df13a83ee54758a4a0aff52f185849018752477c708db31222d13"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./draft-Reference/draft/Reference.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected RParen, found Ident(\"else\")",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 67,
+            "line": 55,
+            "path": "./draft-Reference/draft/Reference.edict"
+          },
+          "span": {
+            "end": 2050,
+            "start": 2046
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "draft-Rope",
+      "status": 2,
+      "sourceSha256": "b05a25c4546e98fe76cd6554bd840e1b5fc73124844e163c8bdfbc607d6418bd",
+      "sourceHashes": {
+        "draft/Rope.edict": "b05a25c4546e98fe76cd6554bd840e1b5fc73124844e163c8bdfbc607d6418bd",
+        "draft/Text.edict": "a638b4c3b71df13a83ee54758a4a0aff52f185849018752477c708db31222d13"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./draft-Rope/draft/Rope.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected Semi, found Ident(\"depth\")",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 3,
+            "line": 24,
+            "path": "./draft-Rope/draft/Rope.edict"
+          },
+          "span": {
+            "end": 958,
+            "start": 953
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    },
+    {
+      "name": "draft-ReplaceRange",
+      "status": 2,
+      "sourceSha256": "bf8972f0422d0689406ff6b78cff003e8b9f31e39f87112315f4b954fddbeb3b",
+      "sourceHashes": {
+        "draft/ReplaceRange.edict": "bf8972f0422d0689406ff6b78cff003e8b9f31e39f87112315f4b954fddbeb3b",
+        "draft/Text.edict": "a638b4c3b71df13a83ee54758a4a0aff52f185849018752477c708db31222d13",
+        "draft/Rope.edict": "b05a25c4546e98fe76cd6554bd840e1b5fc73124844e163c8bdfbc607d6418bd"
+      },
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "path",
+            "path": "./draft-ReplaceRange/draft/ReplaceRange.edict"
+          },
+          "kind": "ExpectedToken",
+          "message": "expected Semi, found LBrace",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "sourceLocation": {
+            "column": 19,
+            "line": 49,
+            "path": "./draft-ReplaceRange/draft/ReplaceRange.edict"
+          },
+          "span": {
+            "end": 1951,
+            "start": 1950
+          },
+          "stage": "parse",
+          "type": "diagnostic"
+        },
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "InvalidApplicationSource",
+          "message": "Edict application source did not parse",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ]
+    }
+  ]
+}

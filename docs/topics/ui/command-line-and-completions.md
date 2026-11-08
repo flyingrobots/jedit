@@ -33,7 +33,7 @@ Common commands:
 | Command | Purpose |
 | --- | --- |
 | `:edit <path>` | Open a file or descend into a directory completion. |
-| `:write` | Save the current buffer. |
+| `:write` | Save the current buffer. In production this currently ends in a typed export obstruction. |
 | `:quit` | Quit when it is safe. |
 | `:wq` | Write and quit. |
 | `:why` | Explain the last meaningful command. |

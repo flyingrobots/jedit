@@ -171,10 +171,8 @@ export function basisPinnedTestTextSession(delegate) {
       const outcome = await delegate.openBuffer(request);
       if (outcome.kind !== "opened") return outcome;
       basis = outcome.textBasis ?? fakeTextBasis(request.initialText, "head:test:opened");
-      return {
-        ...outcome,
-        textBasis: basis,
-      };
+      // A fake open is a first import: the host anchors the opened head to the request's basis.
+      return { ...outcome, textBasis: basis, importAnchor: outcome.importAnchor ?? { headId: basis.basisHeadId, hostBasis: request.hostBasis } };
     },
     insertText: basisAdvancingEdit(delegate.insertText, insertedByteLength),
     replaceRange: basisAdvancingEdit(delegate.replaceRange, replacementByteLength),

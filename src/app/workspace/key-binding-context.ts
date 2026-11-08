@@ -8,6 +8,7 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { CreateDrawerAnimationCmd } from './drawer.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
+import type { JimSettingsPort } from '../../ports/jim-settings.js';
 
 export type CreateStartupFileDrawerAnimationCmd = (
   from: number,
@@ -16,6 +17,7 @@ export type CreateStartupFileDrawerAnimationCmd = (
 
 export interface UpdateFromKeyDeps {
   readonly footerPreferences?: FooterPreferencesPort;
+  readonly jimSettings?: JimSettingsPort;
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;

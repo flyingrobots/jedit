@@ -1,0 +1,19 @@
+{
+  "schema": "jedit.probe-frozen-application/v1",
+  "sourceCommit": "9e6466150e43afc83966f9fe67c6ddce2f58d5bc",
+  "sourceRoot": "edict/replace-range",
+  "files": {
+    "edict.application.json": "sha256:3182577627cd1f88bf590f3a8481ef53476c83d783aa142182e7c65eb1f72f8b",
+    "vendor/jedit-text/adapter.cbor": "sha256:ab1437164084cbaf453f869c4302df9e648186fe6833bcb81c1e267c8dfeb6f9",
+    "vendor/jedit-text/adapter.sha256": "sha256:f8f24ec4077411189f7cdc73052c2149b24036a31535e95d4254fb6393e66421",
+    "vendor/jedit-text/echo-operation-configuration.cbor": "sha256:ea787368881f448021f2d71c72cbadbc487e59a09e9638acfc25ec3579a3609d",
+    "vendor/jedit-text/echo-operation-configuration.sha256": "sha256:583070043579837cfffb4949867bb672f71f935a45e20e6ecbf7caf7483d600c",
+    "vendor/jedit-text/edict.lawpack-output.json": "sha256:141c0000932ba19cff687e4173e40b0a38410f70bd511c9bc51f3fb3f73ee62b",
+    "vendor/jedit-text/exports.cbor": "sha256:cab9c575da49cb33289e45fc45afb9d7f05558dada734be7eb3acfbbabb1d4db",
+    "vendor/jedit-text/exports.sha256": "sha256:9bb11d9f8153c18af53b484526d9980b05c27eb20aa97e7623d1bf1ed5a69aea",
+    "vendor/jedit-text/manifest.cbor": "sha256:0323ed8e9510e473d329166d421dc7d8e1da353065c1cd2dee77e6313ba9bf91",
+    "vendor/jedit-text/manifest.sha256": "sha256:316cf602502a45cbab89b77b6344854edee750eaf1f0c8167da48d19ead75c22",
+    "vendor/jedit-text/verifier-rules.cbor": "sha256:e6d445fe8b4428307c274dd1a883b848d1aa72d1194730e75928cd1f375b2464",
+    "vendor/jedit-text/verifier-rules.sha256": "sha256:4fd69ab96251d649e9c9528bac6188839f0210b128ffc54701b9ee4ef6e7f7b7"
+  }
+}

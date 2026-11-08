@@ -7,6 +7,40 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { importDist, mockRuntime, mockJeditTheme, REPO_ROOT } from './workspace-helpers.mjs';
 
+// Ray-tracing runtime modules the live workspace must not reach. Listed
+// explicitly rather than matched by prefix: ui/title-scene-lighting-tokens.js
+// is still a production theme dependency.
+const REMOVED_RAY_TRACING_RUNTIME_MODULES = [
+  'ui/title-screen.js',
+  'ui/title-screen-optics.js',
+  'ui/title-screen-presentation.js',
+  'ui/title-screen-sample.js',
+  'ui/title-scene.js',
+  'ui/title-scene-camera.js',
+  'ui/title-scene-cube.js',
+  'ui/title-scene-director.js',
+  'ui/title-scene-environment.js',
+  'ui/title-scene-hit.js',
+  'ui/title-scene-math.js',
+  'ui/title-scene-mesh-hit.js',
+  'ui/title-scene-ray-acceleration.js',
+  'ui/title-scene-transform.js',
+  'ui/title-mesh.js',
+  'ui/title-mesh-library.js',
+  'ui/title-mesh-ray-hit.js',
+  'ui/title-bunny-scene.js',
+  'ui/title-floor-light-effects.js',
+  'app/title-camera-session.js',
+  'app/title-camera-fps.js',
+  'app/title-mesh-loader.js',
+  'adapters/title-scene-loader.js',
+  'adapters/title-scene-json-decoder.js',
+  'adapters/title-scene-object-decoder.js',
+  'adapters/title-scene-environment-decoder.js',
+  'adapters/title-bunny-mesh.js',
+  'adapters/workspace-title-meshes.js',
+];
+
 async function setup() {
   const module = await importDist('app', 'workspace', 'runtime.js');
   const deps = mockRuntime();
@@ -66,6 +100,15 @@ test('stale scene and camera messages cannot change the workspace or reactivate 
   assert.equal(idle, model);
 });
 
+test('a freshly started static title is idle: time ticks return the same model', async () => {
+  const module = await importDist('app', 'workspace', 'runtime.js');
+  const runtime = module.createWorkspaceRuntime(mockRuntime());
+  const [initial] = runtime.init();
+  const [ticked, commands] = runtime.update({ type: 'time-tick', time: 1 }, initial);
+  assert.equal(ticked, initial);
+  assert.deepEqual(commands, []);
+});
+
 test('legacy scene properties cannot select a ray-traced viewer', async () => {
   const { model } = await setup();
   const { renderViewer } = await importDist('app', 'workspace', 'viewer-content.js');
@@ -99,7 +142,10 @@ export async function load(url, context, nextLoad) {
     '--input-type=module', '-e', `await import(${JSON.stringify(entry)});`], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   const loaded = readFileSync(log, 'utf8');
-  for (const forbidden of ['/ui/title-screen.js', '/ui/title-scene.js', '/app/title-camera-session.js', '/adapters/title-scene-loader.js']) {
-    assert.equal(loaded.includes(forbidden), false, forbidden);
+  const distUrl = pathToFileURL(path.join(REPO_ROOT, 'dist')).href;
+  // Positive control: the forbidden checks below would pass vacuously on a URL prefix mismatch.
+  assert.equal(loaded.includes(`${distUrl}/adapters/workspace-app.js`), true, 'entry module URL');
+  for (const forbidden of REMOVED_RAY_TRACING_RUNTIME_MODULES) {
+    assert.equal(loaded.includes(`${distUrl}/${forbidden}`), false, forbidden);
   }
 });

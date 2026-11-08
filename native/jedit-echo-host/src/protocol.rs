@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::error::{HostError, HostResult};
+use crate::import_anchor::{ImportAnchorFact, ImportHostBasis};
 use crate::records::CheckpointReason;
 use crate::rope::{BufferSnapshot, WindowProjection};
 
@@ -15,6 +17,8 @@ pub enum HostRequest {
         initial_text: String,
         #[serde(rename = "projectionPath")]
         projection_path: Option<String>,
+        #[serde(rename = "hostBasis")]
+        host_basis: HostBasis,
     },
     Replace {
         #[serde(rename = "requestId")]
@@ -72,6 +76,8 @@ pub enum HostResponse {
         request_id: u64,
         #[serde(flatten)]
         buffer: BufferResponse,
+        #[serde(rename = "importAnchor")]
+        import_anchor: ImportAnchorResponse,
         #[serde(rename = "receiptId", skip_serializing_if = "Option::is_none")]
         receipt_id: Option<String>,
         #[serde(rename = "admittedTickId", skip_serializing_if = "Option::is_none")]
@@ -154,6 +160,86 @@ impl From<BufferSnapshot> for BufferResponse {
             byte_length: snapshot.byte_length,
             line_count: snapshot.line_count,
             buffer_version: snapshot.version,
+        }
+    }
+}
+
+/// The host coordinate's current or imported basis, as the client observed
+/// it: the SHA-256 digest (lowercase hex) and length of the file's raw bytes,
+/// or the absence of a file.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum HostBasis {
+    File {
+        sha256: String,
+        #[serde(rename = "byteLength")]
+        byte_length: u64,
+    },
+    Missing,
+}
+
+impl HostBasis {
+    /// Validates the digest and converts to the recorded form.
+    pub fn to_import(&self) -> HostResult<ImportHostBasis> {
+        match self {
+            Self::Missing => Ok(ImportHostBasis::Missing),
+            Self::File {
+                sha256,
+                byte_length,
+            } => Ok(ImportHostBasis::File {
+                sha256: parse_sha256(sha256)?,
+                byte_length: *byte_length,
+            }),
+        }
+    }
+}
+
+impl From<&ImportHostBasis> for HostBasis {
+    fn from(basis: &ImportHostBasis) -> Self {
+        match basis {
+            ImportHostBasis::Missing => Self::Missing,
+            ImportHostBasis::File {
+                sha256,
+                byte_length,
+            } => Self::File {
+                sha256: hex::encode(sha256),
+                byte_length: *byte_length,
+            },
+        }
+    }
+}
+
+/// Parses a lowercase hex SHA-256 digest.
+pub fn parse_sha256(value: &str) -> HostResult<[u8; 32]> {
+    if value.len() != 64
+        || value
+            .bytes()
+            .any(|byte| !matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
+        return Err(HostError::InvalidRequest(
+            "host digest must be 64 lowercase hex characters".to_owned(),
+        ));
+    }
+    let bytes = hex::decode(value)
+        .map_err(|error| HostError::InvalidRequest(format!("invalid host digest: {error}")))?;
+    bytes
+        .try_into()
+        .map_err(|_| HostError::InvalidRequest("host digest must contain 32 bytes".to_owned()))
+}
+
+/// The anchored import a reopened or created buffer was checked against.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportAnchorResponse {
+    pub head_id: String,
+    pub host_basis: HostBasis,
+}
+
+impl From<&ImportAnchorFact> for ImportAnchorResponse {
+    fn from(anchor: &ImportAnchorFact) -> Self {
+        Self {
+            head_id: crate::identity::node_id_hex(anchor.head_id.into()),
+            host_basis: HostBasis::from(&anchor.host_basis),
         }
     }
 }

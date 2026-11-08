@@ -14,6 +14,7 @@ import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
+import type { JimSettingsPort } from '../../ports/jim-settings.js';
 
 export type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -21,6 +22,7 @@ export type WorkspaceResizeMsg = ResizeMsg;
 
 export interface WorkspaceRuntimeDependencies {
   readonly footerPreferences?: FooterPreferencesPort;
+  readonly jimSettings?: JimSettingsPort;
   readonly filePreviewSource?: FilePreviewSource;
   readonly initialColumns: number;
   readonly initialRows: number;

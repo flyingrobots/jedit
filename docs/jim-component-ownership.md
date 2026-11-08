@@ -4,14 +4,13 @@ date: 2026-08-22
 author: James Ross
 description: "A guided map of Jim's editor mind, text capability, causal settlement, runtime, UI body, compiler, structural intelligence, compatibility layers, and external-effect boundaries."
 tags: [jim, jedit, edict, echo, architecture, ownership, causal-rope]
-draft: true
-status: review
+draft: false
+status: accepted
 project: jedit
 related:
   - ../ARCHITECTURE.md
-  - BEARING.md
+  - ../README.md
   - jedit-echo-end-to-end.md
-  - stack-map.md
 ---
 
 # Jim: Components, Responsibilities, and Ownership
@@ -470,7 +469,7 @@ positive responsibility and the forbidden expansion for each participant.
 | Bijou | Terminal UI substrate | Terminal event decoding support, surface lifecycle, focus, layout, paint | Modes, motions, rope law, causal truth | Exists and remains part of the target body |
 | Native adapters | Process bootstrap and raw host capabilities | Echo process lifecycle, filesystem import/export, declared materialization guarantees, package transport, raw I/O | Native Jim planner callbacks or exaggerated filesystem authority in the final composition | Exists; the current Rust host still contains compatibility rope law |
 | `jim.core` / `Jim.edict` | Active observer and editor mind | Persistent editor state, event interpretation, observation requests, operation choice, command settlement composition, result handling | Rope representation, scheduling, WAL, receipt identity, terminal or filesystem mechanics | Target only; source not yet checked in |
-| `jedit.text` Edict capability | Reusable application-owned text model, operations, and optics | Buffer and head contracts, `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, `TextWindow`, slices, diffs, rope invariants, and typed text outcomes | Jim modes, commands, registers, cursor policy, Echo admission, host syscalls | Schema and oracle are frozen; executable sources are not yet authored |
+| `jedit.text` Edict capability | Reusable application-owned text model, operations, and optics | Buffer and head contracts, `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, `TextWindow`, slices, diffs, rope invariants, and typed text outcomes | Jim modes, commands, registers, cursor policy, Echo admission, host syscalls | Schema and oracle are frozen; a pure flat-text `ReplaceRange.edict` reference is authored, compiled, and verified; the persistent-rope operation and the other sources are not yet authored |
 | `jim.external-policy` | Jim's policy for external authorities | Import, export, provider selection, expected-fingerprint, guarantee-class, conflict, and reconciliation decisions | Ambient paths, raw syscalls, or claims that an external effect committed or was authored without matching evidence | Target contract defined here; no executable provider protocol yet |
 | `JimRelease` | Immutable executable application composition | Complete transitive package, standard-library, schema, codec, entry-point, instruction-set, execution-profile, verifier, effect-protocol, migration, and command-relevant provider closure | Ambient “latest package” lookup or reinterpretation of historical events | Target contract defined here; exact manifest schema, artifact store, and activation protocol remain unimplemented |
 | Edict | Language, compiler, package builder, and verifier boundary | Parsing, typing, authority closure, Core IR, Target IR lowering, canonical package construction, independent verification | Running Jim, choosing events, or committing graph state | Generic prerequisites have landed; Jim is the next real consumer |
@@ -482,6 +481,17 @@ positive responsibility and the forbidden expansion for each participant.
 | Generated clients | Typed syscall-style stubs | Canonical encoding/decoding, package addresses, event and artifact transport | Command interpretation, range derivation, rope patches, optimistic authority | Allowed in target only as non-semantic membrane code |
 | Filesystem | External file storage and ecosystem interchange | Bytes at paths under operating-system authority | Current in-editor buffer truth after import | Import source and export destination, not canonical editor state |
 | Git | External version-control ecosystem | Repository commits, refs, index, and worktree projections | Jim's causal edit history or live buffer authority | Optional adapter/export boundary |
+
+An application lawpack declares admission ceilings for the provider's static
+whole-operation judgment over bounded pure computation. Echo checks those
+ceilings conservatively before accepting the program; each runtime host still
+supplies its own execution limits. Raising a compilation ceiling does not raise
+those host limits, expand source byte bounds, or establish execution cost at the
+maximum input. The current flat-text `ReplaceRange` witness uses this distinction;
+it does not establish the persistent-rope target. This refines the budget
+ownership in the table and the evaluator meter in
+[the rope design](design/0159-edict-rope-representation.md), without transferring
+runtime budget authority to Jedit.
 
 The table also explains why “Echo runs Jim” is acceptable while “Echo
 implements `ReplaceRange`” is not. A CPU can execute an editor without knowing
@@ -601,6 +611,7 @@ view joins the editor projection only when it names the rendered buffer head.
 | While rendering | A declared causal view basis plus basis-matching optional projections | Deleting a cache or pane changes no text history; stale Graft data is withheld |
 | During save/export | A selected witnessed rope head | The adapter writes a projection and records which basis was materialized |
 | After external file change | Two potentially divergent authorities are observed | Jim must apply an explicit import, rebase, conflict, or refusal policy |
+| Reopening a path that has a buffer | The buffer's import anchor: the path, the imported bytes' host basis, and the imported head | The buffer is reused only when the anchor names the path's current basis; otherwise the open is refused and neither side is changed |
 
 This model also prevents a common false shortcut: reading a file immediately
 before every command does not make the filesystem an Echo reading, and writing
@@ -709,6 +720,26 @@ an existing head, or produce a conflict result. Echo history retains logical
 external identities, immutable content references, intents, and observations;
 it does not acquire ambient host paths as application authority.
 
+The current compatibility corridor implements the refusal half of that policy
+([#350](https://github.com/flyingrobots/jedit/issues/350)). Every open sends
+the path's host basis: the SHA-256 digest and length of the file's raw bytes,
+or the absence of a file. Creating a buffer records a
+`jedit.text.ImportAnchor.v1` fact in the same admitted Tick, binding the path,
+that basis, and the head built from those bytes, so the anchor is recovered
+from the Echo WAL with the buffer. A later open reuses the buffer only when the
+anchor names the path's current basis. Otherwise the native host refuses with a
+typed obstruction and writes nothing: `file-changed-since-import` when only the
+file changed, `file-and-buffer-changed-since-import` when the buffer also has
+edits beyond its anchored head, and `import-anchor-missing` when the buffer has
+no anchor, which includes every buffer recovered from a WAL written before
+anchors existed. The file layer of buffer durability is clean only against the
+anchored head. Explicit reconciliation (re-import, keep-buffer, discard) and
+re-anchoring on save are not implemented
+([#357](https://github.com/flyingrobots/jedit/issues/357)). Until they are, an open
+is refused for as long as the path's basis differs from the anchor, or the buffer
+has no anchor; restoring the anchored bytes makes the buffer reusable again.
+The target moves this decision into `jim.external-policy`.
+
 In summary, Jim sees source files as external coordinates and import/export
 surfaces. Jim edits an Echo-backed buffer worldline; the path is not the buffer,
 and the saved file is one observed materialization of a chosen head. Durable
@@ -736,13 +767,28 @@ definitions or test oracles accidentally become fake runtime implementations.
 | Installed release record | Echo | One complete closure was retained, installed, verified, and activated for a worldline under an explicit transition | That a particular command committed |
 | Tick, conflict outcome, reading, receipt, and recovery evidence | Echo realm | What happened under one release, realm, epoch, basis, and admitted or rejected execution | What Jim should decide next |
 
-The schema and oracle are already frozen under
-`contracts/jedit/lawpacks/replace-range-v1/`. `ReplaceRange.edict` and its
-complete application-owned lawpack closure do not yet exist in Jedit. Neither
-does the release manifest that would bind `jim.core`, `jedit.text`, their entry
-points, and the relevant profiles. Edict's generic application-owned lawpack
-authoring and bounded-control prerequisites have landed, but only the real
-application source can reveal the next honest compiler or target-profile gap.
+The schema and independent oracle are frozen under
+`contracts/jedit/lawpacks/replace-range-v1/`. Jedit now owns executable source
+and its complete published lawpack closure under `edict/replace-range/`.
+The public Edict build and independent verifier produce a pinned pure package
+that Echo executes as a flat-text replacement reference, with range, UTF-8,
+offset-boundary, no-op and resource refusals. The package and verifier report
+are byte-identical across the verified macOS and Linux builds. The application
+[README](../edict/replace-range/README.md) owns the exact build and runtime
+reproduction instructions.
+
+This reference computes bytes; it does not construct a persistent rope or
+produce the domain's typed outcomes. Authored graph effects, atomic admission,
+Tick/WAL/receipt/readings and fresh-engine recovery remain unimplemented for
+this package. The standalone runtime host is test-only conformance scaffolding,
+unreachable from the editor's production composition. The proposed persistent
+rope source remains a noncompiling draft outside the application gate.
+
+The release manifest binding `jim.core`, `jedit.text`, their entry points and
+profiles, and the installed release that would activate it, also remain absent.
+This working pure package refines the authored-source stage of the artifact
+chain; it does not establish an installed Jim release or replace the current
+native text-operation authority.
 
 In summary, the artifact chain moves from application definition, to authored
 source and lawpack closure, to compiler-produced package, to installed release,
@@ -802,13 +848,14 @@ one coherent command settlement inside an explicit authority realm and epoch.
 | Split, join, validate, and emit rope facts | Native Rust compatibility planner | `jedit.text`'s `ReplaceRange.edict`, compiled to generic target operations |
 | Settle buffer, Jim state, command result, and evidence | Not yet one application-authored causal cut | Echo executing the composed `JimRelease` program inside one realm and epoch |
 | Reject a candidate whose read set changed | Current compatibility behavior does not yet prove the final Jim protocol | Echo conflict outcome followed by a separate idempotent `jim.core` resolver Tick |
+| Decide whether an existing buffer may be reused for a file | Native Rust compatibility host (`import_anchor.rs`), refusal only | `jim.external-policy` |
 | Admit, schedule, persist, receipt, recover | Echo | Echo |
 | Read the resulting bounded text | Generated/native `TextWindow` observer | `TextWindow.edict` through Echo |
 | Install lines into the editor and paint | TypeScript/Bijou projection code | Jedit/Bijou projection code |
 
 The current GraphQL contract declares four operations: create a buffer
-worldline, replace a range as a Tick, declare a checkpoint, and read a bounded
-text window. Wesley generates codecs, identities, registry evidence, and host
+worldline (which also records its import anchor), replace a range as a Tick,
+declare a checkpoint, and read a bounded text window. Wesley generates codecs, identities, registry evidence, and host
 helpers from that schema. The actual operation law still appears in
 `native/jedit-echo-host/src/contract.rs` and its rope modules. TypeScript's
 `vim-chord-syntax.ts`, `vim-motion-resolver.ts`,
@@ -1212,18 +1259,11 @@ but contradictory prose.
 | How does save survive a host crash or intervening writer? | The file is correctly described as an export projection, but no executable effect provider or compare-and-swap contract exists | Define stable intent and outcome identities, fingerprints, immutable content references, idempotency keys, guarantee and certainty classes, effect evidence, authorship classification, indeterminate supersession, leases and fencing where available, and recovery decisions |
 | Can the UI combine inconsistent bases? | Projections are disposable, but the current target has no canonical view-basis contract | Make every Jim state declare its presentation head and coordinate bases; render only a valid view basis and withhold optional Graft data when its basis differs |
 | Are all unhappy outcomes obstructions? | Current prose and contracts emphasize typed obstructions | Freeze separate normal-domain, obstruction, admission, compiler, external-effect, and runtime-fault result classes |
-| Is checkpoint declaration supported today? | The native host registers, admits, persists, and returns `RopeCheckpointDeclared` evidence; `docs/BEARING.md` records it as implemented | Remove stale claims that checkpoint always fails closed; retain the distinction from causal anchors and text mutation |
+| Is checkpoint declaration supported today? | The native host registers, admits, persists, and returns `RopeCheckpointDeclared` evidence; the README's *Current posture* records it as implemented | Remove stale claims that checkpoint always fails closed; retain the distinction from causal anchors and text mutation |
 | What exactly is a canonical event envelope? | The target sequences require one, but the final wire schema is not yet frozen | Define one opaque transport contract: Jedit decodes raw input, Echo carries the envelope without interpreting Jim fields, and only `jim.core` assigns editor meaning |
 | Which TypeScript paths still own semantics? | Vim parsing, motion resolution, coordinate conversion, operation selection, and transition planning are executable today | Classify them explicitly as compatibility authority, not merely import or migration plumbing |
 | Who owns text and rope contracts in target prose? | Some older documents say “Jedit” broadly, while the first draft grouped them under Jim | Name `jedit.text` as the application-owned text capability, `jim.core` as its semantic consumer, and Jedit as the product/body composition |
-| Do documentation tests prove the canonical section? | Some policy tests search required phrases anywhere in a document | Scope tests to the named ownership sections and assert the complete contract, including test-only direct `ReplaceRange` invocation |
-| Does the target exist in code? | `Jim.edict`, `ReplaceRange.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers are absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
-
-There is also a procedural gap. The clean architecture worktree is one commit
-ahead of current Jedit `main`, and PR #300 carries these ownership corrections,
-but it remains blocked by five unresolved review threads. This document is a
-review draft on that branch; it is not merged architecture doctrine and must
-not be cited as production evidence.
+| Does the target exist in code? | A compiler-produced pure flat-text `ReplaceRange.edict` reference exists; the authored persistent-rope operation, `Jim.edict`, `TextWindow.edict`, `JimRelease`, authority realms, durable conflict resolution, and materialization guarantee providers remain absent or unproven | Keep every target statement labeled as target until compiler, runtime, recovery, and external-effect evidence exists |
 
 In summary, the remaining disagreements are not about whether Echo should
 learn Jim vocabulary. They are about making every document and executable
@@ -1235,12 +1275,11 @@ generic-Echo model.
 
 This map was built by comparing canonical architecture claims with the code
 paths that currently make decisions. Documentation alone was insufficient,
-because the open architecture PR itself contains a stale checkpoint statement
-and under-classifies some compatibility authority.
+because documentation drifts from the code that actually decides.
 
 The audit followed these evidence layers:
 
-1. `ARCHITECTURE.md`, `docs/BEARING.md`, `docs/stack-map.md`, and
+1. `ARCHITECTURE.md`, the README's *Current posture*, and
    `docs/jedit-echo-end-to-end.md` supplied the declared target and current
    runtime corridor.
 2. `contracts/jedit/echo-text.graphql` supplied the current operation surface.
@@ -1254,9 +1293,8 @@ The audit followed these evidence layers:
 5. The frozen schema, codec vectors, and oracle under
    `contracts/jedit/lawpacks/replace-range-v1/` established what exists without
    pretending those artifacts are executable semantics.
-6. Live PR and issue state established that PR #300 is blocked, Jedit #296 is
-   the first operation slice, and the relevant generic Edict prerequisites have
-   landed.
+6. Issue state established that Jedit #296 is the first operation slice and
+   that the relevant generic Edict prerequisites have landed.
 
 One earlier line of thought treated a generic native rope capability as the
 likely answer. That was rejected because it would preserve application law
@@ -1298,7 +1336,7 @@ The planned proof sequence is:
 
 | Stage | Required proof | Ownership consequence |
 | --- | --- | --- |
-| Jedit #296 | Check in real `jedit.text` `ReplaceRange.edict` and its complete application-owned lawpack closure; build through Edict; execute the exact verified package through Echo; agree with the independent oracle | Removes native Rust as the owner of one text operation without calling the text substrate Jim |
+| Jedit #296 | Check in real `jedit.text` `ReplaceRange.edict` and its complete application-owned lawpack closure; build through Edict; execute the exact verified package through Echo; agree with the independent oracle under the [representation-specific acceptance contract](design/0159-edict-rope-representation.md#replacerange-acceptance-across-representations), including every retained case and separate schema-2 physical evidence | Removes native Rust as the owner of one text operation without calling the text substrate Jim |
 | Jedit #297 | Author the `jedit.text` `CreateBuffer`, `TextWindow`, and `DeclareCheckpoint` lawpacks | Moves the remaining text operation and optic vocabulary into reusable application-owned source |
 | Protocol design gate | Freeze canonical events, durable attempts/readings/outcomes, combined settlement, authority realms and epochs, candidate conflict identities, settlement safety and liveness, retained `JimRelease` lifecycle, coherent view bases, and external certainty, guarantee, evidence, authorship, and supersession classes | Prevents the observer implementation from encoding an RPC-shaped, fork-blind, ambient-version, or filesystem-overclaiming protocol |
 | Echo realm and conflict gate | Host all mutable commit-time preconditions in one explicit realm and epoch; reject a stale candidate without emitting a Jim outcome; recover, consume the identified conflict outcome at most once, and prove conditional resolution liveness | Supplies the serialization and evidence boundary required by combined command settlement |
