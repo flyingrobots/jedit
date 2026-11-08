@@ -40,17 +40,24 @@ test('Enter toggles immediate children inline and nested collapse preserves sibl
   assert.deepEqual(reopened.entries, [src, nested, main, tests]);
 });
 
+async function listRow(index) {
+  const { WORKSPACE_BODY_TOP_OFFSET, FILE_SEARCH_LIST_TOP } = await importDist('app', 'workspace', 'viewport.js');
+  return WORKSPACE_BODY_TOP_OFFSET + FILE_SEARCH_LIST_TOP + index;
+}
+const NAME_COLUMN = 6;
+
 test('Directory clicks toggle inline while file clicks only select and file Enter explicitly opens', async () => {
   const { runtime, model } = await setup();
-  const mouse = (model, row) => runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 6, row }, model);
-  const [expanded] = mouse(model, 4);
+  const mouse = async (model, index) =>
+    runtime.update({ type: 'mouse', action: 'press', button: 'left', col: NAME_COLUMN, row: await listRow(index) }, model);
+  const [expanded] = await mouse(model, 0);
   assert.deepEqual(expanded.entries, [src, nested, main, tests]); assert.equal(expanded.cwd, model.cwd);
-  const [selected, effects] = mouse(expanded, 6);
+  const [selected, effects] = await mouse(expanded, 2);
   assert.equal(selected.selectedIndex, 2); assert.equal(selected.entries[2], main);
   assert.equal(selected.textAuthority, model.textAuthority); assert.deepEqual(effects, []);
   const [opening, commands] = key(runtime, selected, 'enter');
   assert.equal(opening.textAuthority.filePath, main.path); assert.equal(commands.length, 1);
-  assert.deepEqual(mouse(expanded, 4)[0].entries, [src, tests]);
+  assert.deepEqual((await mouse(expanded, 0))[0].entries, [src, tests]);
 });
 
 test('Right enters a child, Left selects its parent and collapses it without changing the root', async () => {
@@ -109,4 +116,18 @@ test('Left on a root-level row or after a filtered collapse never changes the ex
   assert.deepEqual(fileSearchEntries(folded).map(({ entry }) => entry), [src, nested, main, tests]);
   const parentRow = key(runtime, folded, 'left')[0]; assert.equal(parentRow.entries[parentRow.selectedIndex], src);
   assert.equal(key(runtime, parentRow, 'left')[0].cwd, model.cwd);
+});
+
+test('The .. row moves the root up with Enter or Right while a click only selects it', async () => {
+  const { runtime, deps, model } = await setup();
+  const up = { kind: 'parent', name: '..', path: '/' };
+  const root = { kind: 'dir', name: 'repo', path: '/repo' };
+  deps.fileSystem.loadEntries = (path) => (path === '/' ? [root] : [up, src, tests]);
+  const withParent = { ...model, entries: [up, src, tests], selectedIndex: 1 };
+  const [clicked] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: NAME_COLUMN, row: await listRow(0) }, withParent);
+  assert.equal(clicked.cwd, model.cwd); assert.equal(clicked.entries[clicked.selectedIndex], up);
+  for (const keyName of ['enter', 'right', 'l']) {
+    assert.equal(key(runtime, clicked, keyName)[0].cwd, '/', keyName);
+  }
+  assert.equal(key(runtime, clicked, 'left')[0].cwd, model.cwd);
 });

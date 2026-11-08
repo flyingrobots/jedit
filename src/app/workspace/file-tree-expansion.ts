@@ -2,7 +2,7 @@ import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
 import { DIRECTORY_ACTION_OPEN, FileEntryKinds } from '../../ports/file-system.js';
 import { directoryChangeFailure, type DirectoryExpansionContext } from './directory-change-failure.js';
 import {
-  EMPTY_FILE_SEARCH, fileSearchEntries, fileSearchState, fileSearchWithInput, selectedFileSearchEntry,
+  EMPTY_FILE_SEARCH, fileSearchEntries, fileSearchWithInput, selectedFileSearchEntry,
 } from './file-search.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -15,7 +15,6 @@ export interface FileTreeNode {
 }
 const CHILD_DEPTH = 1;
 const FIRST_CHILD_OFFSET = 1;
-const NO_SELECTION = -1;
 const COLLAPSE_KEYS = new Set<string>([WorkspaceKeys.ArrowLeft, WorkspaceKeys.H]);
 const TOGGLE_KEYS = new Set<string>([WorkspaceKeys.Enter, WorkspaceKeys.Return]);
 const EXPAND_KEYS = new Set<string>([WorkspaceKeys.ArrowRight, WorkspaceKeys.L]);
@@ -84,9 +83,8 @@ function collapseDirectory(model: WorkspaceModel): WorkspaceModel {
     fileHoveredIndex: undefined };
   const visible = fileSearchEntries(next);
   if (visible.some((row) => row.index === model.selectedIndex)) return { ...next, selectedIndex: model.selectedIndex };
-  // A filter that only matched the collapsed descendants would hide the folder itself,
-  // so the filter is cleared and the folder stays selected.
-  if (fileSearchState(next).input.length === 0) return { ...next, selectedIndex: visible[0]?.index ?? NO_SELECTION };
+  // Only an active filter can hide the collapsed folder: it matched the folder's
+  // descendants alone, so the filter is cleared and the folder stays selected.
   return { ...fileSearchWithInput(next, EMPTY_FILE_SEARCH), selectedIndex: model.selectedIndex };
 }
 
