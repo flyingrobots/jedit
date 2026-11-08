@@ -16,6 +16,7 @@ const PREVIEW_LOADING = 'fileExplorer.preview_loading';
 const PREVIEW_BINARY = 'fileExplorer.preview_binary';
 const PREVIEW_UNAVAILABLE = 'fileExplorer.preview_unavailable';
 const PREVIEW_TRUNCATED = 'fileExplorer.preview_truncated';
+const PREVIEW_UNSAVED_BUFFER = 'fileExplorer.preview_unsaved_buffer';
 
 export function renderFileExplorerPreview(model: WorkspaceModel, width: number, height: number): Surface | undefined {
   if (!fileExplorerHasFocus(model)) return undefined;
@@ -47,6 +48,7 @@ function previewLines(model: WorkspaceModel, result: FilePreviewResult | undefin
   if (result == null) return [model.i18n.t(PREVIEW_LOADING)];
   if (result.kind === FilePreviewKinds.Binary) return [model.i18n.t(PREVIEW_BINARY)];
   if (result.kind === FilePreviewKinds.Unavailable) return [model.i18n.t(PREVIEW_UNAVAILABLE)];
+  if (result.kind === FilePreviewKinds.UnsavedBuffer) return [model.i18n.t(PREVIEW_UNSAVED_BUFFER)];
   const lines = filePreviewSourceLines(result.lines);
   return result.truncated ? [model.i18n.t(PREVIEW_TRUNCATED), ...lines] : lines;
 }

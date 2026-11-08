@@ -78,4 +78,26 @@ test('A late highlighted preview cannot repaint a closed drawer or a different s
   assert.ok(message.highlight.spans.length > 0);
   const [late] = fixture.runtime.update(message, closed); assert.equal(late.fileExplorerPreview, undefined);
   assert.equal(late.textAuthority, fixture.model.textAuthority);
+  const other = { kind: 'file', name: 'other.ts', path: '/repo/other.ts' };
+  const two = await setup({ model: { entries: [entry, other] } });
+  const [first, firstCommands] = two.runtime.update(key('b', { ctrl: true }), two.model);
+  const [moved] = two.runtime.update(key('j'), { ...first, fileDrawerProgress: 1 });
+  assert.equal(moved.entries[moved.selectedIndex], other);
+  const [stale] = two.runtime.update(await firstCommands.at(-1)(), moved);
+  assert.equal(stale.fileExplorerPreview.entry, other); assert.equal(stale.fileExplorerPreview.result, undefined);
+});
+
+test('A modified open buffer with an off-head reading window reports unsaved changes instead of previewing disk', async () => {
+  const fixture = await setup();
+  const { WorkspaceTextAuthorityKinds } = await importDist('app', 'workspace', 'workspace-text-authority.js');
+  const opened = (dirty, cache) => ({
+    ...fixture.model.textAuthority, kind: WorkspaceTextAuthorityKinds.Opened, filePath: entry.path, bufferId: 'b1', dirty, cache,
+  });
+  const window = { startLine: 500, lines: ['CACHE line 501'], totalLineCount: 1000, truncated: true };
+  const dirty = await preview({ ...fixture, model: { ...fixture.model, textAuthority: opened(true, window) } });
+  assert.deepEqual(fixture.reads, []); assert.equal(dirty.fileExplorerPreview.result.kind, 'unsaved-buffer');
+  const { renderFileExplorerPreview } = await importDist('app', 'workspace', 'file-explorer-preview-view.js');
+  assert.match(rowText(renderFileExplorerPreview(dirty, 60, 12), 3), /unsaved/i);
+  const clean = await preview({ ...fixture, model: { ...fixture.model, textAuthority: opened(false, undefined) } });
+  assert.deepEqual(fixture.reads, [entry.path]); assert.equal(clean.fileExplorerPreview.result.kind, 'loaded');
 });

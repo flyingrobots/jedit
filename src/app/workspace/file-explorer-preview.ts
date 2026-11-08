@@ -5,7 +5,7 @@ import { FilePreviewKinds, FILE_PREVIEW_MAX_LINES, type FilePreviewSource, type 
 import { FileEntryKinds, type FileEntry } from '../../ports/file-system.js';
 import { fileExplorerHasFocus, selectedFileSearchEntry } from './file-search.js';
 import { findWorkspaceBufferRecordByPath } from './workspace-buffer-registry.js';
-import { isWorkspaceTextAuthorityOpened } from './workspace-text-authority.js';
+import { isWorkspaceTextAuthorityOpened, type WorkspaceTextAuthorityOpened } from './workspace-text-authority.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceModel } from './model.js';
@@ -52,13 +52,19 @@ function clearFileExplorerPreview(result: Result): Result {
 
 // Open buffers preview their current text-authority reading, not the editor
 // projection, which can be a stale opening window. A reading that does not start
-// at the first line cannot show the file's head, so the file is read instead.
+// at the first line cannot show the file's head: a clean buffer falls back to the
+// saved file, while a modified buffer reports its unsaved state rather than
+// silently previewing stale disk text.
 function bufferPreview(model: WorkspaceModel, path: string): FilePreviewResult | undefined {
   const authority = isWorkspaceTextAuthorityOpened(model.textAuthority) && model.textAuthority.filePath === path
     ? model.textAuthority
     : findWorkspaceBufferRecordByPath(model, path)?.textAuthority;
-  if (authority != null) return readingPreview(authority.cache);
+  if (authority != null) return readingPreview(authority.cache) ?? unsavedBufferPreview(authority);
   return model.editor?.path === path ? linesPreview(model.editor.lines, model.editor.lines.length) : undefined;
+}
+
+function unsavedBufferPreview(authority: WorkspaceTextAuthorityOpened): FilePreviewResult | undefined {
+  return authority.dirty ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
 }
 
 function readingPreview(cache: WorkspaceTextReadingCache | undefined): FilePreviewResult | undefined {
