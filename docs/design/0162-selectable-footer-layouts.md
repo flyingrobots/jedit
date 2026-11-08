@@ -344,4 +344,7 @@ corrections within this cycle. New runtime tests first reproduced RTL, viewport,
 lock/symlink and grapheme failures. Application observations will remain free of
 terminal geometry/style contracts; UI composition owns their placement.
 
-- [ ] Slice 9: Address review boundaries and runtime edge cases; validate final head.
+- [x] Slice 9: Address review boundaries and runtime edge cases; validate final
+  head (validated at `22df22c` on the stacked explorer branch: full check 912
+  tests, 904 passed, 8 existing skips, zero failures; dispatched CI run
+  https://github.com/flyingrobots/jedit/actions/runs/42465462059 passed all 12 jobs).

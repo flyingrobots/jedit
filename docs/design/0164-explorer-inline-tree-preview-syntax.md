@@ -227,14 +227,27 @@ editor-head basis, and parser failures preserve readable text.
 Tests exposed one interaction refinement: filter ancestry must not steal the
 initial selection from the actual match. A later full check found that row
 identity needed to remain index-based rather than path-based. Both have focused
-regressions, and the corrected full check passed 907 tests: 895 passed, 12 existing
-skips, zero failures. Quality has no new debt; all 140 specs are assigned.
+regressions. At `26bba006` the full check passed 907 tests (895 passed, 12
+existing skips, zero failures) with 140 specs assigned to CI shards.
+
+After merging `origin/main` (`5451c27`), an evidence-bounded review added five
+fixes with focused regressions: Left/h never leave the tree, a filtered collapse
+keeps the folder selected, a modified buffer reports unsaved state instead of
+previewing disk, stale `~/.jimrc` locks are reclaimed, and Ctrl+G releases the
+filter prompt. At `22df22c` the full check passed 912 tests (904 passed, 8
+existing skips, zero failures), the quality gate reports no regressions, and all
+136 specs belong to a CI shard. CI does not trigger for a PR whose base is not
+`main`; a dispatched run on `22df22c` passed all 12 jobs:
+https://github.com/flyingrobots/jedit/actions/runs/42465462059. Deferred findings are issues #391-#400.
 
 [Native evidence](0164-explorer-witness/README.md) covers mouse and Enter toggles,
 root preservation, nested/filtered rows, dark 100x32 and minimum 60x12, and Arabic
 light 60x16. Graft produced 13 syntax spans while preview authority remained none
 and textRequestId remained 0. Only explicit file Enter opened a buffer.
-Arabic rasterization proves alignment, not terminal-specific shaping.
+Arabic rasterization proves alignment, not terminal-specific shaping. The
+captures were taken at `26bba006`, before the main merge and the review fixes;
+the captured flows are unchanged by those fixes, which cover the root-level Left,
+filtered-collapse, unsaved-buffer and Ctrl+G edges proven by specs.
 
 PR: https://github.com/flyingrobots/jedit/pull/349. The change is stacked on footer
 PR #344; the separate Dojo Feed branch is not part of this change.

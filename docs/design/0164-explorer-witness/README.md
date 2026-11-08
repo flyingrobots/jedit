@@ -39,8 +39,11 @@ Use Ctrl+B, then j Enter j Enter j to expand both levels and select panel.ts.
 Clicking the same directory rows exercises pointer toggling. Type /panel to
 filter; Esc exits filtering. Enter on the file opens it. Ctrl+C exits.
 
-Validation: 47 focused explorer/Graft tests passed; the selection-index
-correction then passed 24 focused navigation/tree/syntax tests. The final full
-local check passed 907 tests: 895 passed, 12 existing skips, zero failures, and
-no quality regressions. All 140 specs belong to CI shards. Hosted exact-head
-checks are recorded in PR #349.
+Validation: captures were taken at `26bba006`, where 47 focused explorer/Graft
+tests passed, the selection-index correction passed 24 focused
+navigation/tree/syntax tests, and the full local check passed 907 tests (895
+passed, 12 existing skips, zero failures) with 140 specs in CI shards. After
+merging `origin/main` and the review fixes, the full check at `22df22c` passed
+912 tests (904 passed, 8 existing skips, zero failures) with no quality
+regressions and 136 specs in CI shards; the dispatched hosted run on that head
+passed all 12 jobs: https://github.com/flyingrobots/jedit/actions/runs/42465462059.
