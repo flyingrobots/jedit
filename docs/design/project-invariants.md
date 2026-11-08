@@ -200,8 +200,8 @@ Important decisions should land in inspectable docs, tests, and code, not live
 only in chat.
 
 Design docs define intent, but executable witnesses prove implementation.
-Design-doc assertions may support evidence ledgers, but they are not sufficient
-proof for product, runtime, UI, or tooling work.
+Tests never read documentation, so a design doc is never evidence that its
+contract holds.
 
 ### 19. Graceful degradation is mandatory
 

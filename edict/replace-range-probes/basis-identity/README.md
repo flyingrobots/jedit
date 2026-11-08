@@ -1,0 +1,60 @@
+# Basis identity comparison witness
+
+These Jim-owned sources isolate byte equality required by ReplaceRange's
+basis validation and content comparisons. They are conformance inputs for
+[Echo #738](https://github.com/flyingrobots/echo/issues/738), not the completed
+operation from [Jim #296](https://github.com/flyingrobots/jedit/issues/296).
+
+`ReplaceRange.edict` compares two `text.HeadId` values through their declared
+32-byte representation. `PayloadEquality.edict` compares bounded variable
+byte payloads, including empty values and unequal lengths, to exercise work
+accounting. Both return an authored numeric branch result. An observed ID
+supplied as input is **not** evidence of the graph's current head. Neither
+source reads state, decodes a fact, grants authority, or admits an edit.
+
+## Build the exact packages
+
+From the repository root:
+
+```sh
+docker build -f edict/replace-range-probes/basis-identity/Dockerfile \
+  -t jim-byte-comparison .
+docker run --name jim-byte-comparison-proof jim-byte-comparison
+docker cp jim-byte-comparison-proof:/comparison-output <destination>
+```
+
+The COPY-based image builds the existing pinned compiler
+`3f81f759e921a69b04fe8cf8e62e62f8f3dc7b7e` using Rust 1.94.0, fetches the
+existing pinned provider `49e9efb68001dfd78563d18bac9359a87671e431`, and invokes
+Edict's public JSONL application-build boundary. Each disposable application
+copy uses `application/`, the frozen application manifest and complete published
+lawpack from Jedit commit `9e6466150e43afc83966f9fe67c6ddce2f58d5bc`.
+`application-provenance.json` records every retained file's SHA-256. The Node
+preflight stage checks every hash, refuses missing or unrecorded files and
+unsafe paths, then emits a checksum projection that also binds the provenance
+JSON. The runtime build checks that projection before compiling either source. This closure's
+manifest is `sha256:95758c1605894672cc9069fde01bb8b6e11842b053102660c9cd4f4d6f34d64e`,
+matching both comparison sources. It is independent of the current flat-text
+application, whose published closure may evolve. The build inserts only the
+selected comparison source into the disposable copy. No host repository or Git
+directory is mounted.
+
+The success marker is `JIM_BYTE_COMPARISON_PACKAGES_BUILT`. Output contains
+`head/` and `payload/`, each with the emitted executable package and its separate
+accepted verification report. Echo's runtime tests must consume these exact
+bytes, never construct a program from the schema or oracle. The frozen
+`edict/replace-range/` application, runtime host, and producer locks are unchanged.
+
+The original evaluator at `8c725d699241a7e3adee482029031ff6bade25fa` refuses
+byte equality as `UnsupportedProgram`. The Echo prerequisite adds bounded,
+metered byte equality; it does not provide snapshot reads or make the full
+ReplaceRange acceptance criteria complete. Generic fact reads, application-owned
+codecs and rope semantics, admitted execution, independent oracle agreement,
+Tick, receipts, WAL, and recovery remain required by #296.
+
+The closure checker requires a build-owned immutable input tree, as supplied by
+Docker `COPY`. It rechecks directories before descent and reads regular files
+through descriptors opened with `O_NOFOLLOW`, including the provenance JSON.
+This refuses a leaf symlink swapped after traversal. It does not provide a
+sandbox for a hostile process concurrently replacing ancestor directories;
+mutable trees shared with untrusted writers are outside this probe's contract.

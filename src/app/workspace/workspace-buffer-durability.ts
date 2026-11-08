@@ -219,6 +219,11 @@ export interface OpenedWorkspaceBufferDurabilityOptions {
   readonly hostBasis: 'file' | 'missing';
   readonly materialization: WorkspaceMaterializationKind;
   readonly hostFingerprint?: EditorFileFingerprint;
+  /**
+   * The head anchored to the opened file bytes. A file is clean only against
+   * this head: without it the file relation is unknown, never assumed.
+   */
+  readonly importHeadId?: string;
 }
 
 export interface WorkspaceBufferAdmittedTransition {
@@ -236,13 +241,14 @@ export function openedWorkspaceBufferDurability(
   options: OpenedWorkspaceBufferDurabilityOptions,
 ): WorkspaceBufferDurability {
   const basisHeadId = nonEmptyId(options.basisHeadId);
-  const file = openedFileDurability(options, basisHeadId);
+  const importHeadId = nonEmptyId(options.importHeadId);
+  const file = openedFileDurability(options, importHeadId);
   return {
     intent: idleIntent(),
     causal: basisHeadId == null
       ? { kind: CAUSAL_UNAVAILABLE }
       : { kind: CAUSAL_ADMITTED, headId: basisHeadId },
-    importBasisHeadId: basisHeadId,
+    importBasisHeadId: importHeadId ?? basisHeadId,
     file,
     localGit: { kind: LOCAL_GIT_UNKNOWN },
     remoteGit: { kind: REMOTE_GIT_UNKNOWN },
@@ -437,7 +443,7 @@ export function workspaceBufferFileDirty(
 
 function openedFileDurability(
   options: OpenedWorkspaceBufferDurabilityOptions,
-  basisHeadId: string | undefined,
+  importHeadId: string | undefined,
 ): WorkspaceBufferFileDurability {
   if (options.hostBasis === HOST_BASIS_MISSING) {
     return {
@@ -447,11 +453,11 @@ function openedFileDurability(
   }
   if (
     options.materialization === WorkspaceMaterializationKinds.Materialized
-    && basisHeadId != null
+    && importHeadId != null
   ) {
     return {
       kind: FILE_SAVED,
-      basisHeadId,
+      basisHeadId: importHeadId,
       hostFingerprint: options.hostFingerprint,
     };
   }

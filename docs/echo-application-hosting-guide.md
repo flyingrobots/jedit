@@ -11,8 +11,8 @@ Identity rules are governed by
 
 `Jim.edict` is the application and proposes work. Echo owns generic admission,
 scheduling, ticks, receipts, witnessed causal history, recovery, bounded
-program interpretation, and basis-pinned observation. Jim-owned Edict lawpacks
-own text semantics. Jedit/Bijou/native code owns terminal and process I/O plus
+program interpretation, and basis-pinned observation. `jedit.text` Edict
+lawpacks own text semantics, composed by `jim.core`. Jedit/Bijou/native code owns terminal and process I/O plus
 rendering. A TypeScript map, queue, runtime, or ledger may neither impersonate
 Echo authority nor interpret Jim commands and choose application operations.
 
@@ -38,9 +38,10 @@ The production workspace now performs this narrow path:
 8. Recover the graph and continue editing from Echo's runtime WAL after
    process restart.
 
-Create/open, single-range insert/replace/delete, and bounded text-window reads
-are implemented. Checkpoints, save/export, multi-range editing, undo/redo,
-causal gutter readings, and `:why` fail closed with typed obstructions.
+Create/open, single-range insert/replace/delete, checkpoint declaration, and
+bounded text-window reads are implemented. Save/export, multi-range editing,
+undo/redo, causal gutter readings, and range `:why` fail closed with typed
+obstructions.
 
 The prior raw WASM facade is deleted. It was not the product text path and no
 longer has a runnable side lane.
@@ -64,7 +65,7 @@ Echo owns:
 - canonical event interpretation, observation requests, operation intents,
   and outcome or obstruction handling.
 
-Jim-owned Edict lawpacks own:
+`jedit.text` Edict lawpacks own:
 
 - rope, buffer, checkpoint, range, and editor semantics;
 - application fact schemas, identities, results, and typed obstructions;
@@ -82,7 +83,7 @@ The Wesley compatibility package currently supplies:
 - canonical EINT codecs and operation ids generated from GraphQL;
 - package registry and artifact evidence;
 - generated mutation-rule and query-observer host helpers;
-- a typed Rust binding around the transitional Jim-owned operation law.
+- a typed Rust binding around the transitional operation law.
 
 Edict owns the generated semantic boundary:
 
@@ -256,7 +257,8 @@ parity by widening handwritten Rust operation APIs.
 
 The planned migration is:
 
-1. Author the exact Jim-owned `ReplaceRange.edict` source and closure.
+1. Author the persistent-rope `ReplaceRange.edict` in `jedit.text`; the
+   flat-text reference is already authored, built, and verified.
 2. Build it through Edict's public application-build boundary.
 3. Add only the generic Edict or Echo capabilities that the honest build proves
    missing; execute the exact verified package against the retained oracle.
@@ -265,7 +267,7 @@ The planned migration is:
 6. Make direct frontend operation orchestration and the bespoke Wesley/Rust
    replacement path unreachable, then delete them.
 7. Migrate buffer creation, checkpoint, save/export, undo/redo, and historical
-   explanation as Jim-owned lawpacks and bounded observations.
+   explanation as `jedit.text` lawpacks and bounded observations.
 8. Delete semantic JSONL operation glue once only the event/artifact membrane
    remains.
 

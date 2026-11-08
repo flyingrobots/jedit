@@ -61,6 +61,10 @@ or import head. A same-text causal
 reversion can therefore remain marked when the retained touch history says the
 line changed.
 
+In production today the causal line-diff observation returns a typed
+obstruction, so the `+`, `~`, and `-` markers are not shown; they become
+available when that observation is Echo-owned.
+
 `?` and `!` are app-owned execution posture, not Echo facts. While optimistic
 text is visible, Jim withholds admitted markers whose old line coordinates no
 longer match the rendered projection. After settlement and a basis-matched

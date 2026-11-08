@@ -10,7 +10,7 @@ export const FROZEN_TITLE_PATH_PATTERNS = Object.freeze([
   /^scripts\/title/,
 ]);
 
-const FREEZE_POLICY_DOC = 'docs/method/backlog/leash/title-scene-freeze.md';
+const FREEZE_POLICY_DOC = 'docs/method/title-scene-freeze.md';
 
 export function isFrozenTitlePath(pathName) {
   return FROZEN_TITLE_PATH_PATTERNS.some((pattern) => pattern.test(pathName));

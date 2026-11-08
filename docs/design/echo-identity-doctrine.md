@@ -89,24 +89,12 @@ No export may claim full replay if it leaves dangling references.
    `(NamespaceId, AnchorId) -> LocalPath` or `(ImportInstanceId, AnchorId) -> LocalPath`.
 6. Rename and copy remain distinct even when snapshots are byte-identical.
 
-## Acceptance checkpoints for this doctrine
+## Acceptance
 
-- [ ] Same-content, different-path records keep `ContentRef` identical but preserve
-  declared worldline distinction.
-- [ ] Two empty buffers can coexist with shared genesis content but distinct
-  `WorldlineId`.
-- [ ] Rename preserves logical identity (`WorldlineId`) and changes only binding/path.
-- [ ] Copy mints a new `WorldlineId`, reuses current content snapshot, and
-  records `derived_from` to source lineage.
-- [ ] Imported WSC can be opened, forked, or adopted without changing transport
-  payload bytes.
-- [ ] Local anchor resolution is scoped by namespace/import instance, never `AnchorId -> LocalPath`.
-- [ ] WSC provenance completeness vs horizon-bounded partials are explicitly declared.
-- [ ] Replay remains deterministic under the same canonical bytes + declared IDs.
+Witnessing this doctrine is tracked in
+[#358](https://github.com/flyingrobots/jedit/issues/358).
 
 ## Reference
 
-Canonical source for implementation and policy follow-on:
-[ARCHITECTURE.md](../ARCHITECTURE.md),
-[docs/method/backlog/asap/echo-identity-doctrine.md](../method/backlog/asap/echo-identity-doctrine.md),
+Related: [ARCHITECTURE.md](../../ARCHITECTURE.md),
 [docs/echo-application-hosting-guide.md](../echo-application-hosting-guide.md).

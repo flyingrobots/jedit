@@ -9,6 +9,7 @@ import type {
   TextWindowReading,
 } from '../../ports/text-authority-evidence.js';
 import type { JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
+import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import type {
   ProductionTextExportRequest,
@@ -36,6 +37,9 @@ const CHECKPOINT_OBSTRUCTION_CODE = 'text-buffer-checkpoint-obstructed';
 const MISSING_BUFFER_OBSTRUCTION_CODE = 'text-buffer-missing-obstructed';
 const TEXT_EXPORT_OBSTRUCTION_CODE = 'text-buffer-export-obstructed';
 const WHY_RANGE_OBSTRUCTION_CODE = 'text-buffer-why-range-obstructed';
+const IMPORT_ANCHOR_MISSING_CODE = 'text-buffer-import-anchor-missing';
+const FILE_CHANGED_SINCE_IMPORT_CODE = 'text-buffer-file-changed-since-import';
+const FILE_AND_BUFFER_CHANGED_SINCE_IMPORT_CODE = 'text-buffer-file-and-buffer-changed-since-import';
 const ECHO_OPERATION_CORRIDOR_UNAVAILABLE = 'Echo is connected, but the generated Jim operation corridor is unavailable.';
 const OUTCOME_OPENED = 'opened';
 const OUTCOME_APPLIED = 'applied';
@@ -64,6 +68,9 @@ export const ProductionTextObstructionCodes = Object.freeze({
   Export: TEXT_EXPORT_OBSTRUCTION_CODE,
   WhyRange: WHY_RANGE_OBSTRUCTION_CODE,
   MissingBuffer: MISSING_BUFFER_OBSTRUCTION_CODE,
+  ImportAnchorMissing: IMPORT_ANCHOR_MISSING_CODE,
+  FileChangedSinceImport: FILE_CHANGED_SINCE_IMPORT_CODE,
+  FileAndBufferChangedSinceImport: FILE_AND_BUFFER_CHANGED_SINCE_IMPORT_CODE,
 } as const);
 
 export type ProductionTextSessionOutcomeKind =
@@ -72,10 +79,30 @@ export type ProductionTextSessionOutcomeKind =
 export type ProductionTextObstructionCode =
   typeof ProductionTextObstructionCodes[keyof typeof ProductionTextObstructionCodes];
 
+export const ProductionTextHostBasisKinds = Object.freeze({
+  File: 'file',
+  Missing: 'missing',
+} as const);
+
+/** What the opened file coordinate holds, observed from its raw bytes. */
+export type ProductionTextHostBasis =
+  | {
+      readonly kind: typeof ProductionTextHostBasisKinds.File;
+      readonly fingerprint: EditorFileFingerprint;
+    }
+  | { readonly kind: typeof ProductionTextHostBasisKinds.Missing };
+
+/** The import an opened buffer is anchored to: its head and the bytes it came from. */
+export interface ProductionTextImportAnchor {
+  readonly headId: string;
+  readonly hostBasis: ProductionTextHostBasis;
+}
+
 export interface ProductionTextOpenRequest {
   readonly bufferKey: string;
   readonly initialText: string;
   readonly projectionPath?: string | null;
+  readonly hostBasis: ProductionTextHostBasis;
   readonly atMs: number;
 }
 
@@ -135,6 +162,7 @@ export interface ProductionTextOpenApplied {
   readonly kind: typeof OUTCOME_OPENED;
   readonly bufferId: string;
   readonly textBasis: TextWindowBasis;
+  readonly importAnchor: ProductionTextImportAnchor;
 }
 
 export interface ProductionTextEditApplied {

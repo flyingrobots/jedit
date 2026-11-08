@@ -68,6 +68,7 @@ export const createWorkspaceRuntime = (
           },
         ),
         profiler: createInitialProfilerState(),
+        ...initialLeaderSettings(deps),
       };
       return [model, initialRuntimeCommands(deps, model)];
     },
@@ -419,6 +420,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
     createNotificationTickCmd: deps.createNotificationTickCmd,
     deps: {
       footerPreferences: deps.footerPreferences,
+      jimSettings: deps.jimSettings,
       fileSystem: deps.fileSystem,
       editorFile: deps.editorFile,
       sourceHighlighter: deps.sourceHighlighter,
@@ -426,6 +428,14 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       graftDiagnostics: deps.graftDiagnostics,
       productionTextSession: deps.productionTextSession,
     },
+  };
+}
+
+function initialLeaderSettings(deps: WorkspaceRuntimeDependencies) {
+  const saved = deps.jimSettings?.load();
+  return saved == null ? {} : {
+    leaderKey: saved.leaderKey,
+    leaderSettingsIssue: saved.issue,
   };
 }
 

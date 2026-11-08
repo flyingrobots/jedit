@@ -533,16 +533,10 @@ What changed from the design:
   [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L20@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L20)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362)
-- **Artifact digest ledger.** The published SHA-256 digests are
-  `f49b0ff6c9c7010d3a72b46734d47832853f496739a083edc41dddec3431bac7`
-  for the schema,
-  `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
-  for codec vectors, and
-  `b9b4707dd5e07897cbe7af36d88928401887e6af5d167d1a88a8d6181b4dbb0e`
-  for the oracle. The oracle source-set digest is
-  `2adf83f798205f52636ad64ca45178f33a8e1cc663874f8a6113484c945e3052`.
-  The ledger derives all four values from the committed artifacts.
-  [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
+- **Artifact digest ledger.** Each published artifact's SHA-256 digest is
+  its `.sha256` sidecar in `contracts/jedit/lawpacks/replace-range-v1/`, and the
+  oracle records its own source-set digest. `tests/replace-range-law-cycle.spec.mjs`
+  checks every sidecar against its artifact bytes.
 - **Serialized resource updates.** The deliberate resource-update command runs
   each exact writer serially
   before the complete locked reader and conformance pass.

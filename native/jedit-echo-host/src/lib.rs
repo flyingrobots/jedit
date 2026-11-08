@@ -3,6 +3,7 @@ pub mod error;
 pub mod generated;
 pub mod host;
 pub mod identity;
+pub mod import_anchor;
 pub mod protocol;
 pub mod records;
 pub mod rope;

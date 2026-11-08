@@ -2,7 +2,7 @@
 title: "WF-0124 - Workspace Buffer Registry"
 legend: "WF"
 lane: "design"
-status: "draft"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-06-27"
@@ -43,7 +43,7 @@ interface WorkspaceBufferRecord {
   pathBinding: string;
   textAuthority: WorkspaceTextAuthorityOpened;
   editorProjection: EditorState;
-  materializationState: WorkspaceWorldlineMaterializationKind;
+  materializationState: WorkspaceMaterializationKind;
   sourceHighlight?: SourceHighlightReading;
   graftInfo?: GraftInfo;
   graftSelectedIndex: number;
@@ -106,16 +106,8 @@ requests claim an active buffer after a switch.
 
 ## Future Slices
 
-The registry is not yet complete. Future cycles should add:
-
-- restart recovery UI for inactive unmaterialized buffers;
-- explicit path-binding records separate from `pathBinding: string`;
-- per-buffer source-highlight and Graft request identity;
-- inactive-buffer history drawer filters;
-- conflict and external-frontier posture per buffer;
-- multi-pane lenses over the same buffer registry;
-- agent proposal strands as isolated buffer records;
-- buffer close/abandon UI.
+Remaining registry work is tracked in
+[#364](https://github.com/flyingrobots/jedit/issues/364).
 
 ## Non-Goals
 

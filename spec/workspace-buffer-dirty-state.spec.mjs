@@ -103,6 +103,7 @@ function openedAuthority(authority, profile, worldline, basisHeadId) {
     materialization: worldline.WorkspaceMaterializationKinds.Materialized,
     hostBasis: authority.WorkspaceTextHostBasisKinds.File,
     hostFingerprint: fileFingerprint(),
+    importHeadId: basisHeadId,
     cache: basisCache(basisHeadId),
   });
 }

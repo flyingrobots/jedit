@@ -1,0 +1,213 @@
+# Re-run the ReplaceRange compiler inventory
+
+This measures the current boundary between authored rope drafts, Core lowering,
+provider schema admission, and provider lowering/verification. It does not make
+the drafts executable or establish graph effects, rope behavior, or recovery.
+
+The [source-module result](current-source-modules.json) records the exact compiler
+commit and observed Echo checkout commit, compiler binary hash, lawpack and
+provider manifest hashes,
+source hashes, exit codes and structured diagnostics. Each report has 27 results:
+the baseline, 21 construct probes, one source module and four whole drafts. The separate
+[default-publication control](current-default.json) accepts the function-free
+baseline; the source-module candidate accepts five cases. The default publication
+rejects function-bearing probes that pass the compiler at schema admission,
+before provider execution.
+Diagnostic paths in the committed reports are relative to the output directory.
+Each rerun writes full case sources and raw JSONL streams into its owned output
+directory; these generated case directories are not committed with the summaries.
+
+`echoCheckoutCommit` identifies the clean checkout inspected by the runner. The
+`--provider` directory is selected independently: its manifest hash binds the
+chosen bytes, while the checkout commit does not attest their source revision.
+The recorded snapshots use this label for the original captured checkout value;
+their case results are unchanged.
+
+Run with the application's pinned Node and Rust releases, inside the admitted
+resource-guarded worker with its existing Cargo target. Set `EDICT_REPO` to a clean
+compiler checkout (the repository is now called Amblicit) and `ECHO_REPO` to a
+clean Echo checkout. Choose new output paths inside the runner's accounted data
+root; the commands compile code and produce test artifacts. Set `JEDIT_ROOT` to
+the Jedit checkout root before changing directories.
+
+For source-function and source-module probes, first explicitly generate Echo's
+source-module publication from its checked component carriers:
+
+```sh
+cd "$ECHO_REPO"
+cargo +1.96.0 run --locked -p echo-wesley-gen \
+  --example source_functions_publication_witness -- \
+  /owned-data/source-modules-provider --source-modules
+cd "$JEDIT_ROOT"
+node edict/replace-range-probes/compiler-inventory/run.mjs \
+  --provider /owned-data/source-modules-provider \
+  --output /owned-data/current-source-modules
+
+# Separate control using the checked default publication.
+node edict/replace-range-probes/compiler-inventory/run.mjs \
+  --provider "$ECHO_REPO/schemas/edict-provider/package/v1" \
+  --output /owned-data/current-default
+```
+
+The runner builds the public compiler selected by Cargo metadata. It copies the
+application into the owned output directory, rebinds its adapter to the selected
+provider, republishes the lawpack through the compiler, and uses the resulting
+import digest. Every case goes through public application build; no case writes
+a package or substitutes a verifier report. An unsuccessful baseline invalidates
+the inventory. A source-function probe can fail at provider admission even when
+its source compiled successfully, so read its stage and kind rather than treating
+all failures as missing language features.
+
+The generated publication is an explicit consumer candidate assembled from
+checked components. This run does not promote a checked provider package, prove
+component reproducibility, or grant application authority. The default
+`schemas/edict-provider/package/v1` publication remains separate; its schema
+rejects a Core function table.
+
+Keep unpublished producer measurements in a separately named candidate report;
+do not overwrite `current-default.json` or `current-source-modules.json` with
+unmerged local changes. The runner records the selected producer commits and
+binary/provider hashes, so a candidate result does not become an upstream claim.
+For an explicit candidate component pair, use the publisher's paired
+`--lowerer-component` and `--verifier-component` paths and retain the designated
+build evidence. Selection does not establish independent reproducibility.
+
+The byte-lookup probe returns its exact U8 result. Its older U32-returning form
+was sufficient to expose an unresolved `at` on the historical compiler, but
+cannot classify a compiler that implements the U8 operation. A composed probe
+also applies `at` directly to a raw byte literal, so measuring the prerequisites
+separately cannot hide an integration failure.
+
+The upstream snapshots distinguish useful capabilities from remaining blockers:
+
+- The default flat-text reference remains the positive control.
+- Unsigned literal addition, byte count, UTF-8 checks and a source-module import
+  carrying the correct digest pass public build with the explicit publication.
+  The inventory does not test a wrong module digest.
+- The `bytes-escapes` and `list-literal` probes reach the candidate provider and
+  are refused there. The generic diagnostic does not isolate literals from return
+  types or escapes; `count-bytes` contains a byte literal and passes.
+- The probes for variants, recursive records/functions, Option, function
+  preconditions and typed pure failures refuse before provider invocation.
+- Whole drafts fail first at a generic helper or an undigested module import.
+  Those first errors do not classify every later construct in each program.
+
+Accepted helper declarations are deliberately narrow evidence: this inventory
+has not invoked those helpers at runtime. The complete ReplaceRange gate still needs
+execution evidence for its authored program; helper declarations must not replace
+the persistent rope with the already proven flat-text reference.
+
+## Unpublished composed byte prerequisites
+
+[Candidate measurement](candidate-composed-bytes.json) selects Amblicit
+`9b5ed1a49c84867d6959e20222b827e4fa7d2789` and Echo
+`162d14a183312bfadd4fd8abac0c4a4919b51dd7`, a regular merge of the byte-literal
+and U8/byte-lookup candidates. The exact compiler binary is
+`db47a8e5c13ba5e47a0e7468ea06aebec146409ca378f82dc33146e644594faa`;
+selected provider manifest is
+`81dabc4af55c459eed6e80ae47a8071d3487a4c3562e13c686d7d4b054683eec`.
+This is local candidate evidence, not checked-component promotion or a statement
+that these changes are on upstream main.
+
+Nine of 28 public-build cases pass: baseline, raw bytes/escapes, unsigned
+addition, U8, count, UTF-8, byte lookup, literal-plus-lookup composition, and the
+digest-authenticated source module. Unsafe addition, variants, recursive
+records/functions, Option, list length/concatenation, function preconditions,
+typed pure failure, division/min/max and generic helpers still refuse in the
+compiler. The list-literal helper reaches the provider and is refused there.
+
+The complete drafts still stop first at `contentId<T>` in `Text.edict` or a
+missing source-module digest in the other three drafts. Later constructs in
+those drafts remain unmeasured by their first failure. The candidate source
+and component checks do not establish the rope's oracle agreement, sharing,
+effects, admission, recovery or editor cutover. The upstream snapshots above
+remain unchanged.
+
+
+## Authenticated draft source closures
+
+[Follow-up candidate measurement](candidate-authenticated-drafts.json) uses the
+same Amblicit `9b5ed1a` and component pair, with Echo witness source `158714ce`.
+The component production code remains `162d14a1`; the later commit changes only
+the witness selection and its documentation. Nine of 28 cases still pass.
+
+The authored drafts now pin their imported source bytes. `run.mjs` checks those
+pins before building and supplies each root's complete source-module closure,
+sets its declared package coordinate, and records every source hash. To repin
+after an intentional dependency edit, run from the repository root:
+
+```sh
+node edict/replace-range-probes/compiler-inventory/draft-modules.mjs --write
+node edict/replace-range-probes/compiler-inventory/draft-modules.mjs --check
+node --test edict/replace-range-probes/compiler-inventory/draft-modules.test.mjs
+```
+
+The tests check an independent compiler digest vector and an actual leaf-source
+mutation that must repin both direct imports and the transitive rope import.
+These commands do not compile the drafts. The public inventory measures that
+separately, preserving the earlier snapshots unchanged.
+
+The next actual parse refusals are `contentId<T>` in Text (line 89), an `else`
+inside the reference read expression (line 55), the rope's recursive `depth`
+clause (line 24), and the operation draft's enum declaration (line 49). No
+missing-digest error remains. Later constructs and schema-2 lawpack resolution
+are still unproven; a first parse error cannot classify their support.
+
+
+## Witnessed boundary helper in the authored closure
+
+[Current draft measurement](candidate-boundary-drafts.json) keeps the same
+compiler/component selection and nine of 28 accepted builds. The new
+[Boundary module witness](../text-boundary/README.md) separately invokes the
+exact Jim-authored character-boundary predicate through public build and the
+generic runtime. Its 61 predicate cases and ten refusal controls do not replace
+the 40 retained ReplaceRange oracle cases.
+
+Boundary is now a leaf dependency of Text. The pin check and mutation test
+propagate changes through Text and Rope into Reference and ReplaceRange, and
+every current draft result hashes that full source-module closure. Full Text
+still first refuses at `contentId<T>` (now line 90); Reference, Rope and
+ReplaceRange retain their `else`, `depth` and enum parser refusals. The older
+snapshots above remain unchanged for their named source revisions.
+
+
+## Acyclic variant declaration graph
+
+[Variant-type candidate measurement](candidate-variant-types.json) selects
+Amblicit `da86ed1` and the same Echo source/component publication. Ten of 28
+public builds accept: the additional accepted case is the source variant type
+declaration. Its exact case and payload graph now enters Core instead of being
+rejected before Core; the selected provider accepts that declaration too.
+
+This probe declares an unused variant. It does not construct a variant value,
+match one, or exercise variant-valued input/results. Native compiler tests also
+cover aliases, original imported module and nominal payload identities,
+canonical order independence, and missing/empty/duplicate/cyclic/deep/wide
+refusals. At that compiler revision, constructors and matching remain explicit
+compiler refusals. Enum
+and recursive-variant support are still separate work, and the whole drafts'
+first generic/read-expression/depth/enum errors are unchanged. The earlier
+snapshots above remain bound to their original compiler/source selections.
+
+## Checked source constructors and the provider boundary
+
+[Constructor candidate measurement](candidate-variant-constructors.json) selects
+Amblicit `2e24840` with the unchanged Echo `158714ce` publication. Ten of 30
+public builds accept; the two additional cases separate a valid constructor
+from an invalid payload. Existing 28-case snapshots remain unchanged.
+
+The valid helper `Probe::Data(value)` with `value: U8` now passes source/Core
+checking and reaches `ProviderLowererRefused` for `core.source-functions`.
+The diagnostic identifies the checked pure-function profile; it does not
+identify which variant type or expression check refused first. This helper is
+unused by the baseline operation. No variant-valued package or runtime
+execution is established. `Probe::Data(true)` instead refuses during source
+type checking with `TypeMismatch` before provider invocation.
+
+The compiler candidate separately checks constructor tags, payload presence,
+payload types/bounds, original imported coordinates, exact named union
+identity through helper calls, and payload capture/cycles/depth/totality.
+Its full local gate passes 1,350 tests with two ignored. This compiler evidence
+does not establish Echo admission, execution, wire representation, matching,
+recursive variants, or full rope acceptance. The whole drafts' first failures
+remain generic `contentId<T>`, read-expression `else`, `depth`, and enum syntax.

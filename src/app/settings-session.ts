@@ -14,6 +14,7 @@ import {
   type WorkspaceCausalGutterBasis,
 } from './workspace/workspace-causal-gutter-basis.js';
 import { ViewModes, type ViewMode } from './workspace/view-mode.js';
+import { leaderSettingsRow, type LeaderSettingsState } from './leader-settings-row.js';
 
 export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
@@ -28,6 +29,7 @@ export const JEDIT_SETTING_ACTION = {
   OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
   CycleLocale: Symbol('jedit.settings.action.cycle-locale'),
   SelectLocale: Symbol('jedit.settings.action.select-locale'),
+  CaptureLeader: Symbol('jedit.settings.action.capture-leader'),
 } as const;
 
 export type JeditSettingAction = typeof JEDIT_SETTING_ACTION[keyof typeof JEDIT_SETTING_ACTION];
@@ -47,7 +49,7 @@ export type JeditSettingsActivationDelta =
   | typeof SETTINGS_ACTIVATE_NEXT_DELTA
   | typeof SETTINGS_ACTIVATE_PREVIOUS_DELTA;
 
-export interface JeditSettingsState {
+export interface JeditSettingsState extends LeaderSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
   readonly footerLayout?: FooterLayout;
@@ -87,6 +89,7 @@ export interface JeditSettingsKeyMsg {
 }
 
 export interface JeditSettingsHandlers<Model, Command> {
+  captureLeader(model: Model): [Model, Cmd<Command>[]];
   cycleTheme(model: Model): [Model, Cmd<Command>[]];
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   cycleFilepaths(model: Model): [Model, Cmd<Command>[]];
@@ -197,6 +200,7 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
 
 type NonLocaleSettingsHandlerName =
   | 'cycleFilepaths'
+  | 'captureLeader'
   | 'cycleTheme'
   | 'toggleThemeMode'
   | 'toggleFooter'
@@ -210,6 +214,7 @@ const SETTINGS_ACTION_HANDLERS: ReadonlyMap<
   NonLocaleSettingsHandlerName
 > = new Map([
   [JEDIT_SETTING_ACTION.CycleFilepaths, 'cycleFilepaths'],
+  [JEDIT_SETTING_ACTION.CaptureLeader, 'captureLeader'],
   [JEDIT_SETTING_ACTION.CycleTheme, 'cycleTheme'],
   [JEDIT_SETTING_ACTION.ToggleThemeMode, 'toggleThemeMode'],
   [JEDIT_SETTING_ACTION.ToggleFooter, 'toggleFooter'],
@@ -240,6 +245,7 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
   if (state.diagnosticsAvailable) {
     rows.push(diagnosticsSettingsRow(state.i18n));
   }
+  rows.push(leaderSettingsRow(state));
 
   return rows;
 }

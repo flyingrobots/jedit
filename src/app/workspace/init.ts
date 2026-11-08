@@ -11,6 +11,7 @@ import { ViewModes } from "./view-mode.js";
 import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from "../text-runtime-profile.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { emptyWorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
+import { LeaderKey } from '../../domain/leader-key.js';
 import { EMPTY_FILE_SEARCH } from './file-search.js';
 import {
   initialStartupFileModalState,
@@ -95,6 +96,8 @@ function initialDrawerState() {
 
 function initialSettingsState() {
   return {
+    leaderKey: LeaderKey.Default,
+    leaderCaptureActive: false,
     lineNumberMode: INITIAL_LINE_NUMBER_MODE,
     gutterDimmed: false,
     causalGutterBasis: INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,

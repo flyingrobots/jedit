@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { z } from 'zod';
 import {
+  EchoTextHostBasisKinds,
   EchoTextHostOutcomeKinds,
   EchoTextHostCheckpointReasons,
   EchoTextHostRequestKinds,
@@ -35,9 +36,22 @@ const BufferEvidenceSchema = z.object({
   bufferVersion: z.number().int().nonnegative(),
 });
 
+const HostBasisSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal(EchoTextHostBasisKinds.File),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+    byteLength: z.number().int().nonnegative(),
+  }),
+  z.object({ kind: z.literal(EchoTextHostBasisKinds.Missing) }),
+]);
+
 const WireOpenedSchema = BufferEvidenceSchema.extend({
   kind: z.literal(EchoTextHostOutcomeKinds.Opened),
   requestId: z.number().int().nonnegative(),
+  importAnchor: z.object({
+    headId: z.string().min(1),
+    hostBasis: HostBasisSchema,
+  }),
   receiptId: z.string().min(1).optional(),
   admittedTickId: z.string().min(1).optional(),
 });
