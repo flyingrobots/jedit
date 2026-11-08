@@ -14,6 +14,13 @@ export interface FooterGlobalWidthOptions {
   readonly compact: boolean;
 }
 const GLOBAL_GAP_WIDTH = 2;
+const HALVES = 2;
+
+/** Footer segments split a row at its midpoint; the right half keeps the odd cell. */
+export function halfFooterWidth(width: number): number {
+  return Math.floor(width / HALVES);
+}
+
 export function footerGlobalWidth(options: FooterGlobalWidthOptions): number {
-  return options.compact ? Math.min(visibleLineLength(options.summary) + GLOBAL_GAP_WIDTH, Math.floor(options.width / 2)) : 0;
+  return options.compact ? Math.min(visibleLineLength(options.summary) + GLOBAL_GAP_WIDTH, halfFooterWidth(options.width)) : 0;
 }

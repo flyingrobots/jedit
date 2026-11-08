@@ -11,6 +11,7 @@ import type { WorkspaceModel } from '../app/workspace/model.js';
 import { footerGlobalObservation } from '../app/workspace/footer-global-observation.js';
 import { footerSurfaceObservation } from '../app/workspace/footer-surface-observation.js';
 import { settingsRows } from '../app/workspace/settings.js';
+import { LEADER_SETTINGS_COPY } from '../app/leader-settings-row.js';
 
 export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresentation {
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
@@ -43,8 +44,9 @@ function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undef
   };
   if (!model.settingsOpen) return undefined;
   const row = settingsRows(model)[model.settingsFocusIndex];
+  const detail = model.leaderCaptureActive === true ? model.i18n.t(LEADER_SETTINGS_COPY.Capture) : row?.valueLabel ?? '';
   return {
-    label: model.i18n.t('footer.mode.settings').toUpperCase(), identity: row?.label ?? '', detail: row?.valueLabel ?? '',
+    label: model.i18n.t('footer.mode.settings').toUpperCase(), identity: row?.label ?? '', detail,
     active: true, x: 0, width: resolveSettingsDrawerWidth(model.columns),
   };
 }

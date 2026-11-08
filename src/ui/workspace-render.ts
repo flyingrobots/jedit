@@ -35,8 +35,13 @@ export interface TreeLineOptions extends SelectableLineOptions {
   readonly expanded?: boolean;
 }
 
+const TREE_PREFIX_CELLS = 2;
+const TREE_INDENT = '  ';
+const TREE_INDENT_CELLS = TREE_INDENT.length;
+const TREE_DISCLOSURE_CELLS = 2;
+
 export function fileTreeNameColumn(entry: FileEntry, depth = 0): number {
-  return 2 + depth * 2 + (entry.kind === FileEntryKinds.Directory ? 2 : 0);
+  return TREE_PREFIX_CELLS + depth * TREE_INDENT_CELLS + (entry.kind === FileEntryKinds.Directory ? TREE_DISCLOSURE_CELLS : 0);
 }
 
 export function formatTreeLine(entry: FileEntry, options: TreeLineOptions): string {
@@ -46,9 +51,9 @@ export function formatTreeLine(entry: FileEntry, options: TreeLineOptions): stri
   }
   if (entry.kind === FileEntryKinds.Directory) {
     const disclosure = options.expanded ? '▾' : '▸';
-    return `${prefix}${'  '.repeat(options.depth ?? 0)}${disclosure} ${entry.name}/`;
+    return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${disclosure} ${entry.name}/`;
   }
-  return `${prefix}${'  '.repeat(options.depth ?? 0)}${entry.name}`;
+  return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${entry.name}`;
 }
 
 export function graftOutlineScroll(selectedIndex: number, total: number, visible: number): number {

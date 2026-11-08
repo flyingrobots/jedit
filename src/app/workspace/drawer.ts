@@ -28,7 +28,7 @@ function openGraftDrawer(
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const [next, cmds] = beginGraftRefresh({
-    ...withFocusPane({ ...model, graftDrawerOpen: true }, FocusPanes.Graft),
+    ...withFocusPane({ ...model, graftDrawerOpen: true, fileSearchEditing: false }, FocusPanes.Graft),
   }, { force: false });
   if (model.graftDrawerOpen) {
     return [next, cmds];

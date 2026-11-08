@@ -5,7 +5,7 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
 import { emphasizeFooterPhrases } from './footer-cell-style.js';
 import { renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
-import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, type FooterLayout } from './footer-layout.js';
+import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, halfFooterWidth, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
 
@@ -113,7 +113,7 @@ function paintLine(surface: Surface, text: string, bounds: { row: number; x: num
 
 export function joinFooterSides(left: string, right: string, width: number, direction: I18nDirection = I18N_TEXT_DIRECTION.Ltr): string {
   if (right.length === 0) return direction === I18N_TEXT_DIRECTION.Rtl ? fitRight(left, width) : clipToWidth(left, width);
-  const rightWidth = Math.min(visibleLineLength(right), Math.floor(width / 2));
+  const rightWidth = Math.min(visibleLineLength(right), halfFooterWidth(width));
   const leftWidth = Math.max(0, width - rightWidth - GAP.length);
   return direction === I18N_TEXT_DIRECTION.Rtl
     ? `${fitLine(right, rightWidth)}${GAP}${fitRight(left, leftWidth)}`
@@ -121,7 +121,7 @@ export function joinFooterSides(left: string, right: string, width: number, dire
 }
 
 function localObservationLine(observation: FooterSurfaceObservation, width: number, direction: I18nDirection): string {
-  const detailWidth = Math.min(visibleLineLength(observation.detail), Math.floor(width / 2));
+  const detailWidth = Math.min(visibleLineLength(observation.detail), halfFooterWidth(width));
   const gapWidth = detailWidth === 0 ? 0 : GAP.length;
   const prefix = [observation.label, observation.emphasis].filter(Boolean).join(' ');
   const identityWidth = Math.max(0, width - detailWidth - gapWidth - visibleLineLength(prefix) - 1);
@@ -154,7 +154,7 @@ function paintGlobalEmphasis(surface: Surface, options: FooterLayoutViewOptions)
   const row = surface.height - 1;
   emphasizeFooterPhrases(surface, { row, x: 0, width: options.width }, options.presentation.globalEmphasis, options.presentation.normalToken);
   if (options.presentation.filterInput != null && row !== LOCAL_ROW) {
-    emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: Math.floor(options.width / 2), width: Math.ceil(options.width / 2) },
+    emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: halfFooterWidth(options.width), width: options.width - halfFooterWidth(options.width) },
       options.presentation.globalEmphasis, options.presentation.normalToken);
   }
 }
