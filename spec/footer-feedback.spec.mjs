@@ -134,6 +134,14 @@ test('Explorer opens a temporary footer filter, retains a header indicator, and 
   next = runtime.update({ type: 'key', key: 'escape' }, next)[0];
   assert.equal(workspaceFooterRows(next), 0);
 });
+test('A hidden footer reserves the prompt row only while the filter prompt owns input', async () => {
+  const { workspaceFooterRows } = await importDist('app', 'workspace', 'viewport.js');
+  const editing = { footerVisible: false, fileSearchEditing: true, fileDrawerOpen: true, focusPane: 'files' };
+  assert.equal(workspaceFooterRows(editing), 1);
+  for (const overlay of [{ quitConfirmOpen: true }, { settingsOpen: true }, { startupFileModalOpen: true }, { commandLine: { active: true } }]) {
+    assert.equal(workspaceFooterRows({ ...editing, ...overlay }), 0, JSON.stringify(overlay));
+  }
+});
 test('The Files footer says FILTER only while the filter prompt owns input', async () => {
   const { model } = await setup({
     fileDrawerOpen: true,

@@ -11,7 +11,7 @@ import type { WorkspaceModel } from '../app/workspace/model.js';
 import { footerGlobalObservation } from '../app/workspace/footer-global-observation.js';
 import { footerSurfaceObservation } from '../app/workspace/footer-surface-observation.js';
 import { settingsRows } from '../app/workspace/settings.js';
-import { LEADER_SETTINGS_COPY } from '../app/leader-settings-row.js';
+import { FOOTER_COPY } from '../app/workspace/footer-copy.js';
 
 export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresentation {
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
@@ -37,7 +37,9 @@ export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresen
   };
 }
 
-const OVERLAY_COPY = Object.freeze({ StartupTitle: 'startupFileModal.title', SettingsMode: 'footer.mode.settings' } as const);
+const OVERLAY_COPY = Object.freeze({
+  StartupTitle: FOOTER_COPY.StartupTitle, SettingsMode: FOOTER_COPY.Settings, LeaderCapture: FOOTER_COPY.LeaderCapture,
+} as const);
 
 function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undefined {
   if (model.startupFileModalOpen) return {
@@ -46,7 +48,7 @@ function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undef
   };
   if (!model.settingsOpen) return undefined;
   const row = settingsRows(model)[model.settingsFocusIndex];
-  const detail = model.leaderCaptureActive === true ? model.i18n.t(LEADER_SETTINGS_COPY.Capture) : row?.valueLabel ?? '';
+  const detail = model.leaderCaptureActive === true ? model.i18n.t(OVERLAY_COPY.LeaderCapture) : row?.valueLabel ?? '';
   return {
     label: model.i18n.t(OVERLAY_COPY.SettingsMode).toUpperCase(), identity: row?.label ?? '', detail,
     active: true, x: 0, width: resolveSettingsDrawerWidth(model.columns),

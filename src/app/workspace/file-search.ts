@@ -1,6 +1,6 @@
 import type { FileEntry } from '../../ports/file-system.js';
 import { FileEntryKinds } from '../../ports/file-system.js';
-import { FocusPanes } from '../../ui/panel-focus.js';
+import { FocusPanes } from '../../ports/workspace-focus.js';
 import { scrollIndexByRows } from '../../ui/mouse-scroll.js';
 import { wrapIndex } from '../list-index.js';
 import type { WorkspaceModel } from './model.js';
@@ -27,12 +27,17 @@ export function fileSearchState(model: Pick<WorkspaceModel, 'fileSearch'>): File
   return model.fileSearch ?? EMPTY_FILE_SEARCH;
 }
 
-export function fileExplorerHasFocus(model: WorkspaceModel): boolean {
-  return model.fileDrawerOpen && model.focusPane === FocusPanes.Files &&
-    !model.settingsOpen && !model.quitConfirmOpen && !model.startupFileModalOpen && !model.commandLine?.active;
+/** The model facts that decide whether the Files explorer and its filter prompt own input. */
+export type FileExplorerFocusState = Partial<Pick<WorkspaceModel,
+  'fileDrawerOpen' | 'focusPane' | 'settingsOpen' | 'quitConfirmOpen' | 'startupFileModalOpen' | 'commandLine' | 'fileSearchEditing'>>;
+
+export function fileExplorerHasFocus(model: FileExplorerFocusState): boolean {
+  return model.fileDrawerOpen === true && model.focusPane === FocusPanes.Files &&
+    model.settingsOpen !== true && model.quitConfirmOpen !== true && model.startupFileModalOpen !== true &&
+    model.commandLine?.active !== true;
 }
 
-export function fileSearchHasFocus(model: WorkspaceModel): boolean {
+export function fileSearchHasFocus(model: FileExplorerFocusState): boolean {
   return fileExplorerHasFocus(model) && model.fileSearchEditing === true;
 }
 

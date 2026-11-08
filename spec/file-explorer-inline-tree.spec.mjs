@@ -204,3 +204,19 @@ test('Right or l on a file opens it like Enter', async () => {
     assert.equal(commands.length, 1, keyName);
   }
 });
+
+test('Expanded tree rows never change which file :e opens or what the startup picker lists', async () => {
+  const { runtime, deps, model } = await setup();
+  const rootMain = { kind: 'file', name: 'main.ts', path: '/repo/main.ts' };
+  deps.fileSystem.loadEntries = (path) => (path === '/repo/src' ? [parent, main] : [src, rootMain]);
+  let next = key(runtime, { ...model, entries: [src, rootMain] }, 'enter')[0];
+  assert.deepEqual(next.entries, [src, main, rootMain]);
+  const { cwdEntries } = await importDist('app', 'workspace', 'file-tree-expansion.js');
+  assert.deepEqual(cwdEntries(next), [src, rootMain]);
+  next = key(runtime, next, 'b', { ctrl: true })[0];
+  for (const typed of [':', 'e', 'space', 'm', 'a', 'i', 'n', '.', 't', 's']) {
+    next = key(runtime, next, typed)[0];
+  }
+  const [opened] = key(runtime, next, 'enter');
+  assert.equal(opened.textAuthority.filePath, rootMain.path);
+});

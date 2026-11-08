@@ -1,13 +1,17 @@
 import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 import { fitLine } from './fit-line.js';
 
-export { fitLine } from './fit-line.js';
+export { fitLine, wrapLine } from './fit-line.js';
 
 export interface GraftOutlineDisplayItem {
   readonly kind: string;
   readonly name: string;
   readonly startLine: number;
 }
+
+const SELECTED_ROW_PREFIX = '› ';
+const TREE_INDENT = '  ';
+const UNSELECTED_ROW_PREFIX = TREE_INDENT;
 
 export interface SelectableLineOptions {
   readonly selected: boolean;
@@ -26,7 +30,7 @@ export function fitBlock(text: string, width: number, height: number): string {
 }
 
 export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, options: SelectableLineOptions): string {
-  const prefix = options.selected ? '› ' : '  ';
+  const prefix = options.selected ? SELECTED_ROW_PREFIX : UNSELECTED_ROW_PREFIX;
   return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
 }
 
@@ -36,29 +40,30 @@ export interface TreeLineOptions extends SelectableLineOptions {
 }
 
 const TREE_PREFIX_CELLS = 2;
-const TREE_INDENT = '  ';
 const TREE_INDENT_CELLS = TREE_INDENT.length;
 const TREE_DISCLOSURE_CELLS = 2;
+const ROOT_DEPTH = 0;
 
-export function fileTreeNameColumn(entry: FileEntry, depth = 0): number {
+export function fileTreeNameColumn(entry: FileEntry, depth = ROOT_DEPTH): number {
   return TREE_PREFIX_CELLS + depth * TREE_INDENT_CELLS + (entry.kind === FileEntryKinds.Directory ? TREE_DISCLOSURE_CELLS : 0);
 }
 
-const TREE_SELECTED_PREFIX = '› ';
 const TREE_PARENT_LABEL = '../';
+const DISCLOSURE_GAP = ' ';
+const DIRECTORY_SUFFIX = '/';
 const DISCLOSURE_OPEN = '▾';
 const DISCLOSURE_CLOSED = '▸';
 
 export function formatTreeLine(entry: FileEntry, options: TreeLineOptions): string {
-  const prefix = options.selected ? TREE_SELECTED_PREFIX : TREE_INDENT;
+  const prefix = options.selected ? SELECTED_ROW_PREFIX : UNSELECTED_ROW_PREFIX;
   if (entry.kind === FileEntryKinds.Parent) {
     return `${prefix}${TREE_PARENT_LABEL}`;
   }
   if (entry.kind === FileEntryKinds.Directory) {
     const disclosure = options.expanded ? DISCLOSURE_OPEN : DISCLOSURE_CLOSED;
-    return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${disclosure} ${entry.name}/`;
+    return `${prefix}${TREE_INDENT.repeat(options.depth ?? ROOT_DEPTH)}${disclosure}${DISCLOSURE_GAP}${entry.name}${DIRECTORY_SUFFIX}`;
   }
-  return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${entry.name}`;
+  return `${prefix}${TREE_INDENT.repeat(options.depth ?? ROOT_DEPTH)}${entry.name}`;
 }
 
 export function graftOutlineScroll(selectedIndex: number, total: number, visible: number): number {

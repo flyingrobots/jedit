@@ -16,9 +16,11 @@ import {
 import { paintWorkspaceCommandCompletionOverlay } from './workspace-command-completion-overlay.js';
 import { paintWorkspaceInlinePanelOverlay } from './workspace-inline-panel-overlay.js';
 import { LEADER_SETTINGS_COPY } from '../leader-settings-row.js';
+import { cwdEntries } from './file-tree-expansion.js';
+import { FOOTER_COPY } from './footer-copy.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
-  Title: 'startupFileModal.title',
+  Title: FOOTER_COPY.StartupTitle,
   CurrentDirectory: 'startupFileModal.current_directory',
   Empty: 'startupFileModal.empty',
 } as const);
@@ -97,7 +99,7 @@ function paintStartupFileDrawer(
     screen.blit(
       renderStartupFileDrawer({
         cwd: model.cwd,
-        rows: startupFileModalRows(model.entries),
+        rows: startupFileModalRows(cwdEntries(model)),
         selectedIndex: model.startupFileModalSelectedIndex,
         copy: startupFileModalCopy(model),
         theme: model.jeditTheme,

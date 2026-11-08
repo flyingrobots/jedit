@@ -1,5 +1,5 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { DIRECTORY_ACTION_OPEN, FileEntryKinds } from '../../ports/file-system.js';
+import { DIRECTORY_ACTION_OPEN, FileEntryKinds, type FileEntry } from '../../ports/file-system.js';
 import { directoryChangeFailure, type DirectoryExpansionContext } from './directory-change-failure.js';
 import {
   EMPTY_FILE_SEARCH, fileSearchEntries, fileSearchWithInput, selectedFileSearchEntry,
@@ -13,12 +13,23 @@ export interface FileTreeNode {
   readonly parentPath?: string;
   readonly expanded: boolean;
 }
+const ROOT_DEPTH = 0;
 const CHILD_DEPTH = 1;
 const FIRST_CHILD_OFFSET = 1;
 const COLLAPSE_KEYS = new Set<string>([WorkspaceKeys.ArrowLeft, WorkspaceKeys.H]);
 const TOGGLE_KEYS = new Set<string>([WorkspaceKeys.Enter]);
 const EXPAND_KEYS = new Set<string>([WorkspaceKeys.ArrowRight, WorkspaceKeys.L]);
 type Result = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+
+/**
+ * The cwd's own entries, without rows the inline tree spliced in for expanded
+ * folders. Commands, completion and the startup picker resolve names against
+ * these so explorer state never changes which file `:e name` opens.
+ */
+export function cwdEntries(model: Pick<WorkspaceModel, 'entries' | 'fileTree'>): readonly FileEntry[] {
+  const tree = model.fileTree;
+  return tree == null ? model.entries : model.entries.filter((entry) => tree[entry.path]?.parentPath == null);
+}
 
 export function toggleFileTreeDirectory(model: WorkspaceModel, context: DirectoryExpansionContext): Result {
   const entry = selectedFileSearchEntry(model);
@@ -60,7 +71,7 @@ function collapseOrParent(model: WorkspaceModel): Result {
 function expandDirectory(model: WorkspaceModel, context: DirectoryExpansionContext): WorkspaceModel {
   const entry = model.entries[model.selectedIndex];
   if (entry == null) return model;
-  const node = model.fileTree?.[entry.path] ?? { depth: 0, expanded: false };
+  const node = model.fileTree?.[entry.path] ?? { depth: ROOT_DEPTH, expanded: false };
   const paths = new Set(model.entries.map((row) => row.path));
   const children = context.fileSystem.loadEntries(entry.path).filter((row) => row.kind !== FileEntryKinds.Parent && !paths.has(row.path));
   const fileTree = { ...model.fileTree, [entry.path]: { ...node, expanded: true } };
@@ -96,5 +107,5 @@ function descendantEnd(model: WorkspaceModel, depth: number): number {
 
 function rowDepth(model: WorkspaceModel, index: number): number {
   const path = model.entries[index]?.path;
-  return path == null ? 0 : model.fileTree?.[path]?.depth ?? 0;
+  return path == null ? ROOT_DEPTH : model.fileTree?.[path]?.depth ?? ROOT_DEPTH;
 }

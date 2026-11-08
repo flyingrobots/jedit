@@ -230,3 +230,51 @@ test('The unsaved-changes notice fits the preview of a 60-column terminal in eve
     assert.ok(compact(rowText(surface, 3)).includes(compact(notice)), `${locale}: ${rowText(surface, 3)}`);
   }
 });
+
+test('Preview notices wrap instead of clipping when both drawers leave a narrow preview', async () => {
+  const { locales } = await importDist('generated', 'i18n.js');
+  const { resolveWorkspaceLayout } = await importDist('ui', 'drawer-layout.js');
+  const { renderFileExplorerPreview } = await importDist('app', 'workspace', 'file-explorer-preview-view.js');
+  const viewerWidth = resolveWorkspaceLayout(60, 1, 1).viewer.width;
+  const model = {
+    ...(await setup()).model,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    graftDrawerOpen: true,
+    graftDrawerProgress: 1,
+    focusPane: 'files',
+    selectedIndex: 0,
+  };
+  const compact = (text) => text.replace(/\s+/gu, '');
+  for (const locale of locales) {
+    const i18n = model.i18n.withLocale(locale);
+    for (const [kind, key] of [
+      ['unsaved-buffer', 'fileExplorer.preview_unsaved_buffer'],
+      ['binary', 'fileExplorer.preview_binary'],
+    ]) {
+      const localized = { ...model, i18n, fileExplorerPreview: { requestId: 1, entry, result: { kind } } };
+      const surface = renderFileExplorerPreview(localized, viewerWidth, 12);
+      const body = [3, 4, 5, 6].map((row) => rowText(surface, row)).join('');
+      assert.ok(compact(body).includes(compact(i18n.t(key))), `${locale} ${kind}: ${body}`);
+    }
+  }
+});
+
+test('A pending edit on an already modified buffer reports unsaved changes instead of the pre-edit reading', async () => {
+  const fixture = await setup();
+  const { WorkspaceTextAuthorityKinds } = await importDist('app', 'workspace', 'workspace-text-authority.js');
+  const head = { startLine: 0, lines: ['AUTH v1'], totalLineCount: 1, truncated: false };
+  const textAuthority = {
+    ...fixture.model.textAuthority,
+    kind: WorkspaceTextAuthorityKinds.Opened,
+    filePath: entry.path,
+    bufferId: entry.path,
+    dirty: true,
+    pendingClientSeq: 7,
+    cache: head,
+  };
+  const editor = { path: entry.path, lines: ['PROJ v2'], dirty: true };
+  const next = await preview({ ...fixture, model: { ...fixture.model, textAuthority, editor } });
+  assert.deepEqual(fixture.reads, []);
+  assert.equal(next.fileExplorerPreview.result.kind, 'unsaved-buffer');
+});

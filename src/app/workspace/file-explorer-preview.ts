@@ -78,10 +78,13 @@ function openedBuffer(model: WorkspaceModel, path: string): OpenedBuffer | undef
 // `dirty` on the authority is the durability view (a pending edit is not yet
 // dirty); the editor projection's own flag is also honoured. Disk is only a
 // faithful preview when neither reports unsaved text.
-// A dirty projection over a clean authority means an edit is still pending: the
-// authority's reading, even at the file head, does not contain it yet.
+// An edit the authority has not yet admitted is not in its reading, even at the
+// file head: a pending client sequence, or a dirty projection over a clean
+// authority, means the head reading would show pre-edit text.
 function pendingProjectionPreview(buffer: OpenedBuffer): FilePreviewResult | undefined {
-  return buffer.projection?.dirty === true && !buffer.authority.dirty ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
+  const pendingEdit = buffer.authority.pendingClientSeq != null;
+  const unadmittedEdit = buffer.projection?.dirty === true && !buffer.authority.dirty;
+  return pendingEdit || unadmittedEdit ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
 }
 
 function unsavedBufferPreview(buffer: OpenedBuffer): FilePreviewResult | undefined {

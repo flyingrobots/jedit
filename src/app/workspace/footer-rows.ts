@@ -1,5 +1,5 @@
 import { FOOTER_LAYOUT, type FooterLayout } from '../../ports/footer-preferences.js';
-import { FocusPanes, type FocusPane } from '../../ports/workspace-focus.js';
+import { fileSearchHasFocus, type FileExplorerFocusState } from './file-search.js';
 
 const TWO_ROWS = 2;
 const ONE_ROW = 1;
@@ -10,17 +10,16 @@ export function footerLayoutRows(layout?: FooterLayout): number {
   return layout === FOOTER_LAYOUT.Compact ? ONE_ROW : TWO_ROWS;
 }
 
-export interface FooterRowsState {
+export interface FooterRowsState extends FileExplorerFocusState {
   readonly footerVisible: boolean;
   readonly footerLayout?: FooterLayout;
-  readonly fileSearchEditing?: boolean;
-  readonly fileDrawerOpen?: boolean;
-  readonly focusPane?: FocusPane;
 }
 
-/** A hidden footer reserves one row only while the Files filter prompt owns input. */
+/**
+ * A hidden footer reserves one row only while the Files filter prompt owns
+ * input, by the same predicate the footer presentation uses to paint it.
+ */
 export function footerRowsFor(state: FooterRowsState): number {
   if (state.footerVisible) return footerLayoutRows(state.footerLayout);
-  const filterOwnsInput = state.fileSearchEditing === true && state.fileDrawerOpen === true && state.focusPane === FocusPanes.Files;
-  return filterOwnsInput ? ONE_ROW : NO_ROWS;
+  return fileSearchHasFocus(state) ? ONE_ROW : NO_ROWS;
 }

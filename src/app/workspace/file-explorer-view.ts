@@ -8,11 +8,12 @@ import {
   fileSearchListHeight, listScrollOffset,
 } from './viewport.js';
 import { applyBackground, fillSurface } from './surface-fill.js';
+import { FOOTER_COPY } from './footer-copy.js';
 
 const PAD_MULTIPLIER = 2;
 const MIN_WIDTH = 1;
 const SEARCH_EMPTY_KEY = 'fileExplorer.empty';
-const HEADER_COPY = Object.freeze({ Files: 'footer.mode.files', FilterHint: 'footer.hints.slash_filter', Filter: 'footer.status.filter' } as const);
+const HEADER_COPY = FOOTER_COPY;
 const HEADER_GAP = '  ';
 const QUERY_SEPARATOR = ': ';
 

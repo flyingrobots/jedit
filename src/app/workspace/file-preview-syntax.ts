@@ -1,6 +1,9 @@
 import type { PreviewHighlighter, SourceHighlightReading } from '../../ports/source-highlighter.js';
 import { FilePreviewKinds, type FilePreviewResult } from '../../ports/file-preview.js';
 
+const LINE_SEPARATOR = '\n';
+const FIRST_LINE = 0;
+
 const TAB_SPACES = '    ';
 const UNSAFE_CONTROLS = /[\p{Cc}\p{Cf}]/gu;
 
@@ -16,7 +19,7 @@ export async function highlightFilePreview(
   if (result.kind !== FilePreviewKinds.Loaded || highlighter == null) return undefined;
   const lines = filePreviewSourceLines(result.lines);
   try {
-    const highlight = await highlighter.highlightPreview({ path, text: lines.join('\n'), startLine: 0, lineCount: lines.length });
+    const highlight = await highlighter.highlightPreview({ path, text: lines.join(LINE_SEPARATOR), startLine: FIRST_LINE, lineCount: lines.length });
     return highlight.path === path ? highlight : undefined;
   } catch { return undefined; }
 }

@@ -26,7 +26,9 @@ test('RTL footer layouts align local identity logically and preserve literal pat
     );
     assert.ok(badge > 40, `${footerLayout}: badge ${badge}`);
     assert.ok(line(surface, row).trimEnd().endsWith('/repo'));
-    if (footerLayout !== 'compact') assert.ok(line(surface, 23).trimEnd().endsWith('/repo'));
+    if (footerLayout !== 'compact') {
+      assert.ok(line(surface, 23).trimEnd().endsWith('/repo'));
+    }
   }
 });
 test('Shrinking the source viewport keeps its bottom cursor visible and refreshes highlighting', async () => {

@@ -2,7 +2,7 @@ import type { Cmd, MouseMsg } from '@flyingrobots/bijou-tui';
 import { fileSearchCursorAtColumn } from '../../ui/file-search-input.js';
 import { fileSearchInputOptions, fileFilterPromptWidth, fileFilterPromptX } from '../../ui/workspace-file-filter-prompt.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
-import { FocusPanes } from '../../ui/panel-focus.js';
+import { FocusPanes } from '../../ports/workspace-focus.js';
 import { fileSearchEntries, fileSearchState } from './file-search.js';
 import { DRAWER_INNER_PAD, listScrollOffset, workspaceBodyHeight, WORKSPACE_BODY_TOP_OFFSET,
   FILE_SEARCH_ROW, FILE_SEARCH_LIST_TOP, fileSearchListHeight, workspaceFooterRows } from './viewport.js';
