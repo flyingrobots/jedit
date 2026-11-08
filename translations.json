@@ -224,7 +224,7 @@
           "preview_binary": "Binary file — preview unavailable",
           "preview_unavailable": "Preview unavailable",
           "preview_truncated": "Preview truncated",
-          "preview_unsaved_buffer": "Unsaved changes in the open buffer; press Enter to view them"
+          "preview_unsaved_buffer": "Unsaved changes; Enter opens them"
         }
       }
     },
@@ -452,7 +452,7 @@
           "preview_binary": "Fichier binaire — aperçu indisponible",
           "preview_unavailable": "Aperçu indisponible",
           "preview_truncated": "Aperçu tronqué",
-          "preview_unsaved_buffer": "Modifications non enregistrées dans le tampon ouvert ; Entrée pour les voir"
+          "preview_unsaved_buffer": "Modifications non enregistrées ; Entrée"
         }
       }
     },
@@ -680,7 +680,7 @@
           "preview_binary": "File binario — anteprima non disponibile",
           "preview_unavailable": "Anteprima non disponibile",
           "preview_truncated": "Anteprima troncata",
-          "preview_unsaved_buffer": "Modifiche non salvate nel buffer aperto; Invio per vederle"
+          "preview_unsaved_buffer": "Modifiche non salvate; Invio apre"
         }
       }
     },
@@ -908,7 +908,7 @@
           "preview_binary": "Binärdatei — keine Vorschau",
           "preview_unavailable": "Vorschau nicht verfügbar",
           "preview_truncated": "Vorschau gekürzt",
-          "preview_unsaved_buffer": "Ungespeicherte Änderungen im offenen Puffer; Enter zum Anzeigen"
+          "preview_unsaved_buffer": "Ungespeichert; Enter öffnet"
         }
       }
     },
@@ -1136,7 +1136,7 @@
           "preview_binary": "Archivo binario — sin vista previa",
           "preview_unavailable": "Vista previa no disponible",
           "preview_truncated": "Vista previa truncada",
-          "preview_unsaved_buffer": "Cambios sin guardar en el búfer abierto; Intro para verlos"
+          "preview_unsaved_buffer": "Cambios sin guardar; Intro abre"
         }
       }
     },
@@ -1364,7 +1364,7 @@
           "preview_binary": "바이너리 파일 — 미리 보기 불가",
           "preview_unavailable": "미리 보기 불가",
           "preview_truncated": "미리 보기 생략됨",
-          "preview_unsaved_buffer": "열린 버퍼에 저장되지 않은 변경 사항이 있습니다. Enter로 확인"
+          "preview_unsaved_buffer": "저장 안 된 변경, Enter로 열기"
         }
       }
     },
@@ -1592,7 +1592,7 @@
           "preview_binary": "バイナリファイル — プレビュー不可",
           "preview_unavailable": "プレビュー不可",
           "preview_truncated": "プレビューを省略",
-          "preview_unsaved_buffer": "開いているバッファに未保存の変更があります。Enterで表示"
+          "preview_unsaved_buffer": "未保存の変更。Enterで開く"
         }
       }
     },
@@ -1820,7 +1820,7 @@
           "preview_binary": "二进制文件 — 无法预览",
           "preview_unavailable": "无法预览",
           "preview_truncated": "预览已截断",
-          "preview_unsaved_buffer": "打开的缓冲区有未保存的更改；按 Enter 查看"
+          "preview_unsaved_buffer": "有未保存更改，按 Enter 打开"
         }
       }
     },
@@ -2048,7 +2048,7 @@
           "preview_binary": "Arquivo binário — sem prévia",
           "preview_unavailable": "Prévia indisponível",
           "preview_truncated": "Prévia truncada",
-          "preview_unsaved_buffer": "Alterações não salvas no buffer aberto; Enter para vê-las"
+          "preview_unsaved_buffer": "Alterações não salvas; Enter abre"
         }
       }
     },
@@ -2276,7 +2276,7 @@
           "preview_binary": "Двоичный файл — просмотр недоступен",
           "preview_unavailable": "Просмотр недоступен",
           "preview_truncated": "Просмотр сокращён",
-          "preview_unsaved_buffer": "Несохранённые изменения в открытом буфере; Enter — показать"
+          "preview_unsaved_buffer": "Есть несохранённое; Enter"
         }
       }
     },
@@ -2504,7 +2504,7 @@
           "preview_binary": "ملف ثنائي — المعاينة غير متاحة",
           "preview_unavailable": "المعاينة غير متاحة",
           "preview_truncated": "المعاينة مختصرة",
-          "preview_unsaved_buffer": "تغييرات غير محفوظة في المخزن المفتوح؛ اضغط Enter لعرضها"
+          "preview_unsaved_buffer": "تغييرات غير محفوظة؛ Enter يفتحها"
         }
       }
     },
@@ -2732,7 +2732,7 @@
           "preview_binary": "Berkas biner — pratinjau tidak tersedia",
           "preview_unavailable": "Pratinjau tidak tersedia",
           "preview_truncated": "Pratinjau dipotong",
-          "preview_unsaved_buffer": "Perubahan belum disimpan di buffer terbuka; Enter untuk melihat"
+          "preview_unsaved_buffer": "Belum disimpan; Enter membuka"
         }
       }
     },
@@ -2960,7 +2960,7 @@
           "preview_binary": "İkili dosya — önizleme yok",
           "preview_unavailable": "Önizleme kullanılamıyor",
           "preview_truncated": "Önizleme kısaltıldı",
-          "preview_unsaved_buffer": "Açık arabellekte kaydedilmemiş değişiklikler var; görmek için Enter"
+          "preview_unsaved_buffer": "Kaydedilmemiş; Enter açar"
         }
       }
     },
@@ -3188,7 +3188,7 @@
           "preview_binary": "बाइनरी फ़ाइल — पूर्वावलोकन उपलब्ध नहीं",
           "preview_unavailable": "पूर्वावलोकन उपलब्ध नहीं",
           "preview_truncated": "पूर्वावलोकन संक्षिप्त है",
-          "preview_unsaved_buffer": "खुले बफ़र में असहेजे बदलाव हैं; देखने के लिए Enter दबाएँ"
+          "preview_unsaved_buffer": "असहेजे बदलाव; Enter से खोलें"
         }
       }
     },
@@ -3416,7 +3416,7 @@
           "preview_binary": "Binair bestand — geen voorbeeld",
           "preview_unavailable": "Voorbeeld niet beschikbaar",
           "preview_truncated": "Voorbeeld ingekort",
-          "preview_unsaved_buffer": "Niet-opgeslagen wijzigingen in de open buffer; Enter om te bekijken"
+          "preview_unsaved_buffer": "Niet opgeslagen; Enter opent"
         }
       }
     },
@@ -3644,7 +3644,7 @@
           "preview_binary": "Plik binarny — brak podglądu",
           "preview_unavailable": "Podgląd niedostępny",
           "preview_truncated": "Podgląd skrócony",
-          "preview_unsaved_buffer": "Niezapisane zmiany w otwartym buforze; Enter, aby je zobaczyć"
+          "preview_unsaved_buffer": "Niezapisane zmiany; Enter otwiera"
         }
       }
     },
@@ -3872,7 +3872,7 @@
           "preview_binary": "Tệp nhị phân — không thể xem trước",
           "preview_unavailable": "Không thể xem trước",
           "preview_truncated": "Bản xem trước bị cắt",
-          "preview_unsaved_buffer": "Bộ đệm đang mở có thay đổi chưa lưu; nhấn Enter để xem"
+          "preview_unsaved_buffer": "Chưa lưu; Enter để mở"
         }
       }
     },
@@ -4100,7 +4100,7 @@
           "preview_binary": "ไฟล์ไบนารี — ไม่สามารถแสดงตัวอย่าง",
           "preview_unavailable": "ไม่สามารถแสดงตัวอย่าง",
           "preview_truncated": "ตัวอย่างถูกตัด",
-          "preview_unsaved_buffer": "บัฟเฟอร์ที่เปิดอยู่มีการเปลี่ยนแปลงที่ยังไม่บันทึก กด Enter เพื่อดู"
+          "preview_unsaved_buffer": "ยังไม่บันทึก กด Enter เพื่อเปิด"
         }
       }
     },
@@ -4328,7 +4328,7 @@
           "preview_binary": "فایل دودویی — پیش‌نمایش در دسترس نیست",
           "preview_unavailable": "پیش‌نمایش در دسترس نیست",
           "preview_truncated": "پیش‌نمایش کوتاه شده",
-          "preview_unsaved_buffer": "تغییرات ذخیره‌نشده در بافر باز؛ برای مشاهده Enter را بزنید"
+          "preview_unsaved_buffer": "تغییرات ذخیره‌نشده؛ Enter"
         }
       }
     },
@@ -4556,7 +4556,7 @@
           "preview_binary": "קובץ בינארי — אין תצוגה מקדימה",
           "preview_unavailable": "תצוגה מקדימה אינה זמינה",
           "preview_truncated": "תצוגה מקדימה מקוצרת",
-          "preview_unsaved_buffer": "שינויים שלא נשמרו במאגר הפתוח; Enter להצגה"
+          "preview_unsaved_buffer": "שינויים לא שמורים; Enter פותח"
         }
       }
     }

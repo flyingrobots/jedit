@@ -101,3 +101,19 @@ test('A modified open buffer with an off-head reading window reports unsaved cha
   const clean = await preview({ ...fixture, model: { ...fixture.model, textAuthority: opened(false, undefined) } });
   assert.deepEqual(fixture.reads, [entry.path]); assert.equal(clean.fileExplorerPreview.result.kind, 'loaded');
 });
+
+test('A dirty dormant buffer or a dirty editor projection also reports unsaved changes instead of disk', async () => {
+  const fixture = await setup();
+  const { WorkspaceTextAuthorityKinds } = await importDist('app', 'workspace', 'workspace-text-authority.js');
+  const window = { startLine: 500, lines: ['CACHE line 501'], totalLineCount: 1000, truncated: true };
+  const opened = (path, dirty) => ({
+    ...fixture.model.textAuthority, kind: WorkspaceTextAuthorityKinds.Opened, filePath: path, bufferId: path, dirty, cache: window,
+  });
+  const record = { bufferId: entry.path, pathBinding: entry.path, textAuthority: opened(entry.path, true),
+    editorProjection: { path: entry.path, lines: ['PROJECTED'], dirty: true }, materializationState: 0, graftSelectedIndex: 0, lastActivatedAt: 0 };
+  const dormant = await preview({ ...fixture, model: { ...fixture.model, textAuthority: opened('/repo/other.ts', false), buffers: { [entry.path]: record } } });
+  assert.deepEqual(fixture.reads, []); assert.equal(dormant.fileExplorerPreview.result.kind, 'unsaved-buffer');
+  const editor = { path: entry.path, lines: ['EDITED'], dirty: true };
+  const projected = await preview({ ...fixture, model: { ...fixture.model, textAuthority: opened(entry.path, false), editor } });
+  assert.deepEqual(fixture.reads, []); assert.equal(projected.fileExplorerPreview.result.kind, 'unsaved-buffer');
+});

@@ -9,6 +9,7 @@ import { isWorkspaceTextAuthorityOpened, type WorkspaceTextAuthorityOpened } fro
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceModel } from './model.js';
+import type { EditorState } from './editor/model.js';
 
 export interface FileExplorerPreview {
   readonly requestId: number;
@@ -56,15 +57,29 @@ function clearFileExplorerPreview(result: Result): Result {
 // saved file, while a modified buffer reports its unsaved state rather than
 // silently previewing stale disk text.
 function bufferPreview(model: WorkspaceModel, path: string): FilePreviewResult | undefined {
-  const authority = isWorkspaceTextAuthorityOpened(model.textAuthority) && model.textAuthority.filePath === path
-    ? model.textAuthority
-    : findWorkspaceBufferRecordByPath(model, path)?.textAuthority;
-  if (authority != null) return readingPreview(authority.cache) ?? unsavedBufferPreview(authority);
+  const buffer = openedBuffer(model, path);
+  if (buffer != null) return readingPreview(buffer.authority.cache) ?? unsavedBufferPreview(buffer);
   return model.editor?.path === path ? linesPreview(model.editor.lines, model.editor.lines.length) : undefined;
 }
 
-function unsavedBufferPreview(authority: WorkspaceTextAuthorityOpened): FilePreviewResult | undefined {
-  return authority.dirty ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
+interface OpenedBuffer {
+  readonly authority: WorkspaceTextAuthorityOpened;
+  readonly projection?: EditorState;
+}
+
+function openedBuffer(model: WorkspaceModel, path: string): OpenedBuffer | undefined {
+  if (isWorkspaceTextAuthorityOpened(model.textAuthority) && model.textAuthority.filePath === path) {
+    return { authority: model.textAuthority, projection: model.editor?.path === path ? model.editor : undefined };
+  }
+  const record = findWorkspaceBufferRecordByPath(model, path);
+  return record == null ? undefined : { authority: record.textAuthority, projection: record.editorProjection };
+}
+
+// `dirty` on the authority is the durability view (a pending edit is not yet
+// dirty); the editor projection's own flag is also honoured. Disk is only a
+// faithful preview when neither reports unsaved text.
+function unsavedBufferPreview(buffer: OpenedBuffer): FilePreviewResult | undefined {
+  return buffer.authority.dirty || buffer.projection?.dirty === true ? { kind: FilePreviewKinds.UnsavedBuffer } : undefined;
 }
 
 function readingPreview(cache: WorkspaceTextReadingCache | undefined): FilePreviewResult | undefined {
