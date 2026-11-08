@@ -11,7 +11,7 @@ import {
 } from './command-completion-preview.js';
 import type { WorkspaceModel } from './model.js';
 import {
-  FOOTER_ROWS,
+  workspaceFooterRows,
   MIN_COLUMNS,
   MIN_ROWS,
 } from './viewport.js';
@@ -87,9 +87,9 @@ function commandLineCompletionPopupAnchor(model: WorkspaceModel) {
   return {
     x: commandLineCompletionAnchorIndex(model) +
       COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
-    y: model.rows - FOOTER_ROWS,
+    y: model.rows - workspaceFooterRows(model),
     screenWidth: model.columns,
-    screenHeight: model.rows - FOOTER_ROWS + COMMAND_COMPLETION_COMMAND_LINE_ROWS,
+    screenHeight: model.rows - workspaceFooterRows(model) + COMMAND_COMPLETION_COMMAND_LINE_ROWS,
   };
 }
 

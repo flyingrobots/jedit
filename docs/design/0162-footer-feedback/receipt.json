@@ -1,0 +1,1653 @@
+{
+  "implementation": "82060e45",
+  "finalImplementation": "c9ef3063",
+  "widthImplementation": "8a10e9a615dd0b76ca6685cabe055d70991841d4",
+  "method": "Native production Echo/Bijou PTY; captured Surface cells rendered with Menlo, including bold and underline",
+  "captures": [
+    {
+      "image": "feedback-absolute-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellsSha256": "7144cca85f2615e6c9ef2d05437e8f3447f97f2679f143e3ed1b32dc9b33d870"
+    },
+    {
+      "image": "feedback-editor-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "6bc7305e15c4d810764edc5098ab88d26bdf30538d4070529771bdf6d3db3ccf"
+    },
+    {
+      "image": "feedback-editor-light-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "e8c7ee6d73d9c09521bb8889fc43437dd93066decd95b582c25f8f270904ae50"
+    },
+    {
+      "image": "feedback-filter-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellsSha256": "e5f4e55748c7053019abbcb5ec237a5be5e1db88d21b0b30333a7f50caa0bce4"
+    },
+    {
+      "image": "feedback-filter-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b"
+    },
+    {
+      "image": "feedback-final-filter-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b"
+    },
+    {
+      "image": "feedback-final-settings-dark-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "610eca3c7a880a893b59f5e581bd7abbe252d52150d1556a58148374238c7e7e"
+    },
+    {
+      "image": "feedback-final-settings-light-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "9b0bac2247a44af40c0d3ca4baa9e1f8a3e02d4f9a4d03e7764124fc93e6d001"
+    },
+    {
+      "image": "feedback-hidden-filter-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "2e294f0484a92b1fc5e23834b85a95665fd01cc57500a876805403bc08cb1647"
+    },
+    {
+      "image": "feedback-hidden-nav-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellsSha256": "9432bba95ec7cafeef5e66a589b5a672576abe113bef16acafe58ce10c28c9eb"
+    },
+    {
+      "image": "feedback-nav-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellsSha256": "8e207cb3062ea059c82cf0b79eaceb288ecae6c2522266dacf7a366de80e75e9"
+    }
+  ],
+  "feedback-wide-events.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "b",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ff02c67e2048f217de6ffda0315d97d3e3dc43c751db90e1c0d2ec54b7051fc9",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "337144e84deabfc9273cf607c119f9fa4c7b6a6d2ef78fe9eb084e62d412889f",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "fcae8ae9629613a00a99d7af94b3bc4bfdf4b15bef7c0c1b1d2d7136ce089ddd",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 1,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "l",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "7a6d49c39fbe1aa1cb1bb151aedb3ee9e5430732a45f0608a249da3c79acea11",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "p",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "384f7b52ffc86f45fc42c26d1ec07c6362fffb2b471d35d63f4ef427e4900f2f",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 3,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "h",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "68fdd167aee9acf2cdcf486e993a1da7f56d198636d29dee5886463977b2643c",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 4,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "cfd35eb78e92ffbc14fd153459635267043850dfbe7800c11e99729983b4ce72",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 1,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "<fixture>/alpha.txt",
+          "searchPath": "<fixture>/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "e5f4e55748c7053019abbcb5ec237a5be5e1db88d21b0b30333a7f50caa0bce4",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "8e207cb3062ea059c82cf0b79eaceb288ecae6c2522266dacf7a366de80e75e9",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "4afd131d0c0068eafb3fa92ca30adbaad9c019b3be3b4e2e394a7a288c9cdfde",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "0504dd38e9b0e35dcbdfc1b05883418eb18a3777b1eab73e3450c4ee7f22a413",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "afcc27bfd6c85b3fb0c24c3d222b2cef09f3efa6928f3e1a16ac5225748a88fc",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ed569ad38a6822b33754ed5f9a18f2e7caba37d74e5a26ccf0774d0be756e655",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "fb34200350f3233d0d61cf3037930a025387d20697d8290ada58c166c53c2742",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2eceb83ade34b7a8e193cb4dd05c2015abb72e2d3007e9dc68aa825f5a709a20",
+      "layout": "focused",
+      "filepathStyle": "git-root",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "19d64e21845c7dc8938d188ec358f6288234987c295b43cd8e776add741b1b04",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "eef2a7e880c9537fd6f179066915173f75639e1a48a928ad536f6cc76d777d5a",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 2,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "<fixture>/alpha.txt",
+          "searchPath": "<fixture>/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "7144cca85f2615e6c9ef2d05437e8f3447f97f2679f143e3ed1b32dc9b33d870",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "9131365d03169ecb8d5e9f4426ae5c9148cecf1e6b49fa82da933f328c5bfe4f",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "069551bf4fd3a78cc35760d5548d27524beba0ba4dc42246c5190c39d03962d5",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "bd6ce5c109ebc8c2bb6ed67037306840e74f059ddd1a7867df1ea03a658c65d4",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "076a5a6d96040c01187c9cad9d4bd2fd099c617a675dcb0ce39bf8c42e7a7f9a",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "07610498d96d732b527ee8bcf504865a1e7ee091e0c7ff5e8327598c735206cf",
+      "layout": "focused",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "835268e147739de0c3a3d25df28377bb4f0bab0b952ddb6b5c5c8db1e81e4c23",
+      "layout": "per-pane",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "cb8e4e3c51e3236795c6b3ef36c8e346cb011fa75df8e38cbb9cd806e7eaf928",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "354a59a6e001262e65950502fe6779aafbd7653aa29ae8a92d48179a8ffbc87e",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 3,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "<fixture>/alpha.txt",
+          "searchPath": "<fixture>/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "9c14a805652831ab48553954c7a15fee6a61df133291d7a6390346c47979ff45",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 3
+    }
+  ],
+  "feedback-narrow-events.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "b",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "b2e74ecfe9aa57b8daf08dc7e9e639f9b6ef99093b8a326fed4ddae6e3e3f16d",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "35c3e8470f3530e86caaac12c2e1d39c11eb97968567903bfe446625f7b5b2bf",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ca8fd857d0efb6a1e8521bb6cd0e19a039eee848b4e2d4ab3a9858bb13925bd8",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 1,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "l",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1fa5fad0d018110ec9ab5a75e3c360f1aa8baa97bc47665708df059bf5303b01",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "p",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "cd09731c865211846e10b56c02bdd19f24cc24a6b02fd089c196a9c2789cf17b",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 3,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "h",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "d5837030939568c98aca565fc16ab67dbfec97ee92a1bf68e5fd27ec756e711f",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 4,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "a3e62b91f1f058da1c10b6ec96d4e738b5303aa8e80a8dfda08be41dd3dbc790",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 1,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "<fixture>/alpha.txt",
+          "searchPath": "<fixture>/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "mouse",
+        "button": "left",
+        "action": "press",
+        "col": 3,
+        "row": 15,
+        "shift": false,
+        "alt": false,
+        "ctrl": false
+      },
+      "digest": "1d8262af493f20c8c97ea2a0c30b90b6f73daf32ac1d8d02f6c198697c13f218",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "5ef1704a8ae5fbe22a713e9446a0aaf0674fd6e9dc786232739c860f770922a9",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "mouse",
+        "button": "left",
+        "action": "press",
+        "col": 4,
+        "row": 3,
+        "shift": false,
+        "alt": false,
+        "ctrl": false
+      },
+      "digest": "1d8262af493f20c8c97ea2a0c30b90b6f73daf32ac1d8d02f6c198697c13f218",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "mouse",
+        "button": "left",
+        "action": "press",
+        "col": 4,
+        "row": 4,
+        "shift": false,
+        "alt": false,
+        "ctrl": false
+      },
+      "digest": "5ef1704a8ae5fbe22a713e9446a0aaf0674fd6e9dc786232739c860f770922a9",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "enter",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "00497cad105df04f56aa8ddb35aba41ddf6085ec4f303e0cf9e49a49863cf831",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "text-open-result",
+        "requestId": 1,
+        "result": {
+          "kind": "opened",
+          "filePath": "<fixture>/alpha.txt",
+          "bufferId": "4a54f38fe4421ff348b4016005e9aa26d9ae76d75a74f7709f4e5c315bc5455d",
+          "readOnly": false,
+          "materialization": "materialized",
+          "hostBasis": "file",
+          "hostFingerprint": {
+            "algorithm": "sha256",
+            "digest": "c505d3b475287a87dbac407890225b6a12ecf8634b2ab40973b973d967a74325",
+            "byteLength": 19
+          },
+          "initialLines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "cache": {
+            "bufferId": "4a54f38fe4421ff348b4016005e9aa26d9ae76d75a74f7709f4e5c315bc5455d",
+            "readingId": "84b14e53002b543b5fe9dfd5ff8dcb6b6523a292454a83322c0611bb813d0808",
+            "textBasis": {
+              "basisHeadId": "7fc11213fa1b8555f28282c41679b4d3f7023bc264c0dc987613c8dbbf26b769",
+              "byteRange": {
+                "startByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 0
+                },
+                "endByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 19
+                }
+              }
+            },
+            "projection": {
+              "basisHeadId": "7fc11213fa1b8555f28282c41679b4d3f7023bc264c0dc987613c8dbbf26b769",
+              "basis": {
+                "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                "headId": "7fc11213fa1b8555f28282c41679b4d3f7023bc264c0dc987613c8dbbf26b769",
+                "rootNodeId": "048d8bc1d40bfe6a96c367c59b46015aa282ce80e82b07c31af5b084c4f332b0",
+                "byteLength": 19,
+                "lineCount": 2
+              },
+              "byteRange": {
+                "startByte": 0,
+                "endByte": 19
+              },
+              "text": "ALPHA LIVE CONTENT\n",
+              "support": [
+                {
+                  "leafId": "048d8bc1d40bfe6a96c367c59b46015aa282ce80e82b07c31af5b084c4f332b0",
+                  "blobId": "771f09e098f6e92d87e6991fa015cc4ee127fa8af1e4dfd7c7cf0a56e9e1cf44",
+                  "contentHash": "12fcc22d9fc96524a4a469b8213146aff7316170e8d4636ea34ca37acaa9da2f",
+                  "byteRange": {
+                    "startByte": 0,
+                    "endByte": 19
+                  }
+                }
+              ]
+            },
+            "materialization": {
+              "key": {
+                "schemaVersion": 1,
+                "materializerVersion": "jedit.text-window.materializer.v1",
+                "basis": {
+                  "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                  "headId": "7fc11213fa1b8555f28282c41679b4d3f7023bc264c0dc987613c8dbbf26b769",
+                  "requestFrontierRef": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:1"
+                },
+                "coverage": {
+                  "startByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 0
+                  },
+                  "endByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 19
+                  }
+                },
+                "observerPlanId": "31782b9c0208a0a6682a13b45d3f53fedfed9927d27369456cded29f4d8fe68e",
+                "policyDigest": "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6",
+                "coordinateDigest": "3310bd29f0cf97046df3c11990d8a14bdc9a1b8ec829d04cc61d4835a06f9cf5",
+                "cacheKeyDigest": "84b14e53002b543b5fe9dfd5ff8dcb6b6523a292454a83322c0611bb813d0808"
+              },
+              "completeness": "complete",
+              "materializedProjectionBytes": 19
+            },
+            "lines": [
+              "ALPHA LIVE CONTENT",
+              ""
+            ],
+            "coverage": "full",
+            "lineCount": 2,
+            "startLine": 0,
+            "returnedLineCount": 2,
+            "totalLineCount": 2,
+            "hasMoreBefore": false,
+            "hasMoreAfter": false,
+            "cursorLine": 0,
+            "viewportLineCount": 24,
+            "truncated": false
+          }
+        }
+      },
+      "digest": "85f9a04a9639718f65380e2bf00656a370abf9a24438dbcb4582b0db7145f79b",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "i",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "bb87c6a68ba2e681207fecda1eb75e2ae685d19afac5cd4a5340437dd268d886",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "x",
+        "ctrl": false,
+        "alt": false,
+        "shift": true
+      },
+      "digest": "f20f39c4d74d375d1f4267536c5d95b5b974f3c4afa214ee73923b61efc07908",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "text-edit-result",
+        "requestId": 2,
+        "result": {
+          "kind": "applied",
+          "filePath": "<fixture>/alpha.txt",
+          "bufferId": "4a54f38fe4421ff348b4016005e9aa26d9ae76d75a74f7709f4e5c315bc5455d",
+          "receiptId": "22e648aa63daa9d2c828915dfd93c33325a7bacb4119b823e4be288452964d75",
+          "causalTransition": {
+            "admittedTickId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:2:759d2da93d9b9e2360aeb3f49523caad172755e8f0c70c653d3dd509a2f4df6d",
+            "nextHeadId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282"
+          },
+          "lineChanges": {
+            "kind": "unavailable",
+            "reason": "observation-obstructed",
+            "basisHeadId": "7fc11213fa1b8555f28282c41679b4d3f7023bc264c0dc987613c8dbbf26b769",
+            "nextHeadId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282",
+            "message": "The current generated Wesley compatibility corridor does not implement this operation. Edict migration will add it explicitly."
+          },
+          "cache": {
+            "bufferId": "4a54f38fe4421ff348b4016005e9aa26d9ae76d75a74f7709f4e5c315bc5455d",
+            "readingId": "1ca7a244f3a3e1cc2ae95e3ae45c30b2ce46480f0735f568efb79af8fecee74e",
+            "textBasis": {
+              "basisHeadId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282",
+              "byteRange": {
+                "startByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 0
+                },
+                "endByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 20
+                }
+              }
+            },
+            "projection": {
+              "basisHeadId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282",
+              "basis": {
+                "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                "headId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282",
+                "rootNodeId": "0659556a53d1f80ef20f79e8caf2b98afe8d316a3a179a6b7ca39ba796d74773",
+                "byteLength": 20,
+                "lineCount": 2
+              },
+              "byteRange": {
+                "startByte": 0,
+                "endByte": 20
+              },
+              "text": "XALPHA LIVE CONTENT\n",
+              "support": [
+                {
+                  "leafId": "f304398f9a49ae58fe33be1b6e7310b5eb6da3aeea8bfe20d1d4544176a1bf60",
+                  "blobId": "94c8e96f579173bb9a351b52cb29512a83c1e0a1da70fa5a520e1600d136da47",
+                  "contentHash": "474db980b76d2b8c29e2686a11fb37f0d8267a9c55480a0f5af48d51ee901cf2",
+                  "byteRange": {
+                    "startByte": 0,
+                    "endByte": 1
+                  }
+                },
+                {
+                  "leafId": "048d8bc1d40bfe6a96c367c59b46015aa282ce80e82b07c31af5b084c4f332b0",
+                  "blobId": "771f09e098f6e92d87e6991fa015cc4ee127fa8af1e4dfd7c7cf0a56e9e1cf44",
+                  "contentHash": "12fcc22d9fc96524a4a469b8213146aff7316170e8d4636ea34ca37acaa9da2f",
+                  "byteRange": {
+                    "startByte": 1,
+                    "endByte": 20
+                  }
+                }
+              ]
+            },
+            "materialization": {
+              "key": {
+                "schemaVersion": 1,
+                "materializerVersion": "jedit.text-window.materializer.v1",
+                "basis": {
+                  "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                  "headId": "8a6fa748c38f7ea841712b49aec2eb381caf862ad0c6014c22e76cc87ffe8282",
+                  "requestFrontierRef": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:2"
+                },
+                "coverage": {
+                  "startByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 0
+                  },
+                  "endByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 20
+                  }
+                },
+                "observerPlanId": "31782b9c0208a0a6682a13b45d3f53fedfed9927d27369456cded29f4d8fe68e",
+                "policyDigest": "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6",
+                "coordinateDigest": "759d2da93d9b9e2360aeb3f49523caad172755e8f0c70c653d3dd509a2f4df6d",
+                "cacheKeyDigest": "1ca7a244f3a3e1cc2ae95e3ae45c30b2ce46480f0735f568efb79af8fecee74e"
+              },
+              "completeness": "complete",
+              "materializedProjectionBytes": 20
+            },
+            "lines": [
+              "XALPHA LIVE CONTENT",
+              ""
+            ],
+            "coverage": "full",
+            "lineCount": 2,
+            "startLine": 0,
+            "returnedLineCount": 2,
+            "totalLineCount": 2,
+            "hasMoreBefore": false,
+            "hasMoreAfter": false,
+            "cursorLine": 0,
+            "viewportLineCount": 11,
+            "truncated": false
+          },
+          "cursorAfter": {
+            "row": 0,
+            "column": 1
+          }
+        }
+      },
+      "digest": "29a4c3a6875e76beec2e3d20759fe528ca07e0b499e4e0074e1c29c5b42576d9",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "6bc7305e15c4d810764edc5098ab88d26bdf30538d4070529771bdf6d3db3ccf",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "87451909e39b76c752efa5b1bd17841d04a7f6aa4db49637d04707c01223772a",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "72544c843049c990abf01b905806e7814c5a92bae485985b51ac870d428a2aa7",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2e6f8138104eea8bd81bf98c0a398ff1c1407669e025c8cb6ab37055be202ed9",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "enter",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "543b93b92e065259081d683ba5fa11d4a98278fede2e933f4077d3ba1e0b81fc",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "e8c7ee6d73d9c09521bb8889fc43437dd93066decd95b582c25f8f270904ae50",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "08626ad23a627564ad662bd90a17f85d3d86cd7429cf1e3b914ded77eb37bc04",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1a978f27dc0522b9db79bbe1086b701e173e9b64223b487aa325f2e4ec302c7d",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "a689d515ebbd3943fa1b92a4f91b846d5c7fa5df42e9d7f93c3e096641de19f6",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "b00ed3ce9a8cfac24af0884fdca196b1dac0d71078fbe100b7e6c5107a0b7ea6",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "enter",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2b93f00b530eb1bcf373a4bd2171660a6cc7cbae235d40e9ad86c1226fc67b8d",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "42f8002cb89a1c75361d1e601c99a6aee4bcbc62c400ec42068c7491adad1397",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "tab",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "9432bba95ec7cafeef5e66a589b5a672576abe113bef16acafe58ce10c28c9eb",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2e294f0484a92b1fc5e23834b85a95665fd01cc57500a876805403bc08cb1647",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "9432bba95ec7cafeef5e66a589b5a672576abe113bef16acafe58ce10c28c9eb",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4,
+      "filePath": "<fixture>/alpha.txt"
+    }
+  ],
+  "feedback-final-events.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "b",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "b2e74ecfe9aa57b8daf08dc7e9e639f9b6ef99093b8a326fed4ddae6e3e3f16d",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "26c7b855e2c1715502193c97adc575d66243760be11c3f75dc75e1f76be72418",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "677f167a52178553fdc024b1f76df2b2d1616ea02d9c97e86243d8940b832fa6",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 1,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "l",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "d738f48ed31d02c969f1113f0a6500d3b37f515c901b958126fc4071ec76fd63",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 2,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 3
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "p",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "cd09731c865211846e10b56c02bdd19f24cc24a6b02fd089c196a9c2789cf17b",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 3,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 5
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "h",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "d5837030939568c98aca565fc16ab67dbfec97ee92a1bf68e5fd27ec756e711f",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 4,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 5
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "a3e62b91f1f058da1c10b6ec96d4e738b5303aa8e80a8dfda08be41dd3dbc790",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 5
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 1,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "<fixture>/alpha.txt",
+          "searchPath": "<fixture>/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 5,
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 5
+    }
+  ],
+  "feedback-settings-final-events.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "610eca3c7a880a893b59f5e581bd7abbe252d52150d1556a58148374238c7e7e",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": true,
+      "files": false,
+      "editing": false,
+      "focus": "editor",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "382894b57f0d44de5ce84aeb2d1a9fe78af796d9bf08eced5e13d78b45233935",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": true,
+      "files": false,
+      "editing": false,
+      "focus": "editor",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "4121cdf22593af8da4856d7721ec3f27717b4ca2f58227aae70f4c6f426a534d",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": true,
+      "files": false,
+      "editing": false,
+      "focus": "editor",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "enter",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "9b0bac2247a44af40c0d3ca4baa9e1f8a3e02d4f9a4d03e7764124fc93e6d001",
+      "layout": "compact",
+      "filepathStyle": "absolute",
+      "cursor": 0,
+      "settings": true,
+      "files": false,
+      "editing": false,
+      "focus": "editor",
+      "selected": 0
+    }
+  ]
+}
