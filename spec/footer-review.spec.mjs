@@ -78,11 +78,9 @@ test('The footer renders the leader-capture hint while Settings captures a key',
   const surface = runtime.view(capturing);
   const footer = [line(surface, 22), line(surface, 23)].join('\n');
   assert.ok(footer.includes(model.i18n.t('settings.rows.leader.capture')), footer);
-  assert.ok(
-    !line(runtime.view({ ...capturing, leaderCaptureActive: false }), 22).includes(
-      model.i18n.t('settings.rows.leader.capture'),
-    ),
-  );
+  const idle = runtime.view({ ...capturing, leaderCaptureActive: false });
+  const idleFooter = [line(idle, 22), line(idle, 23)].join('\n');
+  assert.ok(!idleFooter.includes(model.i18n.t('settings.rows.leader.capture')), idleFooter);
 });
 test('Filename clipping never keeps part of a grapheme cluster', async () => {
   const { clipFooterIdentity } = await importDist('ui', 'footer-layout-view.js');
