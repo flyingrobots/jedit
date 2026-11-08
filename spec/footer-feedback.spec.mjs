@@ -134,6 +134,23 @@ test('Explorer opens a temporary footer filter, retains a header indicator, and 
   next = runtime.update({ type: 'key', key: 'escape' }, next)[0];
   assert.equal(workspaceFooterRows(next), 0);
 });
+test('The Files footer says FILTER only while the filter prompt owns input', async () => {
+  const { model } = await setup({
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    entries: [{ kind: 'file', name: 'alpha.ts', path: '/repo/alpha.ts' }],
+  });
+  const { footerSurfaceObservation } = await importDist('app', 'workspace', 'footer-surface-observation.js');
+  const filter = model.i18n.t('footer.status.filter').toUpperCase();
+  assert.ok(
+    footerSurfaceObservation({ ...model, focusPane: 'files', fileSearchEditing: true }, 'files').label.includes(filter),
+  );
+  assert.ok(
+    !footerSurfaceObservation({ ...model, focusPane: 'editor', fileSearchEditing: true }, 'files').label.includes(
+      filter,
+    ),
+  );
+});
 test('Closing an open Graft drawer with Ctrl+G also releases the temporary footer row', async () => {
   const { runtime, model } = await setup({
     columns: 100,

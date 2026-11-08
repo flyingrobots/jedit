@@ -69,6 +69,7 @@ export function activateWorkspaceBufferRecord(
     textAuthority: record.textAuthority,
     viewMode: ViewModes.Source,
     focusPane: FocusPanes.Editor,
+    fileSearchEditing: false,
     sourceHighlight: record.sourceHighlight,
     sourceHighlightLoading: false,
     graftInfo: record.graftInfo,
