@@ -145,9 +145,10 @@ function replaceConfig(path: string, source: string, mode: number): JimSettingsI
     const descriptor = openSync(temporary, 'wx', mode);
     created = true;
     try {
-      // openSync applies the process umask; restore the existing file's mode.
-      fchmodSync(descriptor, mode & PERMISSION_BITS);
       writeFileSync(descriptor, source, CONFIG_ENCODING);
+      // openSync applies the process umask; restore the existing file's mode
+      // after writing, because a write by a non-root owner clears setuid/setgid.
+      fchmodSync(descriptor, mode & PERMISSION_BITS);
       // Durable before the rename, so a crash cannot leave a truncated .jimrc.
       fsyncSync(descriptor);
     } finally {

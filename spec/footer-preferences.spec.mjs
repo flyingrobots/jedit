@@ -13,7 +13,8 @@ async function fixture() {
 test('Footer layout survives a fresh preferences instance and preserves unrelated JSON bytes', async () => {
   const { path, create } = await fixture();
   assert.equal(create().loadLayout(), 'focused');
-  const source = '{\n  "keybindings": {"leader": " "}, "counter": 9007199254740993123, "nested": {"footerLayout":"other"}\n}\n';
+  const source =
+    '{\n  "keybindings": {"leader": " "}, "counter": 9007199254740993123, "nested": {"footerLayout":"other"}\n}\n';
   writeFileSync(path, source, { mode: 0o640 });
   assert.deepEqual(create().saveLayout('compact'), { ok: true });
   assert.equal(create().loadLayout(), 'compact');
@@ -41,7 +42,7 @@ test('Malformed, non-object and duplicate footer preferences are never overwritt
 });
 test('Escaped keys and nested values are handled without replacing unrelated content', async () => {
   const { path, create } = await fixture();
-  writeFileSync(path, '{"footer\\u004cayout": {"a":["}","\\\""]}, "keep": [1,2]}');
+  writeFileSync(path, '{"footer\\u004cayout": {"a":["}","\\""]}, "keep": [1,2]}');
   assert.deepEqual(create().saveLayout('compact'), { ok: true });
   assert.equal(readFileSync(path, 'utf8'), '{"footer\\u004cayout": "compact", "keep": [1,2]}');
 });
@@ -89,6 +90,10 @@ test('Saving keeps special permission bits and the document line endings', async
   chmodSync(path, 0o4600);
   assert.deepEqual(create().saveLayout('per-pane'), { ok: true });
   assert.equal(statSync(path).mode & 0o7777, 0o4600);
+  const { createJimSettingsPort } = await importDist('adapters', 'jim-settings.js');
+  const { LeaderKey } = await importDist('domain', 'leader-key.js');
+  assert.equal(createJimSettingsPort(dirname(path)).saveLeader(LeaderKey.from(';')), undefined);
+  assert.equal(statSync(path).mode & 0o7777, 0o4600);
 });
 
 test('The application loads a saved layout again after a new launch', async () => {
@@ -96,8 +101,14 @@ test('The application loads a saved layout again after a new launch', async () =
   const { createWorkspaceApp } = await importDist('adapters', 'workspace-app.js');
   const { mockRuntime } = await import('./workspace-helpers.mjs');
   const deps = mockRuntime();
-  const options = { initialColumns: 100, initialRows: 32, initialWorkingDirectory: '/repo', perfEnabled: false,
-    footerPreferences: create(), seed: deps.initialModel };
+  const options = {
+    initialColumns: 100,
+    initialRows: 32,
+    initialWorkingDirectory: '/repo',
+    perfEnabled: false,
+    footerPreferences: create(),
+    seed: deps.initialModel,
+  };
   const production = { productionTextSession: deps.productionTextSession };
   const app = createWorkspaceApp(options, production);
   let model = app.init()[0];
