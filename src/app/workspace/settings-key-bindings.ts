@@ -9,7 +9,11 @@ import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
-import { settingsRows, workspaceSettingsHandlers } from './settings.js';
+import {
+  settingsRows,
+  workspaceSettingsHandlers,
+  type WorkspaceSettingsHandlerContext,
+} from './settings.js';
 import { updateLeaderKeyCapture } from './leader-key-capture.js';
 import { LEADER_SETTING_ROW_ID } from '../leader-settings-row.js';
 import {
@@ -60,20 +64,26 @@ export function updateSettingsKey(
         msg,
         model,
         rows,
-        workspaceSettingsHandlers({
-          sourceHighlighter: context.deps.sourceHighlighter,
-          footerPreferences: context.deps.footerPreferences,
-          nowMs: context.nowMs,
-          createNotificationTickCmd: context.createNotificationTickCmd,
-          graftDiagnostics: context.deps.graftDiagnostics,
-          productionTextSession: context.deps.productionTextSession,
-        }),
+        workspaceSettingsHandlers(settingsHandlerContext(context)),
       ),
       context,
     );
   }
 
   return undefined;
+}
+
+function settingsHandlerContext(
+  context: WorkspaceKeyBindingContext,
+): WorkspaceSettingsHandlerContext {
+  return {
+    sourceHighlighter: context.deps.sourceHighlighter,
+    footerPreferences: context.deps.footerPreferences,
+    nowMs: context.nowMs,
+    createNotificationTickCmd: context.createNotificationTickCmd,
+    graftDiagnostics: context.deps.graftDiagnostics,
+    productionTextSession: context.deps.productionTextSession,
+  };
 }
 
 function withSettingsChangeToast(
