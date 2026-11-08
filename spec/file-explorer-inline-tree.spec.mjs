@@ -92,3 +92,21 @@ test('Filtering selects the matching file and Right uses the visible first child
   const next = key(runtime, { ...filtered, selectedIndex: 0 }, 'right')[0];
   assert.equal(next.entries[next.selectedIndex], main);
 });
+
+test('Left on a root-level row or after a filtered collapse never changes the explorer root', async () => {
+  const { runtime, model, reads } = await setup();
+  const rootLeft = key(runtime, model, 'left')[0];
+  assert.equal(rootLeft.cwd, model.cwd); assert.deepEqual(rootLeft.entries, [src, tests]); assert.deepEqual(reads, []);
+  const expanded = key(runtime, model, 'enter')[0];
+  const collapsed = key(runtime, expanded, 'left')[0]; assert.deepEqual(collapsed.entries, [src, tests]);
+  const again = key(runtime, collapsed, 'h')[0]; assert.equal(again.cwd, model.cwd); assert.deepEqual(again.entries, [src, tests]);
+  const { fileSearchEntries, fileSearchWithInput } = await importDist('app', 'workspace', 'file-search.js');
+  const nestedOpen = key(runtime, { ...expanded, selectedIndex: 1 }, 'enter')[0];
+  const filtered = fileSearchWithInput(nestedOpen, { input: 'deep', cursorIndex: 4 });
+  const onAncestor = key(runtime, filtered, 'up')[0]; assert.equal(onAncestor.entries[onAncestor.selectedIndex], nested);
+  const folded = key(runtime, onAncestor, 'left')[0];
+  assert.equal(folded.entries[folded.selectedIndex], nested); assert.equal(folded.fileSearch.input, '');
+  assert.deepEqual(fileSearchEntries(folded).map(({ entry }) => entry), [src, nested, main, tests]);
+  const parentRow = key(runtime, folded, 'left')[0]; assert.equal(parentRow.entries[parentRow.selectedIndex], src);
+  assert.equal(key(runtime, parentRow, 'left')[0].cwd, model.cwd);
+});

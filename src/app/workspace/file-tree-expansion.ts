@@ -1,7 +1,9 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
 import { DIRECTORY_ACTION_OPEN, FileEntryKinds } from '../../ports/file-system.js';
 import { directoryChangeFailure, type DirectoryExpansionContext } from './directory-change-failure.js';
-import { fileSearchEntries, selectedFileSearchEntry } from './file-search.js';
+import {
+  EMPTY_FILE_SEARCH, fileSearchEntries, fileSearchState, fileSearchWithInput, selectedFileSearchEntry,
+} from './file-search.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
@@ -31,9 +33,8 @@ export function toggleFileTreeDirectory(model: WorkspaceModel, context: Director
 
 export function updateInlineDirectoryKey(msg: KeyMsg, model: WorkspaceModel, context: DirectoryExpansionContext): Result | undefined {
   const entry = selectedFileSearchEntry(model);
-  if (entry == null) return undefined;
   if (COLLAPSE_KEYS.has(msg.key)) return collapseOrParent(model);
-  if (entry.kind !== FileEntryKinds.Directory) return undefined;
+  if (entry?.kind !== FileEntryKinds.Directory) return undefined;
   if (TOGGLE_KEYS.has(msg.key)) return toggleFileTreeDirectory(model, context);
   if (!EXPAND_KEYS.has(msg.key)) return undefined;
   return expandOrEnterChild(model, context);
@@ -48,13 +49,13 @@ function expandOrEnterChild(model: WorkspaceModel, context: DirectoryExpansionCo
   return [parentPath === entry.path && child != null ? { ...model, selectedIndex: child.index } : model, []];
 }
 
-function collapseOrParent(model: WorkspaceModel): Result | undefined {
+// Left/h never leave the tree: Backspace and Alt+Up own explorer-root navigation.
+function collapseOrParent(model: WorkspaceModel): Result {
   const entry = selectedFileSearchEntry(model);
-  if (entry == null) return undefined;
-  const node = model.fileTree?.[entry.path];
+  const node = entry == null ? undefined : model.fileTree?.[entry.path];
   if (node?.expanded) return [collapseDirectory(model), []];
   const parent = model.entries.findIndex((candidate) => candidate.path === node?.parentPath);
-  return parent < 0 ? undefined : [{ ...model, selectedIndex: parent, fileHoveredIndex: undefined }, []];
+  return [parent < 0 ? model : { ...model, selectedIndex: parent, fileHoveredIndex: undefined }, []];
 }
 
 function expandDirectory(model: WorkspaceModel, context: DirectoryExpansionContext): WorkspaceModel {
@@ -82,7 +83,11 @@ function collapseDirectory(model: WorkspaceModel): WorkspaceModel {
   const next = { ...model, fileTree, entries: [...model.entries.slice(0, model.selectedIndex + FIRST_CHILD_OFFSET), ...model.entries.slice(end)],
     fileHoveredIndex: undefined };
   const visible = fileSearchEntries(next);
-  return { ...next, selectedIndex: visible.some((row) => row.index === model.selectedIndex) ? model.selectedIndex : visible[0]?.index ?? NO_SELECTION };
+  if (visible.some((row) => row.index === model.selectedIndex)) return { ...next, selectedIndex: model.selectedIndex };
+  // A filter that only matched the collapsed descendants would hide the folder itself,
+  // so the filter is cleared and the folder stays selected.
+  if (fileSearchState(next).input.length === 0) return { ...next, selectedIndex: visible[0]?.index ?? NO_SELECTION };
+  return { ...fileSearchWithInput(next, EMPTY_FILE_SEARCH), selectedIndex: model.selectedIndex };
 }
 
 function descendantEnd(model: WorkspaceModel, depth: number): number {

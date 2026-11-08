@@ -44,11 +44,7 @@ export function isWorkspaceRefreshKey(msg: KeyMsg): boolean {
 }
 
 export function isWorkspaceBackKey(msg: KeyMsg): boolean {
-  return (
-    msg.key === WorkspaceKeys.Backspace ||
-    msg.key === WorkspaceKeys.ArrowLeft ||
-    msg.key === WorkspaceKeys.H
-  );
+  return msg.key === WorkspaceKeys.Backspace;
 }
 
 export function isWorkspaceDownKey(msg: KeyMsg): boolean {
