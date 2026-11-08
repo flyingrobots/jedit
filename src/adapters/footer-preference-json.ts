@@ -5,12 +5,12 @@ type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string
 interface ValueSpan { readonly start: number; readonly end: number }
 const FOOTER_PROPERTY = 'footerLayout';
 const FILEPATH_PROPERTY = 'filepathStyle';
-const EMPTY_DOCUMENT = '{}\n';
+export const EMPTY_PREFERENCE_DOCUMENT = '{}\n';
 const LF = '\n';
 const CRLF = '\r\n';
 
 /** Validate JSON, then edit only this preference's raw span. */
-export function footerPreferenceDocument(source: string = EMPTY_DOCUMENT) {
+export function footerPreferenceDocument(source: string = EMPTY_PREFERENCE_DOCUMENT) {
   const parsed: JsonValue = JSON.parse(source);
   if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new SyntaxError('Expected a JSON object');
   const layoutSpan = preferenceSpan(source, FOOTER_PROPERTY);

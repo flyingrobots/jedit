@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync, statSync, symlinkSync, utimesSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync, statSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { importDist } from './workspace-helpers.mjs';
@@ -62,6 +62,8 @@ test('Footer preferences and the leader-key settings share one jimrc without los
   writeFileSync(path, '{\n  "keep": true\n}\n', { mode: 0o640 });
   assert.deepEqual(create().saveLayout('compact'), { ok: true });
   assert.equal(createJimSettingsPort(home).saveLeader(LeaderKey.from(';')), undefined);
+  assert.equal(create().loadLayout(), 'compact');
+  assert.equal(statSync(path).mode & 0o777, 0o640);
   assert.deepEqual(create().saveFilepaths('absolute'), { ok: true });
   assert.equal(create().loadLayout(), 'compact');
   assert.equal(create().loadFilepaths(), 'absolute');
@@ -69,15 +71,13 @@ test('Footer preferences and the leader-key settings share one jimrc without los
   assert.equal(JSON.parse(readFileSync(path, 'utf8')).keep, true);
   assert.equal(statSync(path).mode & 0o777, 0o640);
 });
-test('A stale writer lock is reclaimed instead of refusing every later save', async () => {
+test('Saving takes no lock file, so a leftover jimrc.lock never refuses a save', async () => {
   const { path, create } = await fixture();
   writeFileSync(path, '{}\n');
-  writeFileSync(`${path}.lock`, 'held');
-  const past = new Date(Date.now() - 60_000);
-  utimesSync(`${path}.lock`, past, past);
+  writeFileSync(`${path}.lock`, 'left by an older build');
   assert.deepEqual(create().saveLayout('compact'), { ok: true });
-  assert.equal(existsSync(`${path}.lock`), false);
   assert.equal(create().loadLayout(), 'compact');
+  assert.equal(readFileSync(`${path}.lock`, 'utf8'), 'left by an older build');
 });
 test('Saving keeps special permission bits and the document line endings', async () => {
   const { path, create } = await fixture();
@@ -86,6 +86,9 @@ test('Saving keeps special permission bits and the document line endings', async
   assert.deepEqual(create().saveLayout('compact'), { ok: true });
   assert.equal(readFileSync(path, 'utf8'), '{\r\n  "keep": 1,\r\n  "footerLayout": "compact"\r\n}\r\n');
   assert.equal(statSync(path).mode & 0o7777, 0o1600);
+  chmodSync(path, 0o4600);
+  assert.deepEqual(create().saveLayout('per-pane'), { ok: true });
+  assert.equal(statSync(path).mode & 0o7777, 0o4600);
 });
 
 test('The application loads a saved layout again after a new launch', async () => {

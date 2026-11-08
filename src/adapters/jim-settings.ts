@@ -9,12 +9,13 @@ import {
   type JimSettingsPort,
 } from '../ports/jim-settings.js';
 
-export const JIMRC_FILENAME = '.jimrc';
+import { JIMRC_CREATE_MODE, JIMRC_FILENAME, JIMRC_PERMISSION_BITS } from './jimrc-file.js';
+export { JIMRC_FILENAME } from './jimrc-file.js';
 const CONFIG_ENCODING = 'utf8';
 const CONFIG_INDENT = 2;
-const CONFIG_CREATE_MODE = 0o600;
+const CONFIG_CREATE_MODE = JIMRC_CREATE_MODE;
 const MISSING_FILE_CODE = 'ENOENT';
-const PERMISSION_BITS = 0o7777;
+const PERMISSION_BITS = JIMRC_PERMISSION_BITS;
 // Strings are matched first so digits inside them are skipped; the remaining
 // matches are exactly the document's number literals.
 const JSON_STRING_OR_NUMBER = /"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
