@@ -7,14 +7,15 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-10-15"
-updated: "2026-10-15"
+updated: "2026-11-08"
 ---
 
 # DX-0162 - Selectable footer layouts
 
-> Status at a glance: the cycle's current record is the "Feedback refinement
-> retrospective" below; the first "Retrospective" covers Slices 1-4, and the
-> later sections record accepted review refinements in order.
+> Status at a glance: the cycle's final record is "Review hardening" (Slice 9)
+> at the end. "Feedback refinement retrospective" records the accepted feedback,
+> and the first "Retrospective" covers Slices 1-4; it predates `filepathStyle`,
+> which the feedback refinement added.
 
 ## Linked Issue
 
@@ -50,7 +51,8 @@ Appearance settings are session-only. Settings uses directional choice rows.
 
 [settings-session.ts#229:44d28cb96458254076d9c181e16e38da927cfd01](https://github.com/flyingrobots/jedit/blob/44d28cb96458254076d9c181e16e38da927cfd01/src/app/settings-session.ts#L229)
 
-The branch stacks on #342, preserving its Files modal navigation and previews.
+The branch was stacked on #342, which merged on 2026-10-20 (as did #339); its
+base is now `main`. It preserves #342's Files modal navigation and previews.
 
 ## Problem
 
@@ -252,8 +254,7 @@ separate durability posture helpers retain their own coverage.
 
 CI on implementation `fcb12be2` passed all twelve jobs in
 [run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
-The final published head is checked separately after these evidence updates.
-The branch remains stacked on #342; no dependency is merged here.
+Final-head evidence is recorded under Slice 9 below.
 
 
 ## Accepted footer feedback refinement
@@ -290,7 +291,8 @@ terminal witnesses must confirm the resulting hierarchy at wide/narrow sizes.
 ### Accepted modal explorer refinement
 
 Remove the permanent search field and separator. The drawer header shows
-`Files  / filter` when idle or `filter: <query>` when a query is active; the
+`files  / filter` when idle or `filter: <query>` when a query is active (both
+localized); the
 list begins immediately below it. `/` activates a
 footer filter prompt that owns typing and cursor movement. Escape/Enter return
 to navigation and keep the query. `/`, Ctrl+U, Escape clears it. Clicking the
@@ -332,19 +334,26 @@ and all 137 specs have a CI shard. Native checks used production Echo at 100×32
 and 60×16, in light/dark themes, with real keys, mouse events and restart.
 See the [current witness gallery and receipts](0162-footer-feedback/README.md).
 Implementation CI run [38764169878](https://github.com/flyingrobots/jedit/actions/runs/38764169878)
-passed all twelve jobs; the final published head is checked before marking ready.
+passed all twelve jobs; final-head evidence is recorded under Slice 9 below.
 
 
 ### Review hardening
 
 Review identified inward dependency direction, RTL alignment, editor viewport
-reconciliation after row-count changes, cooperative preferences serialization,
+reconciliation after row-count changes, preferences serialization (first a
+footer-writer lock file, later replaced by the re-read before rename because the
+leader-key writer takes no lock),
 dangling-symlink refusal and grapheme-safe filename clipping. These are required
 corrections within this cycle. New runtime tests first reproduced RTL, viewport,
 lock/symlink and grapheme failures. Application observations will remain free of
 terminal geometry/style contracts; UI composition owns their placement.
 
 - [x] Slice 9: Address review boundaries and runtime edge cases; validate final
-  head (validated at `22df22c` on the stacked explorer branch: full check 912
-  tests, 904 passed, 8 existing skips, zero failures; dispatched CI run
-  https://github.com/flyingrobots/jedit/actions/runs/42465462059 passed all 12 jobs).
+  head. After `origin/main` merged in, review on the stacked explorer branch
+  renamed the port's layout methods to `loadLayout`/`saveLayout`, removed the
+  footer-writer lock file, applied the preserved mode (including setuid and
+  sticky bits) after writing, kept CRLF line endings, shared the `~/.jimrc`
+  constants with the leader-key writer, and released the filter prompt on every
+  Graft toggle. Validated at code head `287415c`: full check 916
+  tests, 908 passed, 8 existing skips, zero failures; dispatched CI
+  run https://github.com/flyingrobots/jedit/actions/runs/42467430293 passed all 12 jobs.

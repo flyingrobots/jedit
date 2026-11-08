@@ -51,18 +51,22 @@ builds do not require a sibling Echo checkout or generator invocation.
 Ctrl+B opens Files in navigation mode. Click a folder or press Enter to expand
 or collapse it inline. Right/l expands a folder or selects its first visible
 child; on a file it opens the file, like Enter. Left/h collapses a folder or
-selects its parent and does nothing at the top level. Only Backspace and Alt+Up
-move the explorer root upward. Refresh with r or Ctrl+R reloads the root and
-collapses expanded branches.
+selects its parent and does nothing at the top level. Backspace, Alt+Up, and
+Enter or Right/l on the `..` row move the explorer root upward; clicking `..`
+only selects it. Refresh with r or Ctrl+R reloads the root and collapses
+expanded branches.
 
 Click a file to select it and preview its contents in the main viewer. Enter
-opens that file for editing. Previews use Graft syntax colors, prefer unsaved
-open-buffer text, and remain read-only. Unsupported syntax or a parser failure
-leaves a readable plain-text preview.
+opens that file for editing. Previews use Graft syntax colors, show unsaved
+open-buffer text, and remain read-only. When a modified buffer's text is not
+loaded from the top of the file, the preview shows an unsaved-changes notice
+instead of the saved file. Unsupported syntax or a parser failure leaves a
+readable plain-text preview.
 
 Press / to filter known visible paths; matching children retain their folder
 ancestors, and the matching file stays selected. Esc/Enter exits filter editing
-and keeps the query. Closed directories are loaded only when expanded.
+and keeps the query, Ctrl+U clears it, and Ctrl+G leaves the prompt for Graft.
+Closed directories are loaded only when expanded.
 
 ## Validate The Workspace
 

@@ -69,8 +69,11 @@ Clicking any part of a folder row selects and toggles it. Enter toggles it too.
 Right/l expands a closed folder or enters its first child; on a file it opens
 the file like Enter. Left/h collapses an open folder or selects its parent and
 is inert on a top-level row. Collapsing a folder that a filter only matched
-through its descendants clears the filter so the folder stays selected. Only
-Backspace and Alt+Up change the explorer root. Refresh reloads the current root and collapses expanded branches.
+through its descendants clears the filter so the folder stays selected.
+Backspace, Alt+Up, and Enter or Right/l on the `..` row change the explorer
+root; clicking `..` only selects it. Left/h no longer move the root (before this
+cycle they matched the workspace back key alongside Backspace). Refresh reloads
+the current root and collapses expanded branches.
 An empty folder still shows its open disclosure. An unreadable folder shows the
 existing directory error toast and keeps the current tree intact.
 
@@ -81,7 +84,9 @@ opens it. Folder actions do not modify cwd, editor text or Echo authority.
 
 Source previews load/highlight asynchronously. Parser errors or unsupported
 languages retain readable text. The existing loading/binary/unavailable/truncated
-labels remain. Header and truncation notice receive no source syntax colors.
+labels remain, and a new unsaved-changes label covers a modified buffer whose
+text is not loaded from the file head. Header and notices receive no source
+syntax colors.
 
 ### User Journey
 
@@ -94,7 +99,7 @@ browsing. Closing Files reveals the existing editor unchanged.
 100x32, current theme. [Native capture](0164-explorer-witness/nested-syntax-dark-100x32.png):
 
 ```text
-Files  / filter             Preview · main.ts
+files  / filter             Preview · main.ts
   ▾ src/
     ▸ components/           export const answer = 42;
   ›   main.ts               ^ keyword       ^ number
@@ -120,13 +125,22 @@ Files entries remain the visible ordered list; optional tree metadata records
 per-path depth, parent and expanded state. Loading is lazy through FileSystemPort.
 The startup picker and command-path directory opens retain their existing API.
 
-A basis-free PreviewHighlighter port accepts only preview path/text and bounded
-line coordinates. The Graft adapter shares syntax-span conversion with editor
-highlighting but omits the editor-head basis for previews. One pure function
-sanitizes preview text before both parsing and rendering. The existing preview
-request identity gates the combined text/syntax result. Open-buffer text remains
-preferred; a modified buffer whose reading window is not at the file head
-reports its unsaved state instead of silently previewing the saved file.
+A basis-free `PreviewHighlighter` port (`src/ports/source-highlighter.ts`)
+accepts only preview path/text and bounded line coordinates. The Graft adapter
+shares syntax-span conversion with editor highlighting but omits the editor-head
+basis for previews. One pure function, `filePreviewSourceLines` in
+`src/app/workspace/file-preview-syntax.ts`, sanitizes preview text; the
+highlighter parses those lines and the preview view passes the same lines to the
+painter in `src/ui/file-preview-syntax.ts`. The existing preview request identity
+gates the combined text/syntax result. Open-buffer text remains preferred; a
+modified buffer (dirty authority or dirty editor projection) whose reading
+window is not at the file head reports its unsaved state instead of silently
+previewing the saved file.
+
+The preview view and the Files pointer import `ui/file-preview-syntax` and
+`ui/workspace-file-filter-prompt`. These app→ui imports join the existing
+reversed edges whose removal is tracked in
+[#398](https://github.com/flyingrobots/jedit/issues/398).
 
 ## Lower Modes
 
@@ -230,24 +244,39 @@ identity needed to remain index-based rather than path-based. Both have focused
 regressions. At `26bba006` the full check passed 907 tests (895 passed, 12
 existing skips, zero failures) with 140 specs assigned to CI shards.
 
-After merging `origin/main` (`5451c27`), an evidence-bounded review added five
-fixes with focused regressions: Left/h never leave the tree, a filtered collapse
-keeps the folder selected, a modified buffer reports unsaved state instead of
-previewing disk, stale `~/.jimrc` locks are reclaimed, and Ctrl+G releases the
-filter prompt. At `22df22c` the full check passed 912 tests (904 passed, 8
-existing skips, zero failures), the quality gate reports no regressions, and all
-136 specs belong to a CI shard. CI does not trigger for a PR whose base is not
-`main`; a dispatched run on `22df22c` passed all 12 jobs:
-https://github.com/flyingrobots/jedit/actions/runs/42465462059. Deferred findings are issues #391-#400.
+After merging `origin/main` (`5451c27`), two evidence-bounded review rounds
+added fixes with focused regressions. Round one (`f18cc09`..`9f39fcf`): Left/h
+never leave the tree, a filtered collapse keeps the folder selected, a modified
+buffer reports unsaved state instead of previewing disk, `~/.jimrc` saves keep
+special mode bits and line endings (the port's layout methods became
+`loadLayout`/`saveLayout`), Ctrl+G releases the filter prompt, and the
+leader-capture hint renders through the live footer. Commit `c7916e5` added the
+Ctrl+G spec one commit before its fix in `9e79b4e`. Round two
+(`ce82d0d`..`287415c`): closing an open Graft drawer also releases the prompt,
+the footer adapter's lock file is removed in favour of its re-read before
+rename, the preserved mode is applied after writing so setuid survives, a dirty
+editor projection also reports unsaved changes, the unsaved notice fits the
+60-column preview, the `..` row behaviour is pinned, remaining literals are
+named, and the footer specs are formatted one statement per line.
+
+The merge changed the spec inventory: `origin/main` deleted 12 specs that read
+documentation or audited deleted documents (`c508964`, `9ee2435`; they included
+`graph-rope-runtime-red-matrix.spec.mjs` and its skipped cases) and added 8. At
+code head `287415c` the full check passed 916 tests (908 passed,
+8 existing skips, zero failures), the quality gate reports no regressions,
+and all 136 specs belong to a CI shard. CI does not trigger for a PR whose
+base is not `main`; a dispatched run on `287415c` passed all 12 jobs:
+https://github.com/flyingrobots/jedit/actions/runs/42467430293. Deferred findings are issues #391-#400.
 
 [Native evidence](0164-explorer-witness/README.md) covers mouse and Enter toggles,
 root preservation, nested/filtered rows, dark 100x32 and minimum 60x12, and Arabic
 light 60x16. Graft produced 13 syntax spans while preview authority remained none
 and textRequestId remained 0. Only explicit file Enter opened a buffer.
 Arabic rasterization proves alignment, not terminal-specific shaping. The
-captures were taken at `26bba006`, before the main merge and the review fixes;
-the captured flows are unchanged by those fixes, which cover the root-level Left,
-filtered-collapse, unsaved-buffer and Ctrl+G edges proven by specs.
+captures were taken at `26bba006` and were not re-captured after the main merge
+or the review fixes. `f18cc09` rewrote the filtered-collapse path shown in the
+filtered-hierarchy capture; that path, the root-level Left, the `..` row, the
+unsaved-buffer notice and Ctrl+G are proven by specs, not by capture.
 
 PR: https://github.com/flyingrobots/jedit/pull/349. The change is stacked on footer
-PR #344; the separate Dojo Feed branch is not part of this change.
+PR #344 and merges into its branch before #344 lands on `main`.
