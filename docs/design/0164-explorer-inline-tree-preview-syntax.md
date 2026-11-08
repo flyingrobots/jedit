@@ -6,7 +6,7 @@ issue: "https://github.com/flyingrobots/jedit/issues/348"
 status: "active"
 owners: ["@flyingrobots"]
 created: "2026-10-15"
-updated: "2026-10-15"
+updated: "2026-11-08"
 ---
 
 # DX-0164 - Inline explorer tree and preview syntax
@@ -66,9 +66,11 @@ preview editing, new Echo buffer authorities, or changes to the startup picker.
 
 Folders show ▸ when closed and ▾ when open; each child is indented two cells.
 Clicking any part of a folder row selects and toggles it. Enter toggles it too.
-Right/l expands a closed folder or enters its first child; Left/h collapses an
-open folder or selects its parent. Backspace and Alt+Up retain root-parent
-navigation. Refresh reloads the current root and collapses expanded branches.
+Right/l expands a closed folder or enters its first child; on a file it opens
+the file like Enter. Left/h collapses an open folder or selects its parent and
+is inert on a top-level row. Collapsing a folder that a filter only matched
+through its descendants clears the filter so the folder stays selected. Only
+Backspace and Alt+Up change the explorer root. Refresh reloads the current root and collapses expanded branches.
 An empty folder still shows its open disclosure. An unreadable folder shows the
 existing directory error toast and keeps the current tree intact.
 
@@ -120,9 +122,11 @@ The startup picker and command-path directory opens retain their existing API.
 
 A basis-free PreviewHighlighter port accepts only preview path/text and bounded
 line coordinates. The Graft adapter shares syntax-span conversion with editor
-highlighting but omits the editor-head basis for previews. Preview text is
-sanitized once before both parsing and rendering. The existing preview request
-identity gates the combined text/syntax result. Open-buffer text remains preferred.
+highlighting but omits the editor-head basis for previews. One pure function
+sanitizes preview text before both parsing and rendering. The existing preview
+request identity gates the combined text/syntax result. Open-buffer text remains
+preferred; a modified buffer whose reading window is not at the file head
+reports its unsaved state instead of silently previewing the saved file.
 
 ## Lower Modes
 

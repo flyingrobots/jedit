@@ -12,6 +12,10 @@ updated: "2026-10-15"
 
 # DX-0162 - Selectable footer layouts
 
+> Status at a glance: the cycle's current record is the "Feedback refinement
+> retrospective" below; the first "Retrospective" covers Slices 1-4, and the
+> later sections record accepted review refinements in order.
+
 ## Linked Issue
 
 https://github.com/flyingrobots/jedit/issues/343
@@ -266,8 +270,8 @@ use a relative form; outside it, or without a Git root, they remain absolute.
 Only displayed paths change. Native paths used for opening, saving, search and
 Echo identity remain untouched. Root itself displays `.` in relative mode.
 
-The active mode badge uses the theme's normal cursor foreground/background and
-bold weight. Ordinary identities, coordinates, pane dividers and zero-state
+The active mode badge uses a theme-derived filled token with contrast correction
+and bold weight. Ordinary identities, coordinates, pane dividers and zero-state
 counts use the theme's muted foreground. Modified/read-only flags, pending
 operators and nonzero modified/pending counts use normal foreground. Command
 input remains normal foreground with existing error styling. Inactive pane modes
@@ -285,8 +289,9 @@ terminal witnesses must confirm the resulting hierarchy at wide/narrow sizes.
 
 ### Accepted modal explorer refinement
 
-Remove the permanent search field and separator. The drawer header shows Files
-or Filter: <query>; the list begins immediately below it. `/` activates a
+Remove the permanent search field and separator. The drawer header shows
+`Files  / filter` when idle or `filter: <query>` when a query is active; the
+list begins immediately below it. `/` activates a
 footer filter prompt that owns typing and cursor movement. Escape/Enter return
 to navigation and keep the query. `/`, Ctrl+U, Escape clears it. Clicking the
 active-filter header re-enters editing; clicking a list item still selects only.

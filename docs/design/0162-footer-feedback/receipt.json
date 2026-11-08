@@ -29,12 +29,6 @@
       "cellsSha256": "e5f4e55748c7053019abbcb5ec237a5be5e1db88d21b0b30333a7f50caa0bce4"
     },
     {
-      "image": "feedback-filter-60x16.png",
-      "columns": 60,
-      "rows": 16,
-      "cellsSha256": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b"
-    },
-    {
       "image": "feedback-final-filter-60x16.png",
       "columns": 60,
       "rows": 16,

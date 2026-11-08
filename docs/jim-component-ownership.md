@@ -320,24 +320,31 @@ authority. [DX-0164](design/0164-explorer-inline-tree-preview-syntax.md) refines
 [DX-0161](design/0161-file-explorer-search.md) and owns this cycle's evidence.
 
 The footer layout is a Jedit presentation preference, remembered across launches
-through an injected preferences port and the `~/.jimrc` JSON adapter. The
-`filepathStyle` preference shares that adapter and chooses paths relative to
-the Git root or fully qualified paths. A bounded startup Git query discovers
-the root; outside-root paths and non-repository workspaces keep absolute paths.
-Formatting changes display only, preserving native open/save and buffer identity.
-Its three
-layouts derive the same focused-surface observations and known-buffer counts.
-They reserve two, two, or one rows; hidden footer reserves none. This setting
-does not advance a Jim worldline, submit an Echo Tick, or change buffer history.
-Saving edits only the owned `footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes
-and existing file permissions, and refuses malformed or ambiguous documents.
+through an injected `FooterPreferencesPort` and the `~/.jimrc` adapter in
+`src/adapters/footer-preferences.ts`. The `filepathStyle` preference shares
+that adapter and chooses paths relative to the Git root or fully qualified
+paths. A bounded startup Git query discovers the root; outside-root paths and
+non-repository workspaces keep absolute paths. Formatting changes display only,
+preserving native open/save and buffer identity. Its three layouts derive the
+same focused-surface observations and known-buffer counts. They reserve two,
+two, or one rows; a hidden footer reserves none. This setting does not advance
+a Jim worldline, submit an Echo Tick, or change buffer history.
+
+`~/.jimrc` currently has two writers. The footer adapter edits only the owned
+`footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes, line
+endings and file permissions, and refuses malformed or ambiguous documents.
+The leader-key adapter in `src/adapters/jim-settings.ts` rewrites the whole
+document for `keybindings.leader`. Neither reads or drops the other's keys;
+a leader save reformats the file. Consolidating both into one adapter is
+tracked in [#391](https://github.com/flyingrobots/jedit/issues/391).
+
 The model changes after a successful save. A failed save reports an error and
 retains the previous layout. Other Appearance settings keep their current
 session lifetime. Active modes use a filled theme badge; ordinary status text
 is muted and emphasized facts use normal foreground. Settings owns opaque
-borders and filled selections independent of terminal cursor inversion.
-This refines projection and I/O ownership without changing
-the target causal model or claiming general settings replay support.
+borders and filled selections independent of terminal cursor inversion. This
+refines projection and I/O ownership without changing the target causal model
+or claiming general settings replay support.
 [DX-0162](design/0162-selectable-footer-layouts.md) owns the implementation evidence.
 
 > **Intuition to carry forward:** semantic ownership and storage authority are
