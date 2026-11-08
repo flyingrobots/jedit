@@ -4,10 +4,11 @@ import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijo
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
 import { emphasizeFooterPhrases } from './footer-cell-style.js';
-import { renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
+import { FILE_FILTER_PROMPT_LABEL, renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
 import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, halfFooterWidth, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
+const PANE_DIVIDER = '│';
 
 export interface FooterSurfaceObservation extends FooterSurfaceFacts {
   readonly x: number;
@@ -72,7 +73,7 @@ function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
 function paintPaneStatuses(surface: Surface, options: FooterLayoutViewOptions): void {
   for (const observation of options.presentation.surfaces) {
     const inset = observation.x > 0 ? 1 : 0;
-    if (inset > 0) paintLine(surface, '│', { row: LOCAL_ROW, x: observation.x, width: inset }, options.background);
+    if (inset > 0) paintLine(surface, PANE_DIVIDER, { row: LOCAL_ROW, x: observation.x, width: inset }, options.background);
     paintLocalObservation(surface, { ...observation, x: observation.x + inset }, observation.width - inset, options);
   }
 }
@@ -145,7 +146,7 @@ function paintFilter(surface: Surface, options: FooterLayoutViewOptions): void {
   const globalWidth = footerGlobalWidth({ width: options.width, summary: options.presentation.globalCompact, compact });
   const width = options.width - globalWidth;
   const rtl = options.presentation.direction === I18N_TEXT_DIRECTION.Rtl;
-  surface.blit(renderFileSearchInput({ ...input, label: '/', width }), rtl ? globalWidth : 0, LOCAL_ROW);
+  surface.blit(renderFileSearchInput({ ...input, label: FILE_FILTER_PROMPT_LABEL, width }), rtl ? globalWidth : 0, LOCAL_ROW);
   if (globalWidth > 0) paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
     { row: LOCAL_ROW, x: rtl ? 0 : width, width: globalWidth }, options.background);
 }

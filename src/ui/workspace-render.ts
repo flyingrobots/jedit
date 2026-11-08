@@ -44,13 +44,18 @@ export function fileTreeNameColumn(entry: FileEntry, depth = 0): number {
   return TREE_PREFIX_CELLS + depth * TREE_INDENT_CELLS + (entry.kind === FileEntryKinds.Directory ? TREE_DISCLOSURE_CELLS : 0);
 }
 
+const TREE_SELECTED_PREFIX = '› ';
+const TREE_PARENT_LABEL = '../';
+const DISCLOSURE_OPEN = '▾';
+const DISCLOSURE_CLOSED = '▸';
+
 export function formatTreeLine(entry: FileEntry, options: TreeLineOptions): string {
-  const prefix = options.selected ? '› ' : '  ';
+  const prefix = options.selected ? TREE_SELECTED_PREFIX : TREE_INDENT;
   if (entry.kind === FileEntryKinds.Parent) {
-    return `${prefix}../`;
+    return `${prefix}${TREE_PARENT_LABEL}`;
   }
   if (entry.kind === FileEntryKinds.Directory) {
-    const disclosure = options.expanded ? '▾' : '▸';
+    const disclosure = options.expanded ? DISCLOSURE_OPEN : DISCLOSURE_CLOSED;
     return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${disclosure} ${entry.name}/`;
   }
   return `${prefix}${TREE_INDENT.repeat(options.depth ?? 0)}${entry.name}`;

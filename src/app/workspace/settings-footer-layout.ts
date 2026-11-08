@@ -40,7 +40,7 @@ function footerPreferenceFailure(model: WorkspaceModel, context: FooterLayoutSet
 
 export function cycleWorkspaceFilepaths(model: WorkspaceModel, context: FooterLayoutSettingsContext): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const filepathStyle = nextFilepathStyle(model.filepathStyle);
-  if (context.footerPreferences?.saveFilepaths?.(filepathStyle).ok === false) return footerPreferenceFailure(model, context);
+  if (context.footerPreferences?.saveFilepaths(filepathStyle).ok === false) return footerPreferenceFailure(model, context);
   return [{ ...model, filepathStyle }, []];
 }
 

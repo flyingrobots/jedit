@@ -37,16 +37,18 @@ export function workspaceFooterPresentation(model: WorkspaceModel): FooterPresen
   };
 }
 
+const OVERLAY_COPY = Object.freeze({ StartupTitle: 'startupFileModal.title', SettingsMode: 'footer.mode.settings' } as const);
+
 function focusedOverlay(model: WorkspaceModel): FooterSurfaceObservation | undefined {
   if (model.startupFileModalOpen) return {
-    label: model.i18n.t('startupFileModal.title').toUpperCase(), identity: displayFilepath(model.cwd, model), detail: '',
+    label: model.i18n.t(OVERLAY_COPY.StartupTitle).toUpperCase(), identity: displayFilepath(model.cwd, model), detail: '',
     active: true, x: 0, width: model.columns,
   };
   if (!model.settingsOpen) return undefined;
   const row = settingsRows(model)[model.settingsFocusIndex];
   const detail = model.leaderCaptureActive === true ? model.i18n.t(LEADER_SETTINGS_COPY.Capture) : row?.valueLabel ?? '';
   return {
-    label: model.i18n.t('footer.mode.settings').toUpperCase(), identity: row?.label ?? '', detail,
+    label: model.i18n.t(OVERLAY_COPY.SettingsMode).toUpperCase(), identity: row?.label ?? '', detail,
     active: true, x: 0, width: resolveSettingsDrawerWidth(model.columns),
   };
 }

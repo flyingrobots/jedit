@@ -21,6 +21,7 @@ export const LEADER_SETTINGS_COPY = Object.freeze({
   Label: 'settings.rows.leader.label',
   Description: 'settings.rows.leader.description',
   Capture: 'settings.rows.leader.capture',
+  CaptureHint: 'settings.rows.leader.capture_hint',
   CapturingValue: 'settings.rows.leader.capturing_value',
   Space: 'settings.rows.leader.space',
   Backslash: 'settings.rows.leader.backslash',
