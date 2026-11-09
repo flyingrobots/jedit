@@ -228,10 +228,11 @@ review; tests never inspect this design's contents.
 
 ## Playback / Witness
 
-The existing inventory entry point is
-`edict/replace-range-probes/compiler-inventory/run.mjs`. The completed inventory
-README will name the exact bounded replay command, source/artifact selection,
-and retained output format. A passing helper probe is never a rope witness.
+The bounded iterative entry point is
+`edict/replace-range-probes/compiler-inventory/iterative.mts`; its README names
+the public build command and separate generic runtime consumer. The older
+`run.mjs` retains the declaration and draft-closure inventory. A passing helper
+probe is never a rope witness.
 
 ## Risks
 
@@ -248,6 +249,15 @@ New prerequisites need a reproducer and approval before issue publication.
 
 ## Retrospective
 
-Implementation has not started. No compiler/runtime result is claimed by this
-design. The implementation PR will record the completed slices, actual proof
-boundaries, and remaining upstream owners before readiness.
+The first checkpoint builds reachable scalar, bounded-list, and record-list
+folds through the public compiler and checked provider. All three run through
+generic Echo pure evaluation; a dynamic fold bound refuses at source type
+checking. A wrong list expectation fails its result assertion, then the restored
+expectation passes in debug and optimized builds. Exact-budget replay and
+one-unit-short limits are metamorphic checks, not independent cost formulas.
+
+This is a partial implementation: none of the four slices is complete. Complete
+module closures, the remaining iterative shapes, stage classification,
+provenance fault coverage, upstream reconciliation, required application checks,
+and independent review remain. The 40-case rope oracle and production pins are
+unchanged; no new rope acceptance result is claimed.

@@ -1,6 +1,96 @@
 # Re-run the ReplaceRange compiler inventory
 
-This measures the current boundary between authored rope drafts, Core lowering,
+## Reachable iterative probes
+
+`iterative.mts` builds the existing flat-text positive control and four authored
+sources in `iterative/`: a scalar fold, bounded-list accumulation, record-valued
+worklist accumulation, and a dynamic-bound refusal control. The three positive
+iterative probes invoke their fold from an intent and expose its result. This
+is the first bounded subset of [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
+complete module closures, other iterative shapes, and the full stage matrix
+remain part of that cycle.
+
+Run inside the admitted guarded Docker worker, with copied sources, the pinned
+Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
+and Echo checkouts. `EDICT_REPO` and `ECHO_REPO` select those producer checkouts.
+The provider directory is an independent byte selection; its file hashes bind
+the selected components without claiming that an arbitrary directory was built
+from `ECHO_REPO`.
+
+```sh
+node edict/replace-range-probes/compiler-inventory/iterative.mts \
+  --provider "$ECHO_REPO/schemas/edict-provider/package/v1" \
+  --output "$INVENTORY"
+```
+
+`INVENTORY` must be a new directory under the worker's accounted data root.
+The command builds the real public compiler, republishes the basis lawpack,
+pins each authored import to that publication, and retains all source/config,
+provider, lawpack, output-package, verifier-report, and diagnostic bytes. The
+versioned report records their hashes plus the compiler binary, driver, and
+producer checkout identities. A failed baseline invalidates the inventory.
+The report deliberately leaves runtime and full-operation evidence unmeasured.
+
+Record the printed `INVENTORY_REPORT_SHA256`. The separate Rust consumer binds
+that exact report, verifies the selected case files, and checks the independent
+verifier's package/Target/projection bindings before calling generic Echo pure
+evaluation. It checks scalar parity, exact three-item list results, repeat at
+observed resource usage, one-unit-short refusals, and invalid identity/input
+controls. The budget checks are boundary/metamorphic evidence, not independently
+derived absolute cost formulas. No Tick, graph edit, receipt, or rope acceptance
+is established by these pure evaluations.
+
+In the same guarded worker, copy `iterative-runtime.rs` to a new owned example
+path `xtask/examples/jedit_iterative_inventory.rs` in the selected Echo checkout,
+then run:
+
+```sh
+cargo +1.96.0 run --locked -p xtask --example jedit_iterative_inventory -- \
+  "$INVENTORY" "$EXPECTED_REPORT_SHA256"
+```
+
+Use the hash recorded at build completion; do not recompute it after a suspected
+substitution. Retain the copied consumer's exact source hash and output, then
+remove only that owned example copy before another clean-producer inventory.
+The source remains in Jedit. Required CI and the broader #388 acceptance checks
+remain separate gates.
+
+### First portable measurement
+
+The 2026-11-08 checkpoint selects Amblicit
+[`66bf6bac`](https://github.com/flyingrobots/amblicit/commit/66bf6bac369f67e32ddaee099c3198bd30f885a1)
+and Echo
+[`089c849f`](https://github.com/flyingrobots/echo/commit/089c849f766d5331835e7d10148a378cdb1237d5).
+The exact compiler binary SHA-256 is
+`12d169ac6d4acccd7dcd614bb9cc11939982c5aa48531a98dc2875936849f872`;
+the selected provider manifest SHA-256 is
+`492b2ac958c49f113500c5b29c12cc41e1b85f4071ef0c9f6424e5aeba3cbe98`.
+The retained inventory report is
+`a42c204d0c424f33e0c7329bf09bc6f8fa5ac18a6e0db7eb597ccadd6bfb5604`.
+
+| Probe | Public build | Generic pure runtime |
+| --- | --- | --- |
+| Flat-text baseline | Accepted | Not measured by this consumer |
+| Scalar fold | Accepted | Both Bool inputs produce their opposite |
+| Bounded-list fold | Accepted | Exactly `[7, 7, 7]` |
+| Record-list fold | Accepted | Exactly three `{ index: 7 }` records |
+| Dynamic fold bound | `InvalidBound` at `typeCheck` | Unreached |
+
+The public package/report pairs match the preceding exploratory build byte for
+byte. Debug and optimized runtime results agree. Changing the consumer's list
+expectation from 7 to 8 fails its result assertion; restoring it passes. A
+substituted inventory hash refuses before evaluation. This calibrates the
+consumer assertion, not a compiler defect. Record-list accumulation does not
+yet demonstrate worklist traversal, popping, tree rebuilding, or rope edits.
+
+## Earlier declaration inventory
+
+The reports and commands below describe their recorded historical producer
+revisions. They are not current-main capability claims: in particular, the
+historical `--source-modules` publisher flag is absent from the Echo revision
+selected by the new iterative probes. Use the command above for those probes.
+
+This measured the boundary between authored rope drafts, Core lowering,
 provider schema admission, and provider lowering/verification. It does not make
 the drafts executable or establish graph effects, rope behavior, or recovery.
 

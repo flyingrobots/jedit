@@ -1,0 +1,10 @@
+package jedit.iterative.list@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type Input = { marker: U8 }; type Output = { items: List<U8,max=3> };
+fn step(items: List<U8,max=3>) -> List<U8,max=3> {
+  return if listLen(items) < 3u64 then listAppend(items, 7u8) else items;
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let initial: List<U8,max=3> = []; let items = fold(initial, step, 5u64); return { items };
+}
