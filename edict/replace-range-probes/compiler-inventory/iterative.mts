@@ -21,6 +21,9 @@ const CASES = ['scalar-fold', 'bounded-list-fold', 'record-worklist-fold', 'dyna
 const GROUPS = [
     { name: 'controls', cases: CASES },
     { name: 'modules', cases: [...CASES, ...MODULE_CASES] },
+    { name: 'primitives', cases: [...CASES, 'subtraction-constrained', 'subtraction-helper',
+        'unsafe-subtraction-negative', 'byte-slice-intent', 'byte-slice-helper', 'function-precondition',
+        'pure-typed-failure', 'minimum', 'maximum', 'byte-metrics'] },
     { name: 'lists', cases: [...CASES, 'guarded-list-at', 'list-concat', 'record-state-fold',
         'list-rebuild-fold', 'variant-state-fold', 'indexed-record-fold', 'record-list-select', 'guarded-list-transfer',
         'list-rebuild-nested-guards'] },

@@ -138,7 +138,7 @@ test('the exact public artifact set executes', () => {
     const result = run('positive-control', evidence());
     assert.equal(result.status, 0);
     const group = evidence().selectedInputs.group;
-    const counts = new Map([['lists', 30], ['ranges', 7], ['modules', 6]]);
+    const counts = new Map([['lists', 30], ['ranges', 7], ['modules', 6], ['primitives', 28]]);
     const count = counts.get(group ?? '') ?? 4;
     assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length, count);
 });

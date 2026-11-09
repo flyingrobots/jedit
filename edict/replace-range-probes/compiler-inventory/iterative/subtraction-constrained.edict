@@ -1,0 +1,8 @@
+package jedit.iterative.subtraction_constrained@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+type Input = { start: U64, end: U64 }; type Output = { value: U64 };
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget
+  where input.start <= input.end
+{
+  let value = input.end - input.start; return { value };
+}

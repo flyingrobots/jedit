@@ -309,3 +309,15 @@ source-selection regression. TypeScript, repository quality and Clippy pass.
 This proves a reachable transitive module control, not the full rope draft or
 its schema-2 lawpack closure. See the
 [source-closure measurement](../../edict/replace-range-probes/compiler-inventory/source-closures.md).
+
+The arithmetic/byte checkpoint measures ten additional source shapes. Intent
+constraints admit subtraction and slicing, and invoked byte-metric helpers
+publish. Guarded subtraction/slice helpers instead refuse in the provider;
+its order proofs omit branch-path facts. Function preconditions and typed
+failure declarations refuse in parsing, while `min`/`max` refuse in source
+checking. The first direct-return wrappers stopped at Target `NoTargetSteps`;
+both that evidence and the subsequent explicit-binding measurements remain.
+The [owner reconciliation](../../edict/replace-range-probes/compiler-inventory/upstream-status.md)
+records the landed compiler/runtime prerequisites without closing broader
+issues or scheduling their reimplementation. Whole-draft closures, structured
+effects, remaining composite shapes and the full gates are still unfinished.

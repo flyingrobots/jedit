@@ -7,6 +7,8 @@
 mod evidence;
 #[path = "jedit_iterative_inventory/lists.rs"]
 mod list_matrix;
+#[path = "jedit_iterative_inventory/primitives.rs"]
+mod primitive_matrix;
 #[path = "jedit_iterative_inventory/stages.rs"]
 mod stages;
 
@@ -311,6 +313,13 @@ fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
         Some(serde_json::Value::String(group)) if group == "modules" => {
             names.push("module-fold");
         }
+        Some(serde_json::Value::String(group)) if group == "primitives" => {
+            names.extend([
+                "subtraction-constrained",
+                "byte-slice-intent",
+                "byte-metrics",
+            ]);
+        }
         _ => return Err(anyhow!("unsupported inventory group")),
     }
     Ok(names)
@@ -321,6 +330,9 @@ fn run_named(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()
         "scalar-fold" | "module-fold" => scalar(root, evidence, name),
         "bounded-list-fold" | "record-worklist-fold" => accumulated_list(root, evidence, name),
         "constrained-add" => constrained_add(root, evidence),
+        "subtraction-constrained" | "byte-slice-intent" | "byte-metrics" => {
+            primitive_matrix::run_case(root, evidence, name)
+        }
         _ => list_matrix::run_case(root, evidence, name),
     }
 }

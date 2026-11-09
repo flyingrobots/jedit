@@ -12,10 +12,13 @@ an unsafe-addition refusal control.
 `--group modules` invokes a fold through two digest-bound source modules and
 includes changed-leaf and missing-leaf authentication controls. See
 [the source-closure measurement](source-closures.md) for exact evidence.
+`--group primitives` measures [arithmetic and byte shapes](primitives.md).
+[Upstream reconciliation](upstream-status.md) distinguishes landed prerequisites
+from broader open requirements.
 This remains a bounded subset of
 [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-whole-draft closures, other arithmetic/slicing shapes, structured effects,
-and upstream owner reconciliation remain part of that cycle.
+whole-draft closures, structured effects, and remaining composite shapes
+remain part of that cycle.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
 Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
@@ -63,6 +66,7 @@ Copy `iterative-evidence.rs` to the new owned module path
 `xtask/examples/jedit_iterative_inventory/evidence.rs` and `iterative-lists.rs`
 to `xtask/examples/jedit_iterative_inventory/lists.rs`. Also copy
 `iterative-stages.rs` to `xtask/examples/jedit_iterative_inventory/stages.rs`.
+Copy `iterative-primitives.rs` to `xtask/examples/jedit_iterative_inventory/primitives.rs`.
 From that Echo checkout, run:
 
 ```sh
@@ -105,9 +109,11 @@ bytes never changed and that the restored derivative matches, then removes
 only the duplicate working tree.
 Use the release consumer path to repeat admission with an optimized build.
 The positive-control assertion requires four runtime inputs for `controls`,
-thirty for `lists`, seven for `ranges`, and six for `modules`. Use the same environment with
+thirty for `lists`, seven for `ranges`, six for `modules`, and twenty-eight for
+`primitives`. Use the same environment with
 `iterative-stage.test.mts` against a `ranges` inventory for stage assertions.
 Use `iterative-module.test.mts` against `modules` for authenticated-import assertions.
+Use `iterative-primitives.test.mts` against `primitives` for its stage assertions.
 
 The consumer rejects v1 reports: those lack the retained source snapshots and
 completion marker required by v2. Historical measurements below retain their
