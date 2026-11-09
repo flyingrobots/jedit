@@ -96,6 +96,11 @@ This section is the repository's statement of current truth and of the order of 
 
 Current bearing: keep the real Wesley compatibility corridor honest, author Jim's first operation as real Edict source, and converge on `Jim.edict` as an Echo-realized active observer. Do not add editor vocabulary to Echo or move Jim's semantic state machine into a generated TypeScript client.
 
+The [iterative rope capability inventory](docs/design/0162-iterative-rope-capability-inventory.md)
+measures remaining source/provider boundaries against exact public artifacts.
+Its results inform the authored-rope work; they do not establish ReplaceRange
+acceptance or change the production package pins.
+
 What you get right now includes:
 
 - Vim-shaped editing with Normal and Insert behavior, plus a growing command surface.
