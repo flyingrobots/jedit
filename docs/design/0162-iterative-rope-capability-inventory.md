@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-11-08"
-updated: "2026-11-08"
+updated: "2026-11-09"
 ---
 
 # DL-0162 - Iterative Rope Capability Inventory
@@ -272,10 +272,26 @@ total runtime inputs pass in debug and optimized builds. Six wrong-expectation
 calibrations fail at their named result checks, then pass after restoration.
 Source/Core/Target success for the provider refusals is inferred from the
 selected public command's order, not from separately emitted artifacts. The
-precise range-judgment owner and alternative index guards remain unresolved.
+precise range-judgment owner and alternative index guards remained unresolved
+at that checkpoint.
+
+The range checkpoint removes records and folds from the failing source and
+compares strict, non-strict and equality branch guards. All five forms refuse
+in the provider lowerer, while addition under an intent input constraint
+publishes and executes. Source inspection shows branch predicates absent from
+the lowerer's addition-proof inputs. A proposed generic Echo issue is prepared
+for publication authorization; this inventory does not itself repair that gap.
+
+The consumer now emits hash-bound, per-case stage observations. Four stage tests
+first failed, and two tampered diagnostic/status reports exposed missed
+refusals. CLI stream corroboration fixes both. Fifteen admission tests pass on
+the range and expanded-list inventories in debug and optimized builds; four
+range stage tests pass in both builds. A wrong scalar result demonstrates that
+failed witnesses remain distinct from later successful cases. These checks
+still do not establish component regeneration or full operation acceptance.
 
 This is a partial implementation: none of the four slices is complete. Complete
-module closures, the remaining iterative shapes, stage classification,
+module closures, the remaining iterative shapes, wider stage/fault coverage,
 provenance fault coverage, upstream reconciliation, required application checks,
 and independent review remain. The 40-case rope oracle and production pins are
 unchanged; no new rope acceptance result is claimed.

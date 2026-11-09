@@ -229,6 +229,42 @@ fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
     Ok(())
 }
 
+fn json_lines(path: &Path) -> Result<Vec<Value>> {
+    let source = String::from_utf8(read(path)?)?;
+    let mut values = Vec::new();
+    for line in source.lines().filter(|line| !line.trim().is_empty()) {
+        ensure!(values.len() < MAX_ENTRIES, "unbounded compiler events");
+        values.push(serde_json::from_str(line)?);
+    }
+    Ok(values)
+}
+
+fn compiler_events(root: &Path, case: &Value) -> Result<()> {
+    let name = case["name"].as_str().context("case name")?;
+    let stdout = json_lines(&root.join(name).join("stdout.jsonl"))?;
+    let stderr = json_lines(&root.join(name).join("stderr.jsonl"))?;
+    ensure!(
+        case["diagnostics"].as_array() == Some(&stderr),
+        "compiler diagnostics mismatch"
+    );
+    let statuses: Vec<_> = stdout
+        .iter()
+        .chain(&stderr)
+        .filter(|item| item["type"] == "status")
+        .collect();
+    ensure!(statuses.len() == 1, "missing or duplicate compiler status");
+    let status = statuses[0];
+    let exit = case["exitCode"].as_i64().context("compiler exit status")?;
+    ensure!(
+        status["schema"] == "edict.cli.event/v1"
+            && status["command"] == "build"
+            && status["exitCode"].as_i64() == Some(exit)
+            && status["status"] == if exit == 0 { "ok" } else { "error" },
+        "compiler status mismatch"
+    );
+    Ok(())
+}
+
 pub fn load(root: &Path, expected: &str) -> Result<Value> {
     let report = read(&root.join("report.json"))?;
     ensure!(sha(&report) == expected, "compiler evidence substitution");
@@ -243,5 +279,8 @@ pub fn load(root: &Path, expected: &str) -> Result<Value> {
     );
     let selected = inputs(root, &evidence["selectedInputs"])?;
     cases(root, &evidence, &selected)?;
+    for case in evidence["results"].as_array().context("case results")? {
+        compiler_events(root, case)?;
+    }
     Ok(evidence)
 }

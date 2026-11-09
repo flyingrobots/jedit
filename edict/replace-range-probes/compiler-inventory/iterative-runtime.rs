@@ -7,6 +7,8 @@
 mod evidence;
 #[path = "jedit_iterative_inventory/lists.rs"]
 mod list_matrix;
+#[path = "jedit_iterative_inventory/stages.rs"]
+mod stages;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use echo_edict_canonical::{
@@ -245,29 +247,79 @@ fn scalar(root: &Path, evidence: &serde_json::Value) -> Result<()> {
     Ok(())
 }
 
-fn lists(root: &Path, evidence: &serde_json::Value) -> Result<()> {
-    for (name, item) in [
-        ("bounded-list-fold", Value::Integer(APPENDED_VALUE)),
-        (
-            "record-worklist-fold",
-            record("index", Value::Integer(APPENDED_VALUE)),
-        ),
-    ] {
-        let (package, pin) = selected_pair(root, evidence, name)?;
+fn accumulated_list(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()> {
+    let item = if name == "bounded-list-fold" {
+        Value::Integer(APPENDED_VALUE)
+    } else {
+        record("index", Value::Integer(APPENDED_VALUE))
+    };
+    let (package, pin) = selected_pair(root, evidence, name)?;
+    check(
+        &package,
+        pin,
+        record("marker", Value::Integer(0)),
+        record("items", Value::Array(vec![item; 3])),
+    )?;
+    let invalid = encode(&record("marker", Value::Integer(256)))?;
+    ensure!(
+        evaluate(&package, pin, &invalid, limits()) == Err(EvaluationError::InvalidInput),
+        "invalid U8 admitted"
+    );
+    println!("PUBLIC_ITERATIVE_RUNTIME_OK {name}: exact three-item result, exact replay, 3 one-under limits, identity and type refusal");
+    Ok(())
+}
+
+fn constrained_add(root: &Path, evidence: &serde_json::Value) -> Result<()> {
+    let (package, pin) = selected_pair(root, evidence, "constrained-add")?;
+    for (input, expected) in [(0, 1), (1, 2), (2, 3)] {
         check(
             &package,
             pin,
-            record("marker", Value::Integer(0)),
-            record("items", Value::Array(vec![item; 3])),
-        )?;
-        let invalid = encode(&record("marker", Value::Integer(256)))?;
-        ensure!(
-            evaluate(&package, pin, &invalid, limits()) == Err(EvaluationError::InvalidInput),
-            "invalid U8 admitted"
-        );
-        println!("PUBLIC_ITERATIVE_RUNTIME_OK {name}: exact three-item result, exact replay, 3 one-under limits, identity and type refusal");
+            record("index", Value::Integer(input)),
+            record("index", Value::Integer(expected)),
+        )
+        .context("constrained-add")?;
     }
+    for value in [3, i128::from(u64::MAX)] {
+        let input = encode(&record("index", Value::Integer(value)))?;
+        ensure!(
+            evaluate(&package, pin, &input, limits())
+                == Err(EvaluationError::InputConstraintFailed("where.0".into())),
+            "constrained-add did not reject input outside its predicate"
+        );
+    }
+    println!("PUBLIC_RANGE_RUNTIME_OK constrained-add: 3 inputs, 2 constraint refusals");
     Ok(())
+}
+
+fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
+    let mut names = vec!["scalar-fold", "bounded-list-fold", "record-worklist-fold"];
+    match evidence["selectedInputs"].get("group") {
+        None => {}
+        Some(serde_json::Value::String(group)) if group == "controls" => {}
+        Some(serde_json::Value::String(group)) if group == "lists" => names.extend([
+            "guarded-list-at",
+            "list-concat",
+            "record-state-fold",
+            "variant-state-fold",
+            "record-list-select",
+            "guarded-list-transfer",
+        ]),
+        Some(serde_json::Value::String(group)) if group == "ranges" => {
+            names.push("constrained-add");
+        }
+        _ => return Err(anyhow!("unsupported inventory group")),
+    }
+    Ok(names)
+}
+
+fn run_named(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()> {
+    match name {
+        "scalar-fold" => scalar(root, evidence),
+        "bounded-list-fold" | "record-worklist-fold" => accumulated_list(root, evidence, name),
+        "constrained-add" => constrained_add(root, evidence),
+        _ => list_matrix::run_case(root, evidence, name),
+    }
 }
 
 fn main() -> Result<()> {
@@ -282,10 +334,17 @@ fn main() -> Result<()> {
     );
     let root = Path::new(&arguments[0]);
     let evidence = evidence::load(root, &arguments[1])?;
-    scalar(root, &evidence)?;
-    lists(root, &evidence)?;
-    if evidence["selectedInputs"]["group"] == "lists" {
-        list_matrix::run(root, &evidence)?;
+    let names = runtime_names(&evidence)?;
+    let mut report = stages::inventory(root, &evidence, &arguments[1])?;
+    let mut failures = Vec::new();
+    for name in names {
+        let result = run_named(root, &evidence, name);
+        report.record_runtime(name, &result)?;
+        if let Err(error) = result {
+            failures.push(format!("{name}: {error:#}"));
+        }
     }
+    println!("STAGE_INVENTORY {}", serde_json::to_string(&report)?);
+    ensure!(failures.is_empty(), "{}", failures.join("\n"));
     Ok(())
 }

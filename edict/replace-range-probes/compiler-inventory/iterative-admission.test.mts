@@ -2,7 +2,7 @@
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // Derive refusal inputs from retained public output; never synthesize programs.
 import assert from 'node:assert/strict';
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -13,7 +13,7 @@ type Case = { name: string; exitCode: number; diagnostics: object[]; files: File
 type Evidence = {
     schema: string;
     measurement?: string;
-    selectedInputs: { compilerBinarySha256?: string; provider: FileEntry[]; group?: string };
+    selectedInputs: { compilerBinarySha256?: string; compilerCommit?: string; provider: FileEntry[]; group?: string };
     results: Case[];
 };
 
@@ -29,6 +29,23 @@ function sha(bytes: Buffer): string {
     return createHash('sha256').update(bytes).digest('hex');
 }
 
+function shareInputs(source: string, destination: string): void {
+    mkdirSync(destination);
+    for (const item of readdirSync(source, { withFileTypes: true })) {
+        const from = path.join(source, item.name);
+        const to = path.join(destination, item.name);
+        if (item.isDirectory()) shareInputs(from, to);
+        else if (item.isFile()) linkSync(from, to);
+        else throw new AdmissionFailure('nonregular evidence input');
+    }
+}
+
+function writeDetached(file: string, bytes: Buffer): void {
+    const replacement = file + '.replacement';
+    writeFileSync(replacement, bytes, { flag: 'wx' });
+    renameSync(replacement, file);
+}
+
 if (!existsSync('/.dockerenv')) throw new AdmissionFailure('run in the guarded Docker worker');
 const input = required('INVENTORY_INPUT');
 const expected = required('INVENTORY_REPORT_SHA256');
@@ -36,9 +53,10 @@ const executable = required('INVENTORY_RUNTIME');
 const output = required('INVENTORY_TEST_OUTPUT');
 const original = readFileSync(path.join(input, 'report.json'));
 assert.equal(sha(original), expected, 'test input must be the selected public evidence');
+const originalTree = tree(input);
 mkdirSync(output);
 const copy = path.join(output, 'working-copy');
-cpSync(input, copy, { recursive: true });
+shareInputs(input, copy);
 writeFileSync(path.join(output, 'runtime.sha256'), sha(readFileSync(executable)) + '\n', { flag: 'wx' });
 
 function evidence(): Evidence {
@@ -46,14 +64,18 @@ function evidence(): Evidence {
 }
 
 function scalar(value: Evidence): Case {
-    const selected = value.results.find(item => item.name === 'scalar-fold');
-    if (!selected) throw new AdmissionFailure('missing scalar control');
+    return named(value, 'scalar-fold');
+}
+
+function named(value: Evidence, name: string): Case {
+    const selected = value.results.find(item => item.name === name);
+    if (!selected) throw new AdmissionFailure('missing case: ' + name);
     return selected;
 }
 
 function run(name: string, value: Evidence, pin?: string) {
     const bytes = Buffer.from(JSON.stringify(value, null, 2) + '\n');
-    writeFileSync(path.join(copy, 'report.json'), bytes);
+    writeDetached(path.join(copy, 'report.json'), bytes);
     writeFileSync(path.join(output, name + '.report.json'), bytes, { flag: 'wx' });
     const result = spawnSync(executable, [copy, pin ?? sha(bytes)], {
         encoding: 'utf8', timeout: 30_000, maxBuffer: 256 * 1024,
@@ -75,20 +97,20 @@ function refused(name: string, value: Evidence, message: string): void {
     assert.equal(result.stdout, '', name + ' must refuse before any runtime result');
 }
 
-function changedFile(name: string, relative: string, changed: Buffer, message: string): void {
+function changedFile(name: string, relative: string, changed: Buffer, message: string, caseName = 'scalar-fold'): void {
     const value = evidence();
-    const selected = scalar(value).files.find(file => file.path === relative);
+    const selected = named(value, caseName).files.find(file => file.path === relative);
     assert.ok(selected);
-    const file = path.join(copy, 'scalar-fold', relative);
+    const file = path.join(copy, caseName, relative);
     const saved = readFileSync(file);
     selected.bytes = changed.length;
     selected.sha256 = sha(changed);
     writeFileSync(path.join(output, name + '.changed-file'), changed, { flag: 'wx' });
     try {
-        writeFileSync(file, changed);
+        writeDetached(file, changed);
         refused(name, value, message);
     } finally {
-        writeFileSync(file, saved);
+        writeDetached(file, saved);
     }
 }
 
@@ -104,7 +126,8 @@ function tree(root: string, relative = ''): string[] {
 }
 
 after(() => {
-    writeFileSync(path.join(copy, 'report.json'), original);
+    writeDetached(path.join(copy, 'report.json'), original);
+    assert.deepEqual(tree(input), originalTree, 'mutations must never change retained input bytes');
     assert.deepEqual(tree(copy), tree(input), 'restored derivative must match retained public evidence');
     rmSync(copy, { recursive: true });
     console.log('RECLAIMED_VERIFIED_DUPLICATE; all changed reports/files and process logs retained');
@@ -113,8 +136,50 @@ after(() => {
 test('the exact public artifact set executes', () => {
     const result = run('positive-control', evidence());
     assert.equal(result.status, 0);
-    assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length,
-        evidence().selectedInputs.group === 'lists' ? 30 : 4);
+    const group = evidence().selectedInputs.group;
+    const count = group === 'lists' ? 30 : group === 'ranges' ? 7 : 4;
+    assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length, count);
+});
+
+test('unsupported groups cannot silently omit selected runtime witnesses', () => {
+    const value = evidence();
+    value.selectedInputs.group = 'unrecognized';
+    refused('unknown-group', value, 'unsupported inventory group');
+});
+
+test('reported refusal stages must match the retained compiler diagnostics', () => {
+    const value = evidence();
+    named(value, 'dynamic-fold-negative').diagnostics[0] = {
+        type: 'diagnostic', severity: 'error', stage: 'cli', kind: 'ProviderLowererRefused',
+    };
+    refused('forged-stage', value, 'compiler diagnostics mismatch');
+});
+
+test('reported process status must match the public CLI status event', () => {
+    const value = evidence();
+    named(value, 'dynamic-fold-negative').exitCode = 1;
+    refused('forged-status', value, 'compiler status mismatch');
+});
+
+test('the baseline package must bind its accepted verifier report', () => {
+    const relative = '.build/application/verification-report.cbor';
+    const other = readFileSync(path.join(copy, 'scalar-fold', relative));
+    changedFile('baseline-report-substitution', relative, other, 'package/report mismatch', 'baseline');
+});
+
+test('uninspected compiler revisions cannot inherit earlier-stage inference', () => {
+    const value = evidence();
+    value.selectedInputs.compilerCommit = '0'.repeat(40);
+    const result = run('uninspected-compiler', value);
+    assert.equal(result.status, 0, result.stderr);
+    const line = result.stdout.split('\n').find(line => line.startsWith('STAGE_INVENTORY '));
+    assert.ok(line);
+    const stages: { cases: { name: string; source: { status: string }; core: { status: string };
+        target: { status: string }; verifier: { status: string } }[] } = JSON.parse(line.slice('STAGE_INVENTORY '.length));
+    const scalar = stages.cases.find(item => item.name === 'scalar-fold');
+    assert.ok(scalar);
+    for (const stage of [scalar.source, scalar.core, scalar.target]) assert.equal(stage.status, 'unmeasured');
+    assert.equal(scalar.verifier.status, 'accepted');
 });
 
 test('an invalid baseline invalidates the whole measurement', () => {

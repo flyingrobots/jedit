@@ -3,7 +3,7 @@
 //! Literal boundary expectations for public list, record and variant packages.
 
 use super::{check, encode, evaluate, limits, record, selected_pair, EvaluationError, Value};
-use anyhow::{ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use std::path::Path;
 
 fn fields(values: Vec<(&str, Value)>) -> Value {
@@ -202,12 +202,14 @@ fn transfer(root: &Path, evidence: &serde_json::Value) -> Result<()> {
     Ok(())
 }
 
-pub fn run(root: &Path, evidence: &serde_json::Value) -> Result<()> {
-    lookup(root, evidence, "guarded-list-at", false)?;
-    concat(root, evidence)?;
-    record_state(root, evidence)?;
-    variant_state(root, evidence)?;
-    lookup(root, evidence, "record-list-select", true)?;
-    transfer(root, evidence)?;
-    Ok(())
+pub fn run_case(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()> {
+    match name {
+        "guarded-list-at" => lookup(root, evidence, name, false),
+        "list-concat" => concat(root, evidence),
+        "record-state-fold" => record_state(root, evidence),
+        "variant-state-fold" => variant_state(root, evidence),
+        "record-list-select" => lookup(root, evidence, name, true),
+        "guarded-list-transfer" => transfer(root, evidence),
+        _ => bail!("unknown list witness: {name}"),
+    }
 }

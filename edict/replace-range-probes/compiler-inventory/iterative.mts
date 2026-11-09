@@ -22,6 +22,9 @@ const GROUPS = [
     { name: 'lists', cases: [...CASES, 'guarded-list-at', 'list-concat', 'record-state-fold',
         'list-rebuild-fold', 'variant-state-fold', 'indexed-record-fold', 'record-list-select', 'guarded-list-transfer',
         'list-rebuild-nested-guards'] },
+    { name: 'ranges', cases: [...CASES, 'indexed-record-fold', 'indexed-record-fold-nonstrict',
+        'indexed-record-fold-equality', 'scalar-guarded-add', 'intent-guarded-add', 'constrained-add',
+        'unsafe-add-negative'] },
 ];
 
 class InventoryFailure extends Error {}
