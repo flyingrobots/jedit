@@ -13,7 +13,7 @@ type Case = { name: string; exitCode: number; diagnostics: object[]; files: File
 type Evidence = {
     schema: string;
     measurement?: string;
-    selectedInputs: { compilerBinarySha256?: string; provider: FileEntry[] };
+    selectedInputs: { compilerBinarySha256?: string; provider: FileEntry[]; group?: string };
     results: Case[];
 };
 
@@ -113,7 +113,8 @@ after(() => {
 test('the exact public artifact set executes', () => {
     const result = run('positive-control', evidence());
     assert.equal(result.status, 0);
-    assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length, 4);
+    assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length,
+        evidence().selectedInputs.group === 'lists' ? 30 : 4);
 });
 
 test('an invalid baseline invalidates the whole measurement', () => {

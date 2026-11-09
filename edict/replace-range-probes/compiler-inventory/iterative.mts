@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR LicenseRef-MIND-UCAL-1.0
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // Public application builds only; no Core, Target, package, or report synthesis.
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, linkSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -17,6 +17,12 @@ const MAX_PROCESS_MS = 120_000;
 const MAX_EVIDENCE_BYTES = 20 * 1024 * 1024;
 const BUILD = { schema: 'edict.compiler.settings/v1', type: 'compilerSettings', operation: 'build' };
 const CASES = ['scalar-fold', 'bounded-list-fold', 'record-worklist-fold', 'dynamic-fold-negative'];
+const GROUPS = [
+    { name: 'controls', cases: CASES },
+    { name: 'lists', cases: [...CASES, 'guarded-list-at', 'list-concat', 'record-state-fold',
+        'list-rebuild-fold', 'variant-state-fold', 'indexed-record-fold', 'record-list-select', 'guarded-list-transfer',
+        'list-rebuild-nested-guards'] },
+];
 
 class InventoryFailure extends Error {}
 
@@ -52,12 +58,24 @@ function producerCommit(directory: string): string {
     return head.stdout.trim();
 }
 
+function groupName(args: string[]): string {
+    if (args.length === 4) return 'controls';
+    if (args.length === 6 && args[4] === '--group') return args[5];
+    throw new InventoryFailure('usage: iterative.mts --provider DIR --output NEW_DIR [--group NAME]');
+}
+
+function commandLine() {
+    const args = process.argv.slice(2);
+    if (args[0] !== '--provider' || args[2] !== '--output') throw new InventoryFailure('provider and output are required');
+    const name = groupName(args);
+    const group = GROUPS.find(group => group.name === name);
+    if (!group) throw new InventoryFailure('unknown probe group');
+    return { provider: path.resolve(args[1]), output: path.resolve(args[3]), group };
+}
+
 function configuration() {
     if (!existsSync('/.dockerenv')) throw new InventoryFailure('run in the guarded Docker worker');
-    const args = process.argv.slice(2);
-    if (args.length !== 4 || args[0] !== '--provider' || args[2] !== '--output') {
-        throw new InventoryFailure('usage: iterative.mts --provider DIR --output NEW_DIR');
-    }
+    const arguments_ = commandLine();
     const compilerRepository = process.env.EDICT_REPO;
     const echoRepository = process.env.ECHO_REPO;
     if (!compilerRepository || !echoRepository) throw new InventoryFailure('EDICT_REPO and ECHO_REPO are required');
@@ -65,9 +83,8 @@ function configuration() {
     const echoCheckoutCommit = producerCommit(echoRepository);
     const toolchain = JSON.parse(readFileSync(path.join(applicationRoot, 'edict.toolchain-lock.json'), 'utf8')).rust.toolchain;
     const compiler = buildCompiler(compilerRepository, toolchain);
-    const provider = path.resolve(args[1]);
-    return { compiler, compilerCommit, echoCheckoutCommit, compilerRepository, echoRepository,
-        compilerSha256: hash(readFileSync(compiler)), provider, providerFiles: inventory(provider), output: path.resolve(args[3]) };
+    return { compiler, compilerCommit, echoCheckoutCommit, compilerRepository, echoRepository, ...arguments_,
+        compilerSha256: hash(readFileSync(compiler)), providerFiles: inventory(arguments_.provider) };
 }
 
 const selected = configuration();
@@ -103,13 +120,14 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
 }
 
 const basis = publishBasis();
-const authored = ['baseline', ...CASES].map(name => {
+const authored = ['baseline', ...selected.group.cases].map(name => {
     const source = name === 'baseline' ? basis.baseline : withImportDigest(
         readFileSync(path.join(selected.output, 'fixture-sources', name + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
     writeFileSync(path.join(selected.output, 'authored-sources', name + '.edict'), source, { flag: 'wx' });
     return { name, source };
 });
 const selectedInputs = {
+    group: selected.group.name,
     compilerCommit: selected.compilerCommit, echoCheckoutCommit: selected.echoCheckoutCommit,
     compilerBinarySha256: selected.compilerSha256,
     driverSha256: hash(readFileSync(path.join(selected.output, 'driver.mts'))),
@@ -119,11 +137,21 @@ const selectedInputs = {
     lawpackClosure: inventory(path.join(basis.root, 'vendor')),
 };
 
+function shareInputs(source: string, destination: string): void {
+    mkdirSync(destination, { recursive: true });
+    for (const file of inventory(source)) {
+        const target = path.join(destination, file.path);
+        mkdirSync(path.dirname(target), { recursive: true });
+        linkSync(path.join(source, file.path), target);
+    }
+}
+
 function measure(name: string, source: string) {
     const root = path.join(selected.output, name);
     mkdirSync(root);
-    cpSync(path.join(basis.root, 'vendor'), path.join(root, 'vendor'), { recursive: true });
-    cpSync(selected.provider, path.join(root, '.build/echo-provider'), { recursive: true });
+    // Public application builds only read these copied, fixed dependency inputs.
+    shareInputs(path.join(basis.root, 'vendor'), path.join(root, 'vendor'));
+    shareInputs(path.join(basis.root, '.build/echo-provider'), path.join(root, '.build/echo-provider'));
     mkdirSync(path.join(root, 'src'));
     writeFileSync(path.join(root, 'src/Probe.edict'), source, { flag: 'wx' });
     const coordinate = source.match(/^package ([^;]+);/m);
@@ -158,7 +186,9 @@ for (const { name, source } of authored) {
 if (producerCommit(selected.compilerRepository) !== selected.compilerCommit
     || producerCommit(selected.echoRepository) !== selected.echoCheckoutCommit
     || hash(readFileSync(selected.compiler)) !== selected.compilerSha256
-    || JSON.stringify(inventory(selected.provider)) !== JSON.stringify(selected.providerFiles)) {
+    || JSON.stringify(inventory(selected.provider)) !== JSON.stringify(selected.providerFiles)
+    || JSON.stringify(inventory(path.join(basis.root, '.build/echo-provider'))) !== JSON.stringify(selectedInputs.provider)
+    || JSON.stringify(inventory(path.join(basis.root, 'vendor'))) !== JSON.stringify(selectedInputs.lawpackClosure)) {
     throw new InventoryFailure('producer changed during measurement');
 }
 writeReport('complete');

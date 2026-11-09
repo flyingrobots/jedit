@@ -2,13 +2,15 @@
 
 ## Reachable iterative probes
 
-`iterative.mts` builds the existing flat-text positive control and four authored
-sources in `iterative/`: a scalar fold, bounded-list accumulation, record-valued
-worklist accumulation, and a dynamic-bound refusal control. The three positive
-iterative probes invoke their fold from an intent and expose its result. This
-is the first bounded subset of [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-complete module closures, other iterative shapes, and the full stage matrix
-remain part of that cycle.
+`iterative.mts` builds the existing flat-text positive control and reachable
+authored sources in `iterative/`. The default `controls` group measures scalar,
+bounded-list and record-list folds plus a dynamic-bound refusal. Add
+`--group lists` to measure nine more list/record/variant shapes, including
+composed rebuilding and smaller probes that isolate its provider refusal.
+This remains a bounded subset of
+[DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
+complete module closures, arithmetic/slicing, structured effects, and the
+machine-readable stage matrix remain part of that cycle.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
 Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
@@ -33,6 +35,10 @@ repinned authored sources separately. Only a completed run receives
 `measurement: complete`; producer identity changes leave it incomplete.
 A failed baseline invalidates the inventory.
 The report deliberately leaves runtime and full-operation evidence unmeasured.
+Each case hardlinks dependency files from the retained basis copy. These links
+stay within the new evidence directory; external producer files are copied.
+The runner rechecks the basis and external selections after the builds. This
+reduces physical storage without changing the 20 MiB logical evidence limit.
 
 Record the printed `INVENTORY_REPORT_SHA256`. The separate Rust consumer binds
 that exact report, requires complete file inventories, checks each case against
@@ -47,8 +53,8 @@ is established by these pure evaluations.
 In the same guarded worker, copy `iterative-runtime.rs` to a new owned example
 path `xtask/examples/jedit_iterative_inventory.rs` in the selected Echo checkout.
 Copy `iterative-evidence.rs` to the new owned module path
-`xtask/examples/jedit_iterative_inventory/evidence.rs`. From that Echo checkout,
-run:
+`xtask/examples/jedit_iterative_inventory/evidence.rs` and `iterative-lists.rs`
+to `xtask/examples/jedit_iterative_inventory/lists.rs`. From that Echo checkout, run:
 
 ```sh
 cargo +1.96.0 run --locked -p xtask --example jedit_iterative_inventory -- \
@@ -76,10 +82,71 @@ public output and retain each altered report/file and process result. They never
 synthesize a Core program or package. After restoring and comparing every byte
 to the original input tree, they remove only that duplicate working copy.
 Use the release consumer path to repeat admission with an optimized build.
+Allow room for the full logical working copy: the mutation tests do not share
+hardlinks with their retained input. The positive-control assertion requires
+four runtime inputs for `controls` and thirty for `lists`.
 
 The consumer rejects v1 reports: those lack the retained source snapshots and
 completion marker required by v2. Historical measurements below retain their
 original identities and can be replayed with their matching consumer revision.
+
+### List composition and the provider boundary
+
+The expanded fourteen-case report is
+`10c208ec142b1118d7197756005b1c7dd3f47dbbab99494669928269283dce17`.
+It selects the same Amblicit/Echo/compiler/provider tuple recorded below.
+Ten public builds accept, including the baseline; one refuses in source type
+checking and three refuse in the provider lowerer.
+
+| Additional reachable shape | Public build | Generic pure runtime |
+| --- | --- | --- |
+| Guarded list lookup | Accepted | Six empty, valid, end and maximum-index inputs |
+| Concatenation | Accepted | Four empty/full combinations, preserving order |
+| Record-state fold | Accepted | Two Bool/payload states, exact final records |
+| Variant-state fold | Accepted | Three payloads through Pending/Done matching |
+| Lookup through record fields | Accepted | Six empty, valid, end and maximum-index inputs |
+| Guarded list transfer | Accepted | Five append/full/out-of-range inputs |
+| Indexed record fold | `ProviderLowererRefused` | Unreached |
+| List-rebuilding fold | `ProviderLowererRefused` | Unreached |
+| Rebuilding with nested guards | `ProviderLowererRefused` | Unreached |
+
+The indexed fold is the smaller refusal: a record carries an index, and each
+step uses `index < 3` before incrementing it. Guarded selection and transfer
+publish separately. Both conjunctive and nested guards refuse in the composed
+rebuilding fold. These observations narrow the boundary; the generic diagnostic
+does not establish the exact rejected expression or prove that every index
+advancement form fails.
+
+| Stage | Evidence for the three provider refusals |
+| --- | --- |
+| Source / Core / Target | Prior stages passed, inferred from this compiler's command order |
+| Provider lowerer | Observed `UnsupportedSemantics` for `core.source-functions` |
+| Independent provider verifier | Unreached |
+| Published components | Exact checked component bytes selected; regeneration not measured |
+| Generic runtime / full operation | Unreached / unmeasured |
+
+The inference uses the pinned public
+[application-build path#318:66bf6bac369f67e32ddaee099c3198bd30f885a1](https://github.com/flyingrobots/amblicit/blob/66bf6bac369f67e32ddaee099c3198bd30f885a1/crates/amblicit-cli/src/application_build.rs#L318):
+Core compilation and Target lowering precede provider invocation. It does not
+claim independently emitted Core/Target artifacts for the refused cases.
+[Echo #960](https://github.com/flyingrobots/echo/issues/960) describes related
+range-judgment differences for effect programs. Whether that issue covers this
+pure-function refusal remains unresolved; no new prerequisite is asserted here.
+
+The consumer executes 26 new inputs plus the four earlier controls. Each checks
+literal expected output, exact-budget replay, three one-unit-short budget
+refusals, and a wrong package identity. Twelve additional malformed inputs
+refuse (oversized lists, invalid U8 values, and negative U64 indices); the three
+earlier malformed-input checks also remain. Debug and optimized results agree.
+Six wrong-expectation calibrations, one per new accepted shape, each fail the
+named result check before restored GREEN. The earlier consumer first failed the
+expanded obligation because it executed only four of thirty required inputs.
+These are consumer checks, not repaired compiler/runtime defects.
+
+The ten admission tests were proved on the earlier control-only v2 inventory.
+This expanded measurement proves the new runtime cases and six oracle
+calibrations; a fresh run of the whole admission suite on the expanded tree
+remains pending. Full operation acceptance remains 0/40.
 
 ### Complete-evidence admission
 

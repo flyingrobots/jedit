@@ -264,6 +264,16 @@ All ten admission tests pass in debug and optimized builds; emitted public
 package/report pairs are unchanged. The compiler identity remains a selected
 binary hash, not an independently reproduced compiler build.
 
+The list-composition checkpoint adds nine reachable shapes. Six publish and
+execute through generic pure evaluation; three stop in the provider lowerer.
+An indexed record fold isolates a smaller refusal than the composed rebuilding
+fold, while guarded list selection and transfer succeed separately. Thirty
+total runtime inputs pass in debug and optimized builds. Six wrong-expectation
+calibrations fail at their named result checks, then pass after restoration.
+Source/Core/Target success for the provider refusals is inferred from the
+selected public command's order, not from separately emitted artifacts. The
+precise range-judgment owner and alternative index guards remain unresolved.
+
 This is a partial implementation: none of the four slices is complete. Complete
 module closures, the remaining iterative shapes, stage classification,
 provenance fault coverage, upstream reconciliation, required application checks,

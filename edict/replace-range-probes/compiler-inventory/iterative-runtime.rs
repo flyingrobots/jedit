@@ -5,6 +5,8 @@
 
 #[path = "jedit_iterative_inventory/evidence.rs"]
 mod evidence;
+#[path = "jedit_iterative_inventory/lists.rs"]
+mod list_matrix;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use echo_edict_canonical::{
@@ -282,5 +284,8 @@ fn main() -> Result<()> {
     let evidence = evidence::load(root, &arguments[1])?;
     scalar(root, &evidence)?;
     lists(root, &evidence)?;
+    if evidence["selectedInputs"]["group"] == "lists" {
+        list_matrix::run(root, &evidence)?;
+    }
     Ok(())
 }

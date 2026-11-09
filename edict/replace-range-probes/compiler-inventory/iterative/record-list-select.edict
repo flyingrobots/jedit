@@ -1,0 +1,13 @@
+package jedit.iterative.record_select@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type State = { items: List<U8,max=3>, index: U64 };
+type Input = { state: State };
+type Output = { value: U8 };
+fn select(state: State) -> U8 {
+  return if state.index < listLen(state.items) then listAt(state.items, state.index) else 0u8;
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let value = select(input.state);
+  return { value };
+}
