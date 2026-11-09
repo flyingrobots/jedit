@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCompiler } from '../../replace-range/tests/compiler.mjs';
-import { MODULE_CASES, moduleSources } from './iterative-closures.mts';
+import { DRAFT_CASES, MODULE_CASES, moduleSources } from './iterative-closures.mts';
 import { adapterTargets, withAdapterTargets, withImportDigest, lawpackManifestDigest }
     from '../../../scripts/deps/echo-edict-relock.mjs';
 
@@ -21,6 +21,7 @@ const CASES = ['scalar-fold', 'bounded-list-fold', 'record-worklist-fold', 'dyna
 const GROUPS = [
     { name: 'controls', cases: CASES },
     { name: 'modules', cases: [...CASES, ...MODULE_CASES] },
+    { name: 'drafts', cases: [...CASES, ...DRAFT_CASES, 'missing-draft-lawpack'] },
     { name: 'primitives', cases: [...CASES, 'subtraction-constrained', 'subtraction-helper',
         'unsafe-subtraction-negative', 'byte-slice-intent', 'byte-slice-helper', 'function-precondition',
         'pure-typed-failure', 'minimum', 'maximum', 'byte-metrics'] },
@@ -113,6 +114,13 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
     writeFileSync(path.join(selected.output, 'closure-driver.mts'),
         readFileSync(fileURLToPath(new URL('./iterative-closures.mts', import.meta.url))), { flag: 'wx' });
     cpSync(fixtureRoot, path.join(selected.output, 'fixture-sources'), { recursive: true });
+    if (selected.group.name === 'drafts') {
+        const drafts = path.join(applicationRoot, 'draft');
+        cpSync(drafts, path.join(selected.output, 'fixture-sources/drafts'), { recursive: true,
+            filter: source => source === drafts || source.endsWith('.edict') });
+        writeFileSync(path.join(selected.output, 'draft-driver.mjs'),
+            readFileSync(fileURLToPath(new URL('./draft-modules.mjs', import.meta.url))), { flag: 'wx' });
+    }
     mkdirSync(path.join(selected.output, 'authored-sources'));
     const root = path.join(selected.output, 'basis');
     cpSync(applicationRoot, root, { recursive: true,
@@ -132,7 +140,7 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
 const basis = publishBasis();
 const authored = ['baseline', ...selected.group.cases].map(name => {
     const fixture = MODULE_CASES.includes(name) ? 'module-fold' : name;
-    const source = name === 'baseline' ? basis.baseline : withImportDigest(
+    const source = DRAFT_CASES.includes(name) ? '' : name === 'baseline' ? basis.baseline : withImportDigest(
         readFileSync(path.join(selected.output, 'fixture-sources', fixture + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
     const sources = moduleSources(path.join(selected.output, 'fixture-sources'), name, source);
     for (const file of sources) {
@@ -149,6 +157,9 @@ const selectedInputs = {
     compilerBinarySha256: selected.compilerSha256,
     driverSha256: hash(readFileSync(path.join(selected.output, 'driver.mts'))),
     closureDriverSha256: hash(readFileSync(path.join(selected.output, 'closure-driver.mts'))),
+    ...(selected.group.name === 'drafts' ? {
+        draftDriverSha256: hash(readFileSync(path.join(selected.output, 'draft-driver.mjs'))),
+    } : {}),
     probeSources: inventory(path.join(selected.output, 'fixture-sources')), provider: selected.providerFiles,
     authoredSources: inventory(path.join(selected.output, 'authored-sources')),
     sourceClosures: inventory(path.join(selected.output, 'source-closures')),

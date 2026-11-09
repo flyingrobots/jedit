@@ -321,3 +321,11 @@ The [owner reconciliation](../../edict/replace-range-probes/compiler-inventory/u
 records the landed compiler/runtime prerequisites without closing broader
 issues or scheduling their reimplementation. Whole-draft closures, structured
 effects, remaining composite shapes and the full gates are still unfinished.
+
+The whole-draft checkpoint supplies the unchanged five source modules and
+checks each root's exact dependency list. Text, Reference, Rope and ReplaceRange
+retain distinct first parse refusals; the generic controls still execute.
+A separate small probe reaches Target's `UndigestedCoreImport` for the draft's
+`jedit.text@2` import. The selected publication remains version 1, so this
+measurement does not establish the requested version-2 lawpack closure.
+See the [draft closure boundary](../../edict/replace-range-probes/compiler-inventory/draft-closures.md).

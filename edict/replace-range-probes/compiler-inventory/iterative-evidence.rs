@@ -149,6 +149,13 @@ fn closure(case: &Index, prefix: &str, selected: &Index, label: &str) -> Result<
 }
 
 fn inputs(root: &Path, value: &Value, version: u8) -> Result<Inputs> {
+    if value["group"] == "drafts" {
+        ensure!(
+            value["draftDriverSha256"].as_str()
+                == Some(sha(&read(&root.join("draft-driver.mjs"))?).as_str()),
+            "draft driver selection mismatch"
+        );
+    }
     for (field, width, label) in [
         ("compilerCommit", 40, "compiler commit"),
         ("echoCheckoutCommit", 40, "Echo commit"),

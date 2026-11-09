@@ -13,11 +13,13 @@ an unsafe-addition refusal control.
 includes changed-leaf and missing-leaf authentication controls. See
 [the source-closure measurement](source-closures.md) for exact evidence.
 `--group primitives` measures [arithmetic and byte shapes](primitives.md).
+`--group drafts` retains the [complete supplied draft source closures](draft-closures.md)
+and separately exposes their undigested version-2 lawpack import.
 [Upstream reconciliation](upstream-status.md) distinguishes landed prerequisites
 from broader open requirements.
 This remains a bounded subset of
 [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-whole-draft closures, structured effects, and remaining composite shapes
+the requested version-2 lawpack closure, structured effects, and remaining composite shapes
 remain part of that cycle.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
@@ -42,6 +44,9 @@ producer checkout identities. It retains the driver, original fixtures, and
 repinned authored sources separately, including each case's full supplied
 module graph. Only a completed run receives
 `measurement: complete`; producer identity changes leave it incomplete.
+The `drafts` group additionally binds its source-pin driver. A completed
+measurement records all process outcomes; it does not imply that every
+requested dependency was supplied or that every source compiled.
 A failed baseline invalidates the inventory.
 The report deliberately leaves runtime and full-operation evidence unmeasured.
 Each case hardlinks dependency files from the retained basis copy. These links
@@ -110,10 +115,11 @@ only the duplicate working tree.
 Use the release consumer path to repeat admission with an optimized build.
 The positive-control assertion requires four runtime inputs for `controls`,
 thirty for `lists`, seven for `ranges`, six for `modules`, and twenty-eight for
-`primitives`. Use the same environment with
+`primitives`; `drafts` executes the four existing control inputs. Use the same environment with
 `iterative-stage.test.mts` against a `ranges` inventory for stage assertions.
 Use `iterative-module.test.mts` against `modules` for authenticated-import assertions.
 Use `iterative-primitives.test.mts` against `primitives` for its stage assertions.
+Use `iterative-drafts.test.mts` against `drafts` for unchanged source closures and first refusals.
 
 The consumer rejects v1 reports: those lack the retained source snapshots and
 completion marker required by v2. Historical measurements below retain their

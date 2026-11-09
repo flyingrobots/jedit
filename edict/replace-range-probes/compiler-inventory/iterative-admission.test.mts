@@ -14,7 +14,7 @@ type Evidence = {
     schema: string;
     measurement?: string;
     selectedInputs: { compilerBinarySha256?: string; compilerCommit?: string; provider: FileEntry[];
-        group?: string; sourceClosures?: FileEntry[] };
+        group?: string; sourceClosures?: FileEntry[]; draftDriverSha256?: string };
     results: Case[];
 };
 
@@ -242,6 +242,20 @@ test('the application must select its retained source closure', () => {
 });
 
 const modulesOnly = { skip: evidence().selectedInputs.group !== 'modules' };
+const draftsOnly = { skip: evidence().selectedInputs.group !== 'drafts' };
+
+test('draft evidence must bind its source-pin driver', draftsOnly, () => {
+    const value = evidence();
+    delete value.selectedInputs.draftDriverSha256;
+    refused('missing-draft-driver', value, 'draft driver selection mismatch');
+});
+
+test('an authored draft leaf cannot be replaced under self-consistent case metadata', draftsOnly, () => {
+    const relative = 'src/drafts/Boundary.edict';
+    const source = readFileSync(path.join(copy, 'draft-text', relative));
+    changedFile('draft-leaf-substitution', relative, Buffer.concat([source, Buffer.from('\n')]),
+        'source closure selection mismatch', 'draft-text');
+});
 
 test('an imported leaf cannot be substituted with self-consistent case metadata', modulesOnly, () => {
     const relative = 'src/modules/Leaf.edict';

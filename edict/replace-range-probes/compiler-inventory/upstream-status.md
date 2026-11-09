@@ -54,6 +54,12 @@ buffering, reproducible components and public source witnesses. Its dependency
 on #300 is already represented in frontmatter. The current #388 checkpoint has
 not yet measured that complete structured-effect route.
 
-Whole authored draft/lawpack closures, structured effects, remaining composite
-shapes, full application gates and independent review still belong to #388's
-unfinished acceptance work. The retained ReplaceRange acceptance count is 0/40.
+The [whole-draft measurement](draft-closures.md) now retains every supplied
+source module unchanged. Its four roots still refuse in parsing. A separate
+small probe reaches Target's `UndigestedCoreImport` refusal for `jedit.text@2`;
+the selected application supplies only the published version-1 lawpack.
+The requested version-2 lawpack closure remains unresolved under Jedit #296.
+
+Structured effects, remaining composite shapes, full application gates and
+independent review still belong to #388's unfinished acceptance work. The
+retained ReplaceRange acceptance count is 0/40.

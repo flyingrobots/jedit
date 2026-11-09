@@ -298,7 +298,7 @@ fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
     let mut names = vec!["scalar-fold", "bounded-list-fold", "record-worklist-fold"];
     match evidence["selectedInputs"].get("group") {
         None => {}
-        Some(serde_json::Value::String(group)) if group == "controls" => {}
+        Some(serde_json::Value::String(group)) if group == "controls" || group == "drafts" => {}
         Some(serde_json::Value::String(group)) if group == "lists" => names.extend([
             "guarded-list-at",
             "list-concat",
