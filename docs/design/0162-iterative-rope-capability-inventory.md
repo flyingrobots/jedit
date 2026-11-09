@@ -291,7 +291,21 @@ failed witnesses remain distinct from later successful cases. These checks
 still do not establish component regeneration or full operation acceptance.
 
 This is a partial implementation: none of the four slices is complete. Complete
-module closures, the remaining iterative shapes, wider stage/fault coverage,
+whole-draft closures, the remaining iterative shapes, wider stage/fault coverage,
 provenance fault coverage, upstream reconciliation, required application checks,
 and independent review remain. The 40-case rope oracle and production pins are
 unchanged; no new rope acceptance result is claimed.
+
+The source-closure checkpoint invokes an imported fold step through a second
+digest-authenticated module. Both Bool inputs produce their opposite. A changed
+transitive leaf and a missing leaf refuse at source authentication before Core
+or provider execution. The v3 evidence format binds each complete supplied
+source graph and checks the application's exact source selection, including
+root ordering. The prior consumer admitted an empty application source list;
+the retained regression first failed, then refused before runtime after repair.
+All three module assertions and twenty admission tests pass in debug and
+optimized builds, alongside the earlier v2 thirty-input runtime witness and its
+source-selection regression. TypeScript, repository quality and Clippy pass.
+This proves a reachable transitive module control, not the full rope draft or
+its schema-2 lawpack closure. See the
+[source-closure measurement](../../edict/replace-range-probes/compiler-inventory/source-closures.md).

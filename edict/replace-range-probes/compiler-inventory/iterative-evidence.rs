@@ -21,6 +21,7 @@ struct Inputs {
     authored: Index,
     provider: Index,
     lawpack: Index,
+    sources: Option<Index>,
 }
 
 pub fn read(path: &Path) -> Result<Vec<u8>> {
@@ -147,7 +148,7 @@ fn closure(case: &Index, prefix: &str, selected: &Index, label: &str) -> Result<
     Ok(())
 }
 
-fn inputs(root: &Path, value: &Value) -> Result<Inputs> {
+fn inputs(root: &Path, value: &Value, version: u8) -> Result<Inputs> {
     for (field, width, label) in [
         ("compilerCommit", 40, "compiler commit"),
         ("echoCheckoutCommit", 40, "Echo commit"),
@@ -167,11 +168,62 @@ fn inputs(root: &Path, value: &Value) -> Result<Inputs> {
         "lawpack source selection mismatch"
     );
     checked_tree(&root.join("fixture-sources"), &value["probeSources"])?;
+    let sources = if version == 3 {
+        ensure!(
+            value["closureDriverSha256"].as_str()
+                == Some(sha(&read(&root.join("closure-driver.mts"))?).as_str()),
+            "closure driver selection mismatch"
+        );
+        Some(checked_tree(
+            &root.join("source-closures"),
+            &value["sourceClosures"],
+        )?)
+    } else {
+        None
+    };
     Ok(Inputs {
         authored: checked_tree(&root.join("authored-sources"), &value["authoredSources"])?,
         provider: checked_tree(&root.join("basis/.build/echo-provider"), &value["provider"])?,
         lawpack: checked_tree(&root.join("basis/vendor"), &value["lawpackClosure"])?,
+        sources,
     })
+}
+
+fn source_selection(root: &Path, name: &str, files: &Index, selected: &Inputs) -> Result<()> {
+    let expected: Index = if let Some(sources) = &selected.sources {
+        sources
+            .iter()
+            .filter_map(|(path, identity)| {
+                path.strip_prefix(&format!("{name}/"))
+                    .map(|relative| (relative.into(), identity.clone()))
+            })
+            .collect()
+    } else {
+        [(
+            "src/Probe.edict".into(),
+            selected.authored[&format!("{name}.edict")].clone(),
+        )]
+        .into()
+    };
+    let actual: Index = files
+        .iter()
+        .filter(|(path, _)| path.starts_with("src/"))
+        .map(|(path, identity)| (path.clone(), identity.clone()))
+        .collect();
+    ensure!(actual == expected, "source closure selection mismatch");
+    let config: Value =
+        serde_json::from_slice(&read(&root.join(name).join("edict.application.json"))?)?;
+    let sources = config["sources"]
+        .as_array()
+        .context("application source closure mismatch")?;
+    let paths: BTreeSet<_> = sources.iter().filter_map(Value::as_str).collect();
+    ensure!(
+        sources.first().and_then(Value::as_str) == Some("src/Probe.edict")
+            && paths.len() == sources.len()
+            && paths == expected.keys().map(String::as_str).collect(),
+        "application source closure mismatch"
+    );
+    Ok(())
 }
 
 fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
@@ -203,6 +255,7 @@ fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
                 "missing selected artifact: {required}"
             );
         }
+        source_selection(root, name, &files, selected)?;
         closure(
             &files,
             ".build/echo-provider/",
@@ -215,6 +268,16 @@ fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
         names == selected.authored.keys().cloned().collect(),
         "authored source closure mismatch"
     );
+    if let Some(sources) = &selected.sources {
+        let owners: BTreeSet<_> = sources
+            .keys()
+            .filter_map(|path| {
+                path.split_once('/')
+                    .map(|(name, _)| format!("{name}.edict"))
+            })
+            .collect();
+        ensure!(owners == names, "source closure case mismatch");
+    }
     let baseline = cases
         .iter()
         .find(|case| case["name"] == "baseline")
@@ -269,15 +332,16 @@ pub fn load(root: &Path, expected: &str) -> Result<Value> {
     let report = read(&root.join("report.json"))?;
     ensure!(sha(&report) == expected, "compiler evidence substitution");
     let evidence: Value = serde_json::from_slice(&report)?;
-    ensure!(
-        evidence["schema"] == "jedit.iterative-inventory/v2",
-        "wrong inventory ABI"
-    );
+    let version = match evidence["schema"].as_str() {
+        Some("jedit.iterative-inventory/v2") => 2,
+        Some("jedit.iterative-inventory/v3") => 3,
+        _ => anyhow::bail!("wrong inventory ABI"),
+    };
     ensure!(
         evidence["measurement"] == "complete",
         "incomplete inventory"
     );
-    let selected = inputs(root, &evidence["selectedInputs"])?;
+    let selected = inputs(root, &evidence["selectedInputs"], version)?;
     cases(root, &evidence, &selected)?;
     for case in evidence["results"].as_array().context("case results")? {
         compiler_events(root, case)?;

@@ -128,6 +128,7 @@ impl Report {
 
 fn boundary(diagnostic: &Value) -> Option<usize> {
     match diagnostic["kind"].as_str() {
+        Some("InvalidApplicationSourceClosure") => Some(0),
         Some("ProviderLowererRefused") => Some(3),
         Some("ProviderVerifierRefused") => Some(4),
         Some("TargetLoweringFailed") => Some(2),

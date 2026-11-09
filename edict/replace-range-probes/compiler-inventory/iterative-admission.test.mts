@@ -2,7 +2,7 @@
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // Derive refusal inputs from retained public output; never synthesize programs.
 import assert from 'node:assert/strict';
-import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -13,7 +13,8 @@ type Case = { name: string; exitCode: number; diagnostics: object[]; files: File
 type Evidence = {
     schema: string;
     measurement?: string;
-    selectedInputs: { compilerBinarySha256?: string; compilerCommit?: string; provider: FileEntry[]; group?: string };
+    selectedInputs: { compilerBinarySha256?: string; compilerCommit?: string; provider: FileEntry[];
+        group?: string; sourceClosures?: FileEntry[] };
     results: Case[];
 };
 
@@ -137,7 +138,8 @@ test('the exact public artifact set executes', () => {
     const result = run('positive-control', evidence());
     assert.equal(result.status, 0);
     const group = evidence().selectedInputs.group;
-    const count = group === 'lists' ? 30 : group === 'ranges' ? 7 : 4;
+    const counts = new Map([['lists', 30], ['ranges', 7], ['modules', 6]]);
+    const count = counts.get(group ?? '') ?? 4;
     assert.equal((result.stdout.match(/RUNTIME_CASE_OK/g) ?? []).length, count);
 });
 
@@ -229,6 +231,52 @@ test('self-consistent source substitution disagrees with the selected authored s
     const relative = 'src/Probe.edict';
     const source = readFileSync(path.join(copy, 'scalar-fold', relative));
     changedFile('source-substitution', relative, Buffer.concat([source, Buffer.from('\n')]), 'source selection mismatch');
+});
+
+test('the application must select its retained source closure', () => {
+    const relative = 'edict.application.json';
+    const config = JSON.parse(readFileSync(path.join(copy, 'scalar-fold', relative), 'utf8'));
+    config.sources = [];
+    changedFile('omitted-application-source', relative, Buffer.from(JSON.stringify(config) + '\n'),
+        'application source closure mismatch');
+});
+
+const modulesOnly = { skip: evidence().selectedInputs.group !== 'modules' };
+
+test('an imported leaf cannot be substituted with self-consistent case metadata', modulesOnly, () => {
+    const relative = 'src/modules/Leaf.edict';
+    const source = readFileSync(path.join(copy, 'module-fold', relative));
+    changedFile('imported-leaf-substitution', relative, Buffer.concat([source, Buffer.from('\n')]),
+        'source closure selection mismatch', 'module-fold');
+});
+
+test('an imported leaf cannot be omitted from both the case and its file list', modulesOnly, () => {
+    const value = evidence();
+    const relative = 'src/modules/Leaf.edict';
+    const selected = named(value, 'module-fold');
+    selected.files = selected.files.filter(file => file.path !== relative);
+    const file = path.join(copy, 'module-fold', relative);
+    const saved = readFileSync(file);
+    try {
+        unlinkSync(file);
+        refused('omitted-imported-leaf', value, 'source closure selection mismatch');
+    } finally {
+        writeDetached(file, saved);
+    }
+});
+
+test('the selected root must remain first in the application source list', modulesOnly, () => {
+    const relative = 'edict.application.json';
+    const config = JSON.parse(readFileSync(path.join(copy, 'module-fold', relative), 'utf8'));
+    config.sources.reverse();
+    changedFile('reordered-source-root', relative, Buffer.from(JSON.stringify(config) + '\n'),
+        'application source closure mismatch', 'module-fold');
+});
+
+test('a v3 inventory cannot downgrade its required source closure', modulesOnly, () => {
+    const value = evidence();
+    delete value.selectedInputs.sourceClosures;
+    refused('missing-source-closure', value, 'file inventory');
 });
 
 test('self-consistent provider substitution disagrees with the selected provider', () => {

@@ -9,9 +9,12 @@ bounded-list and record-list folds plus a dynamic-bound refusal. Add
 composed rebuilding and smaller probes that isolate its provider refusal.
 `--group ranges` compares branch guards with an intent input constraint and
 an unsafe-addition refusal control.
+`--group modules` invokes a fold through two digest-bound source modules and
+includes changed-leaf and missing-leaf authentication controls. See
+[the source-closure measurement](source-closures.md) for exact evidence.
 This remains a bounded subset of
 [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-complete module closures, other arithmetic/slicing shapes, structured effects,
+whole-draft closures, other arithmetic/slicing shapes, structured effects,
 and upstream owner reconciliation remain part of that cycle.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
@@ -31,9 +34,10 @@ node edict/replace-range-probes/compiler-inventory/iterative.mts \
 The command builds the real public compiler, republishes the basis lawpack,
 pins each authored import to that publication, and retains all source/config,
 provider, lawpack, output-package, verifier-report, and diagnostic bytes. The
-v2 report records their hashes plus the compiler binary, driver, and
+v3 report records their hashes plus the compiler binary, drivers, and
 producer checkout identities. It retains the driver, original fixtures, and
-repinned authored sources separately. Only a completed run receives
+repinned authored sources separately, including each case's full supplied
+module graph. Only a completed run receives
 `measurement: complete`; producer identity changes leave it incomplete.
 A failed baseline invalidates the inventory.
 The report deliberately leaves runtime and full-operation evidence unmeasured.
@@ -44,7 +48,8 @@ reduces physical storage without changing the 20 MiB logical evidence limit.
 
 Record the printed `INVENTORY_REPORT_SHA256`. The separate Rust consumer binds
 that exact report, requires complete file inventories, checks each case against
-the selected source/provider/lawpack snapshots, and checks the independent
+the selected source/provider/lawpack snapshots, requires the application to
+select that source graph with its root first, and checks the independent
 verifier's package/Target/projection bindings before calling generic Echo pure
 evaluation. It checks scalar parity, exact three-item list results, repeat at
 observed resource usage, one-unit-short refusals, and invalid identity/input
@@ -72,7 +77,7 @@ The source remains in Jedit. Required CI and the broader #388 acceptance checks
 remain separate gates.
 
 The consumer prints a separate `STAGE_INVENTORY` JSON record with schema
-`jedit.iterative-stages/v1`, bound to the exact v2 inventory hash. Per-case
+`jedit.iterative-stages/v1`, bound to the exact v2 or v3 inventory hash. Per-case
 source/Core/Target/lowerer/verifier/runtime facts distinguish accepted, refused,
 failed, unreached and unmeasured stages. Earlier-stage inference applies only
 to the inspected compiler revision; an uninspected revision retains observed
@@ -100,12 +105,15 @@ bytes never changed and that the restored derivative matches, then removes
 only the duplicate working tree.
 Use the release consumer path to repeat admission with an optimized build.
 The positive-control assertion requires four runtime inputs for `controls`,
-thirty for `lists`, and seven for `ranges`. Use the same environment with
+thirty for `lists`, seven for `ranges`, and six for `modules`. Use the same environment with
 `iterative-stage.test.mts` against a `ranges` inventory for stage assertions.
+Use `iterative-module.test.mts` against `modules` for authenticated-import assertions.
 
 The consumer rejects v1 reports: those lack the retained source snapshots and
 completion marker required by v2. Historical measurements below retain their
 original identities and can be replayed with their matching consumer revision.
+The consumer still admits complete v2 single-source reports; v3 requires its
+separate source-closure inventory and closure-driver identity.
 
 ### List composition and the provider boundary
 

@@ -228,8 +228,8 @@ fn check(package: &[u8], pin: [u8; 32], input: Value, expected: Value) -> Result
     Ok(())
 }
 
-fn scalar(root: &Path, evidence: &serde_json::Value) -> Result<()> {
-    let (package, pin) = selected_pair(root, evidence, "scalar-fold")?;
+fn scalar(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()> {
+    let (package, pin) = selected_pair(root, evidence, name)?;
     for initial in [false, true] {
         check(
             &package,
@@ -243,7 +243,7 @@ fn scalar(root: &Path, evidence: &serde_json::Value) -> Result<()> {
         evaluate(&package, pin, &invalid, limits()) == Err(EvaluationError::InvalidInput),
         "invalid Bool admitted"
     );
-    println!("PUBLIC_ITERATIVE_RUNTIME_OK scalar-fold: 2 inputs, exact replay, 3 one-under limits, identity and type refusal");
+    println!("PUBLIC_ITERATIVE_RUNTIME_OK {name}: 2 inputs, exact replay, 3 one-under limits, identity and type refusal");
     Ok(())
 }
 
@@ -308,6 +308,9 @@ fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
         Some(serde_json::Value::String(group)) if group == "ranges" => {
             names.push("constrained-add");
         }
+        Some(serde_json::Value::String(group)) if group == "modules" => {
+            names.push("module-fold");
+        }
         _ => return Err(anyhow!("unsupported inventory group")),
     }
     Ok(names)
@@ -315,7 +318,7 @@ fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
 
 fn run_named(root: &Path, evidence: &serde_json::Value, name: &str) -> Result<()> {
     match name {
-        "scalar-fold" => scalar(root, evidence),
+        "scalar-fold" | "module-fold" => scalar(root, evidence, name),
         "bounded-list-fold" | "record-worklist-fold" => accumulated_list(root, evidence, name),
         "constrained-add" => constrained_add(root, evidence),
         _ => list_matrix::run_case(root, evidence, name),

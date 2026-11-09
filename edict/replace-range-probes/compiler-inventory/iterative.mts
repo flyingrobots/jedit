@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCompiler } from '../../replace-range/tests/compiler.mjs';
+import { MODULE_CASES, moduleSources } from './iterative-closures.mts';
 import { adapterTargets, withAdapterTargets, withImportDigest, lawpackManifestDigest }
     from '../../../scripts/deps/echo-edict-relock.mjs';
 
@@ -19,6 +20,7 @@ const BUILD = { schema: 'edict.compiler.settings/v1', type: 'compilerSettings', 
 const CASES = ['scalar-fold', 'bounded-list-fold', 'record-worklist-fold', 'dynamic-fold-negative'];
 const GROUPS = [
     { name: 'controls', cases: CASES },
+    { name: 'modules', cases: [...CASES, ...MODULE_CASES] },
     { name: 'lists', cases: [...CASES, 'guarded-list-at', 'list-concat', 'record-state-fold',
         'list-rebuild-fold', 'variant-state-fold', 'indexed-record-fold', 'record-list-select', 'guarded-list-transfer',
         'list-rebuild-nested-guards'] },
@@ -105,6 +107,8 @@ function run(cwd: string, request: object): { exitCode: number; diagnostics: obj
 function publishBasis(): { root: string; baseline: string; digest: string } {
     mkdirSync(selected.output);
     writeFileSync(path.join(selected.output, 'driver.mts'), readFileSync(fileURLToPath(import.meta.url)), { flag: 'wx' });
+    writeFileSync(path.join(selected.output, 'closure-driver.mts'),
+        readFileSync(fileURLToPath(new URL('./iterative-closures.mts', import.meta.url))), { flag: 'wx' });
     cpSync(fixtureRoot, path.join(selected.output, 'fixture-sources'), { recursive: true });
     mkdirSync(path.join(selected.output, 'authored-sources'));
     const root = path.join(selected.output, 'basis');
@@ -124,18 +128,27 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
 
 const basis = publishBasis();
 const authored = ['baseline', ...selected.group.cases].map(name => {
+    const fixture = MODULE_CASES.includes(name) ? 'module-fold' : name;
     const source = name === 'baseline' ? basis.baseline : withImportDigest(
-        readFileSync(path.join(selected.output, 'fixture-sources', name + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
-    writeFileSync(path.join(selected.output, 'authored-sources', name + '.edict'), source, { flag: 'wx' });
-    return { name, source };
+        readFileSync(path.join(selected.output, 'fixture-sources', fixture + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
+    const sources = moduleSources(path.join(selected.output, 'fixture-sources'), name, source);
+    for (const file of sources) {
+        const target = path.join(selected.output, 'source-closures', name, file.path);
+        mkdirSync(path.dirname(target), { recursive: true });
+        writeFileSync(target, file.source, { flag: 'wx' });
+    }
+    writeFileSync(path.join(selected.output, 'authored-sources', name + '.edict'), sources[0].source, { flag: 'wx' });
+    return { name, source: sources[0].source, sources: sources.map(file => file.path) };
 });
 const selectedInputs = {
     group: selected.group.name,
     compilerCommit: selected.compilerCommit, echoCheckoutCommit: selected.echoCheckoutCommit,
     compilerBinarySha256: selected.compilerSha256,
     driverSha256: hash(readFileSync(path.join(selected.output, 'driver.mts'))),
+    closureDriverSha256: hash(readFileSync(path.join(selected.output, 'closure-driver.mts'))),
     probeSources: inventory(path.join(selected.output, 'fixture-sources')), provider: selected.providerFiles,
     authoredSources: inventory(path.join(selected.output, 'authored-sources')),
+    sourceClosures: inventory(path.join(selected.output, 'source-closures')),
     lawpackSourceSha256: hash(readFileSync(path.join(basis.root, 'edict.lawpack.json'))),
     lawpackClosure: inventory(path.join(basis.root, 'vendor')),
 };
@@ -149,19 +162,18 @@ function shareInputs(source: string, destination: string): void {
     }
 }
 
-function measure(name: string, source: string) {
+function measure(name: string, source: string, sources: string[]) {
     const root = path.join(selected.output, name);
     mkdirSync(root);
     // Public application builds only read these copied, fixed dependency inputs.
     shareInputs(path.join(basis.root, 'vendor'), path.join(root, 'vendor'));
     shareInputs(path.join(basis.root, '.build/echo-provider'), path.join(root, '.build/echo-provider'));
-    mkdirSync(path.join(root, 'src'));
-    writeFileSync(path.join(root, 'src/Probe.edict'), source, { flag: 'wx' });
+    shareInputs(path.join(selected.output, 'source-closures', name), root);
     const coordinate = source.match(/^package ([^;]+);/m);
     if (!coordinate) throw new InventoryFailure('missing source package coordinate');
     const config = JSON.parse(readFileSync(path.join(basis.root, 'edict.application.json'), 'utf8'));
     config.coordinate = coordinate[1];
-    config.sources = ['src/Probe.edict'];
+    config.sources = sources;
     writeFileSync(path.join(root, 'edict.application.json'), JSON.stringify(config, null, 2) + '\n', { flag: 'wx' });
     const result = run(root, { ...BUILD, application: 'edict.application.json' });
     console.log(JSON.stringify({ name, ...result }));
@@ -172,13 +184,13 @@ const results: object[] = [];
 
 function writeReport(measurement: 'incomplete' | 'complete'): void {
     writeFileSync(path.join(selected.output, 'report.json'), JSON.stringify({
-        schema: 'jedit.iterative-inventory/v2', measurement, selectedInputs, results,
+        schema: 'jedit.iterative-inventory/v3', measurement, selectedInputs, results,
         runtime: 'unmeasured', fullOperation: 'unmeasured',
     }, null, 2) + '\n');
 }
 
-for (const { name, source } of authored) {
-    const result = measure(name, source);
+for (const { name, source, sources } of authored) {
+    const result = measure(name, source, sources);
     results.push(result);
     writeReport('incomplete');
     if (name === 'baseline' && result.exitCode !== 0) throw new InventoryFailure('baseline failed; inventory invalid');
