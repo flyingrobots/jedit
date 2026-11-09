@@ -65,7 +65,9 @@ function configuration() {
     const echoCheckoutCommit = producerCommit(echoRepository);
     const toolchain = JSON.parse(readFileSync(path.join(applicationRoot, 'edict.toolchain-lock.json'), 'utf8')).rust.toolchain;
     const compiler = buildCompiler(compilerRepository, toolchain);
-    return { compiler, compilerCommit, echoCheckoutCommit, provider: path.resolve(args[1]), output: path.resolve(args[3]) };
+    const provider = path.resolve(args[1]);
+    return { compiler, compilerCommit, echoCheckoutCommit, compilerRepository, echoRepository,
+        compilerSha256: hash(readFileSync(compiler)), provider, providerFiles: inventory(provider), output: path.resolve(args[3]) };
 }
 
 const selected = configuration();
@@ -82,6 +84,9 @@ function run(cwd: string, request: object): { exitCode: number; diagnostics: obj
 
 function publishBasis(): { root: string; baseline: string; digest: string } {
     mkdirSync(selected.output);
+    writeFileSync(path.join(selected.output, 'driver.mts'), readFileSync(fileURLToPath(import.meta.url)), { flag: 'wx' });
+    cpSync(fixtureRoot, path.join(selected.output, 'fixture-sources'), { recursive: true });
+    mkdirSync(path.join(selected.output, 'authored-sources'));
     const root = path.join(selected.output, 'basis');
     cpSync(applicationRoot, root, { recursive: true,
         filter: source => !source.startsWith(path.join(applicationRoot, '.build')) });
@@ -98,11 +103,18 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
 }
 
 const basis = publishBasis();
+const authored = ['baseline', ...CASES].map(name => {
+    const source = name === 'baseline' ? basis.baseline : withImportDigest(
+        readFileSync(path.join(selected.output, 'fixture-sources', name + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
+    writeFileSync(path.join(selected.output, 'authored-sources', name + '.edict'), source, { flag: 'wx' });
+    return { name, source };
+});
 const selectedInputs = {
     compilerCommit: selected.compilerCommit, echoCheckoutCommit: selected.echoCheckoutCommit,
-    compilerBinarySha256: hash(readFileSync(selected.compiler)),
-    driverSha256: hash(readFileSync(fileURLToPath(import.meta.url))),
-    probeSources: inventory(fixtureRoot), provider: inventory(selected.provider),
+    compilerBinarySha256: selected.compilerSha256,
+    driverSha256: hash(readFileSync(path.join(selected.output, 'driver.mts'))),
+    probeSources: inventory(path.join(selected.output, 'fixture-sources')), provider: selected.providerFiles,
+    authoredSources: inventory(path.join(selected.output, 'authored-sources')),
     lawpackSourceSha256: hash(readFileSync(path.join(basis.root, 'edict.lawpack.json'))),
     lawpackClosure: inventory(path.join(basis.root, 'vendor')),
 };
@@ -126,18 +138,28 @@ function measure(name: string, source: string) {
 }
 
 const results: object[] = [];
-for (const name of ['baseline', ...CASES]) {
-    const source = name === 'baseline' ? basis.baseline
-        : withImportDigest(readFileSync(path.join(fixtureRoot, name + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
-    const result = measure(name, source);
-    results.push(result);
+
+function writeReport(measurement: 'incomplete' | 'complete'): void {
     writeFileSync(path.join(selected.output, 'report.json'), JSON.stringify({
-        schema: 'jedit.iterative-inventory/v1', selectedInputs, results,
+        schema: 'jedit.iterative-inventory/v2', measurement, selectedInputs, results,
         runtime: 'unmeasured', fullOperation: 'unmeasured',
     }, null, 2) + '\n');
+}
+
+for (const { name, source } of authored) {
+    const result = measure(name, source);
+    results.push(result);
+    writeReport('incomplete');
     if (name === 'baseline' && result.exitCode !== 0) throw new InventoryFailure('baseline failed; inventory invalid');
     if (inventory(selected.output).reduce((sum, file) => sum + file.bytes, 0) > MAX_EVIDENCE_BYTES) {
         throw new InventoryFailure('inventory evidence bound');
     }
 }
+if (producerCommit(selected.compilerRepository) !== selected.compilerCommit
+    || producerCommit(selected.echoRepository) !== selected.echoCheckoutCommit
+    || hash(readFileSync(selected.compiler)) !== selected.compilerSha256
+    || JSON.stringify(inventory(selected.provider)) !== JSON.stringify(selected.providerFiles)) {
+    throw new InventoryFailure('producer changed during measurement');
+}
+writeReport('complete');
 console.log('INVENTORY_REPORT_SHA256', hash(readFileSync(path.join(selected.output, 'report.json'))));

@@ -256,6 +256,14 @@ checking. A wrong list expectation fails its result assertion, then the restored
 expectation passes in debug and optimized builds. Exact-budget replay and
 one-unit-short limits are metamorphic checks, not independent cost formulas.
 
+The next checkpoint makes evidence admission explicit in report v2. Eight
+previously missed refusal cases first executed against the old consumer, then
+refused after complete tree inventories, separate source/dependency snapshot
+comparisons, positive-control checks, and completion markers were enforced.
+All ten admission tests pass in debug and optimized builds; emitted public
+package/report pairs are unchanged. The compiler identity remains a selected
+binary hash, not an independently reproduced compiler build.
+
 This is a partial implementation: none of the four slices is complete. Complete
 module closures, the remaining iterative shapes, stage classification,
 provenance fault coverage, upstream reconciliation, required application checks,

@@ -3,36 +3,19 @@
 //! Test-only consumer of exact public compiler package/report pairs.
 #![allow(clippy::print_stdout)]
 
+#[path = "jedit_iterative_inventory/evidence.rs"]
+mod evidence;
+
 use anyhow::{anyhow, ensure, Context, Result};
 use echo_edict_canonical::{
     decode_canonical_cbor_v1 as decode, digest_canonical_value_bytes_v1 as digest,
     encode_canonical_cbor_v1 as encode, CanonicalValueV1 as Value,
 };
-use sha2::{Digest, Sha256};
-use std::io::Read;
-use std::path::{Component, Path};
+use evidence::{read, MAX_FILE_BYTES};
+use std::path::Path;
 use warp_core::edict_pure::{evaluate, EvaluationError, EvaluationLimits};
 
-const MAX_FILE_BYTES: usize = 2_097_152;
 const APPENDED_VALUE: i128 = 7;
-
-fn read(path: &Path) -> Result<Vec<u8>> {
-    let metadata = path.symlink_metadata()?;
-    ensure!(
-        metadata.is_file() && metadata.len() <= MAX_FILE_BYTES as u64,
-        "unbounded input"
-    );
-    let mut bytes = Vec::new();
-    std::fs::File::open(path)?
-        .take(MAX_FILE_BYTES as u64 + 1)
-        .read_to_end(&mut bytes)?;
-    ensure!(bytes.len() <= MAX_FILE_BYTES, "input grew above bound");
-    Ok(bytes)
-}
-
-fn sha(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
-}
 
 fn field<'a>(value: &'a Value, name: &str) -> Result<&'a Value> {
     let Value::Map(fields) = value else {
@@ -84,28 +67,8 @@ fn limits() -> EvaluationLimits {
     }
 }
 
-fn checked_files(root: &Path, case: &serde_json::Value) -> Result<()> {
+fn required_files(case: &serde_json::Value) -> Result<()> {
     let files = case["files"].as_array().context("case file inventory")?;
-    ensure!(!files.is_empty(), "empty selected inventory");
-    for file in files {
-        let relative = file["path"].as_str().context("file path")?;
-        ensure!(
-            !Path::new(relative).is_absolute()
-                && Path::new(relative)
-                    .components()
-                    .all(|part| matches!(part, Component::Normal(_))),
-            "invalid selected path"
-        );
-        let value = read(&root.join(relative))?;
-        ensure!(
-            file["bytes"].as_u64() == Some(value.len() as u64),
-            "selected file length changed"
-        );
-        ensure!(
-            file["sha256"].as_str() == Some(sha(&value).as_str()),
-            "selected bytes changed: {relative}"
-        );
-    }
     for required in [
         "src/Probe.edict",
         "edict.application.json",
@@ -179,7 +142,7 @@ fn selected_pair(
         "public compiler did not accept without diagnostics"
     );
     let directory = root.join(name);
-    checked_files(&directory, case)?;
+    required_files(case)?;
     let package = read(&directory.join(".build/application/executable-operation-package.cbor"))?;
     let report = read(&directory.join(".build/application/verification-report.cbor"))?;
     let pin = checked_report(&package, &report)?;
@@ -316,16 +279,7 @@ fn main() -> Result<()> {
         "expected inventory directory and exact report SHA-256"
     );
     let root = Path::new(&arguments[0]);
-    let report = read(&root.join("report.json"))?;
-    ensure!(
-        sha(&report) == arguments[1],
-        "compiler evidence substitution"
-    );
-    let evidence: serde_json::Value = serde_json::from_slice(&report)?;
-    ensure!(
-        evidence["schema"] == "jedit.iterative-inventory/v1",
-        "wrong inventory ABI"
-    );
+    let evidence = evidence::load(root, &arguments[1])?;
     scalar(root, &evidence)?;
     lists(root, &evidence)?;
     Ok(())

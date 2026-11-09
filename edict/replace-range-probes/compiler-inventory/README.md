@@ -27,12 +27,16 @@ node edict/replace-range-probes/compiler-inventory/iterative.mts \
 The command builds the real public compiler, republishes the basis lawpack,
 pins each authored import to that publication, and retains all source/config,
 provider, lawpack, output-package, verifier-report, and diagnostic bytes. The
-versioned report records their hashes plus the compiler binary, driver, and
-producer checkout identities. A failed baseline invalidates the inventory.
+v2 report records their hashes plus the compiler binary, driver, and
+producer checkout identities. It retains the driver, original fixtures, and
+repinned authored sources separately. Only a completed run receives
+`measurement: complete`; producer identity changes leave it incomplete.
+A failed baseline invalidates the inventory.
 The report deliberately leaves runtime and full-operation evidence unmeasured.
 
 Record the printed `INVENTORY_REPORT_SHA256`. The separate Rust consumer binds
-that exact report, verifies the selected case files, and checks the independent
+that exact report, requires complete file inventories, checks each case against
+the selected source/provider/lawpack snapshots, and checks the independent
 verifier's package/Target/projection bindings before calling generic Echo pure
 evaluation. It checks scalar parity, exact three-item list results, repeat at
 observed resource usage, one-unit-short refusals, and invalid identity/input
@@ -41,8 +45,10 @@ derived absolute cost formulas. No Tick, graph edit, receipt, or rope acceptance
 is established by these pure evaluations.
 
 In the same guarded worker, copy `iterative-runtime.rs` to a new owned example
-path `xtask/examples/jedit_iterative_inventory.rs` in the selected Echo checkout,
-then run:
+path `xtask/examples/jedit_iterative_inventory.rs` in the selected Echo checkout.
+Copy `iterative-evidence.rs` to the new owned module path
+`xtask/examples/jedit_iterative_inventory/evidence.rs`. From that Echo checkout,
+run:
 
 ```sh
 cargo +1.96.0 run --locked -p xtask --example jedit_iterative_inventory -- \
@@ -51,11 +57,51 @@ cargo +1.96.0 run --locked -p xtask --example jedit_iterative_inventory -- \
 
 Use the hash recorded at build completion; do not recompute it after a suspected
 substitution. Retain the copied consumer's exact source hash and output, then
-remove only that owned example copy before another clean-producer inventory.
+remove only those owned example/module copies before another clean-producer inventory.
 The source remains in Jedit. Required CI and the broader #388 acceptance checks
 remain separate gates.
 
-### First portable measurement
+From the Jedit checkout, exercise admission against the built consumer:
+
+```sh
+INVENTORY_INPUT="$INVENTORY" \
+INVENTORY_REPORT_SHA256="$EXPECTED_REPORT_SHA256" \
+INVENTORY_RUNTIME="$CARGO_TARGET_DIR/debug/examples/jedit_iterative_inventory" \
+INVENTORY_TEST_OUTPUT="$NEW_TEST_OUTPUT" \
+node --test edict/replace-range-probes/compiler-inventory/iterative-admission.test.mts
+```
+
+`NEW_TEST_OUTPUT` must be a fresh accounted directory. These tests copy real
+public output and retain each altered report/file and process result. They never
+synthesize a Core program or package. After restoring and comparing every byte
+to the original input tree, they remove only that duplicate working copy.
+Use the release consumer path to repeat admission with an optimized build.
+
+The consumer rejects v1 reports: those lack the retained source snapshots and
+completion marker required by v2. Historical measurements below retain their
+original identities and can be replayed with their matching consumer revision.
+
+### Complete-evidence admission
+
+The v2 report is
+`b5bb52568e7958b901ae43baa91b066b5b22400b8ec543009a0ac965074eb02e`.
+It selects the same producer tuple below, and all four accepted public
+package/report pairs remain byte-identical to v1. The stronger contract changes
+evidence admission, not the emitted programs.
+
+Ten admission tests pass in debug and optimized builds. Before the repair, the
+unchanged positive control and wrong-report-hash refusal passed, while eight
+regressions demonstrated missed refusals: invalid baseline, missing compiler
+identity, omitted provider/lawpack files, duplicate paths, incomplete run, and
+self-consistent case source/provider substitutions. A case's file hash alone
+cannot establish that its bytes match the separately retained selection.
+
+These checks validate retained evidence and metadata consistency. The compiler
+binary hash identifies the selected executable; it is not an independent
+reproducible-build attestation. Full module closures and stage classification
+remain unfinished #388 work.
+
+### First portable measurement (v1)
 
 The 2026-11-08 checkpoint selects Amblicit
 [`66bf6bac`](https://github.com/flyingrobots/amblicit/commit/66bf6bac369f67e32ddaee099c3198bd30f885a1)
