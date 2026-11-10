@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCompiler } from '../../replace-range/tests/compiler.mjs';
 import { DRAFT_CASES, MODULE_CASES, moduleSources } from './iterative-closures.mts';
+import { CREATE_CONFIGURATION, EFFECT_CASES, EFFECT_GROUP, withEffectAdditions } from './iterative-effects.mts';
 import { adapterTargets, withAdapterTargets, withImportDigest, lawpackManifestDigest }
     from '../../../scripts/deps/echo-edict-relock.mjs';
 
@@ -31,6 +32,7 @@ const GROUPS = [
     { name: 'ranges', cases: [...CASES, 'indexed-record-fold', 'indexed-record-fold-nonstrict',
         'indexed-record-fold-equality', 'scalar-guarded-add', 'intent-guarded-add', 'constrained-add',
         'unsafe-add-negative'] },
+    { name: EFFECT_GROUP, cases: [...CASES, ...EFFECT_CASES] },
 ];
 
 class InventoryFailure extends Error {}
@@ -108,6 +110,17 @@ function run(cwd: string, request: object): { exitCode: number; diagnostics: obj
     return { exitCode: result.status, diagnostics };
 }
 
+function writeBasisLawpack(lawpackFile: string): void {
+    const bound = withAdapterTargets(JSON.parse(readFileSync(lawpackFile, 'utf8')), adapterTargets(selected.provider));
+    if (selected.group.name === EFFECT_GROUP) {
+        writeFileSync(path.join(selected.output, 'effect-driver.mts'),
+            readFileSync(fileURLToPath(new URL('./iterative-effects.mts', import.meta.url))), { flag: 'wx' });
+    }
+    const lawpack = selected.group.name === EFFECT_GROUP
+        ? withEffectAdditions(bound, path.join(selected.output, 'fixture-sources')) : bound;
+    writeFileSync(lawpackFile, JSON.stringify(lawpack, null, 2) + '\n');
+}
+
 function publishBasis(): { root: string; baseline: string; digest: string } {
     mkdirSync(selected.output);
     writeFileSync(path.join(selected.output, 'driver.mts'), readFileSync(fileURLToPath(import.meta.url)), { flag: 'wx' });
@@ -126,9 +139,7 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
     cpSync(applicationRoot, root, { recursive: true,
         filter: source => !source.startsWith(path.join(applicationRoot, '.build')) });
     cpSync(selected.provider, path.join(root, '.build/echo-provider'), { recursive: true });
-    const lawpackFile = path.join(root, 'edict.lawpack.json');
-    const lawpack = withAdapterTargets(JSON.parse(readFileSync(lawpackFile, 'utf8')), adapterTargets(selected.provider));
-    writeFileSync(lawpackFile, JSON.stringify(lawpack, null, 2) + '\n');
+    writeBasisLawpack(path.join(root, 'edict.lawpack.json'));
     const publication = run(root, { ...BUILD, lawpack: 'edict.lawpack.json' });
     if (publication.exitCode !== 0) throw new InventoryFailure('lawpack publication failed; no feature inference');
     const published = JSON.parse(readFileSync(path.join(root, 'vendor/jedit-text/edict.lawpack-output.json'), 'utf8'));
@@ -160,6 +171,9 @@ const selectedInputs = {
     ...(selected.group.name === 'drafts' ? {
         draftDriverSha256: hash(readFileSync(path.join(selected.output, 'draft-driver.mjs'))),
     } : {}),
+    ...(selected.group.name === EFFECT_GROUP ? {
+        effectDriverSha256: hash(readFileSync(path.join(selected.output, 'effect-driver.mts'))),
+    } : {}),
     probeSources: inventory(path.join(selected.output, 'fixture-sources')), provider: selected.providerFiles,
     authoredSources: inventory(path.join(selected.output, 'authored-sources')),
     sourceClosures: inventory(path.join(selected.output, 'source-closures')),
@@ -188,6 +202,7 @@ function measure(name: string, source: string, sources: string[]) {
     const config = JSON.parse(readFileSync(path.join(basis.root, 'edict.application.json'), 'utf8'));
     config.coordinate = coordinate[1];
     config.sources = sources;
+    if (EFFECT_CASES.includes(name)) config.lawpacks[0].targetConfiguration = CREATE_CONFIGURATION;
     writeFileSync(path.join(root, 'edict.application.json'), JSON.stringify(config, null, 2) + '\n', { flag: 'wx' });
     const result = run(root, { ...BUILD, application: 'edict.application.json' });
     console.log(JSON.stringify({ name, ...result }));
