@@ -1,0 +1,13 @@
+package jedit.iterative.effect_dynamic_bound@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+type Input = { item: text.CreateInput, items: List<text.CreateInput,max=2>, bound: U64 };
+type Output = { key: String<max=64>, message: String<max=256> };
+intent create(input: Input) returns Output
+  profile text.createValue basis input.item.basis budget <= text.createBudget
+{
+  for item in input.items bounded input.bound {
+    let created: text.CreateReceipt = text.createValue(item) else { alreadyExists(existing) => text.AlreadyCreated };
+  }
+  let receipt: text.CreateReceipt = text.createValue(input.item) else { alreadyExists(existing) => text.AlreadyCreated };
+  return { key: receipt.key, message: input.item.message };
+}

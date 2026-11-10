@@ -1,0 +1,11 @@
+package jedit.iterative.effect_branch@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+type Input = { item: text.CreateInput, enabled: Bool }; type Output = { value: Bool };
+intent create(input: Input) returns Output
+  profile text.createValue basis input.item.basis budget <= text.createBudget
+{
+  if input.enabled {
+    let receipt: text.CreateReceipt = text.createValue(input.item) else { alreadyExists(existing) => text.AlreadyCreated };
+  } else { require !input.enabled else text.NoOp; }
+  let value = input.enabled; return { value };
+}
