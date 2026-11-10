@@ -106,7 +106,8 @@ added six admission assertions. Against the consumer at `377e3c5`, a
 path that traverses into the basis lawpack and an extra lawpack field on an
 effect case were both admitted; the changed bound bytes and a control selecting
 the effect lawpack already refused. The extra-field check also runs on a basis
-control in every group. The completed consumer passes seven effect assertions
+control in every group; that sixth assertion was added after the RED run and
+was not run against `377e3c5`. The completed consumer passes seven effect assertions
 and twenty-six applicable admission assertions in debug and optimized builds;
 six assertions for other groups are skipped. Both builds execute the four control inputs with exact and
 insufficient budgets and identity/type refusals, and their runtime transcripts
