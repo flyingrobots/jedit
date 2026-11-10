@@ -297,6 +297,12 @@ test('an effect lawpack selection cannot carry extra fields', effectsOnly, () =>
     });
 });
 
+test('a basis lawpack selection cannot carry extra fields', () => {
+    lawpackSelection('basis-lawpack-extra-field', 'scalar-fold', lawpack => {
+        lawpack['verifierRules'] = 'vendor/jedit-text/verifier-rules.cbor';
+    });
+});
+
 test('a control case cannot select the effect lawpack', effectsOnly, () => {
     const effect = JSON.parse(readFileSync(path.join(copy, 'effect-linear', 'edict.application.json'), 'utf8'));
     lawpackSelection('control-selects-effect-lawpack', 'scalar-fold', lawpack => {

@@ -102,12 +102,13 @@ still refuses in source checking.
 
 The preceding consumer fails all seven effect assertions and all four effect
 admission assertions; it stops at `unsupported inventory group`. Review then
-added five admission assertions. Against the consumer at `377e3c5`, a
-path that traverses into the basis lawpack and an extra lawpack field were both
-admitted; the other three, which change bound bytes or make a control select
-the effect lawpack, already refused. The completed consumer passes seven effect
-assertions and twenty-five applicable admission assertions in debug and
-optimized builds; six assertions for other groups are skipped. Both builds execute the four control inputs with exact and
+added six admission assertions. Against the consumer at `377e3c5`, a
+path that traverses into the basis lawpack and an extra lawpack field on an
+effect case were both admitted; the changed bound bytes and a control selecting
+the effect lawpack already refused. The extra-field check also runs on a basis
+control in every group. The completed consumer passes seven effect assertions
+and twenty-six applicable admission assertions in debug and optimized builds;
+six assertions for other groups are skipped. Both builds execute the four control inputs with exact and
 insufficient budgets and identity/type refusals, and their runtime transcripts
 match byte for byte. Rust formatting and Clippy pass. With the same debug and
 optimized consumers, the retained draft report `40d6808f…` and primitive report

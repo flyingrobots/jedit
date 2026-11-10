@@ -339,8 +339,9 @@ publishes as the fixed create-if-absent intrinsic; two effects stop in the
 provider lowerer; an effect inside a branch or a bounded loop stops at Target
 with `UnsupportedCoreNode`. All seven effect assertions and four effect
 admission assertions first failed against the preceding consumer, then pass
-in debug and optimized builds, with five more admission assertions added in
-review; the retained draft and primitive reports still
+in debug and optimized builds. Review added six admission assertions; of these,
+only a traversing lawpack path and an extra lawpack field were admitted by the
+earlier consumer. The retained draft and primitive reports still
 pass with the new consumer. See the
 [structured-effect measurement](../../edict/replace-range-probes/compiler-inventory/structured-effects.md).
 The [owner reconciliation](../../edict/replace-range-probes/compiler-inventory/upstream-status.md#measured-boundary-of-each-shape)
