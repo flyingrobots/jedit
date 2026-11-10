@@ -15,6 +15,19 @@ const MAX_ENTRIES: usize = 1024;
 const MAX_CASES: usize = 64;
 const MAX_DEPTH: usize = 8;
 const MAX_TREE_BYTES: u64 = 20_971_520;
+const EFFECT_GROUP: &str = "effects";
+const EFFECT_CASE_PREFIX: &str = "effect-";
+const EFFECT_VENDOR: &str = "vendor/jedit-inventory-effects/";
+const BASIS_VENDOR: &str = "vendor/jedit-text/";
+const GROUPS: [&str; 7] = [
+    "controls",
+    "lists",
+    "ranges",
+    "modules",
+    "primitives",
+    "drafts",
+    EFFECT_GROUP,
+];
 type Index = BTreeMap<String, (u64, String)>;
 
 struct Inputs {
@@ -149,11 +162,30 @@ fn closure(case: &Index, prefix: &str, selected: &Index, label: &str) -> Result<
 }
 
 fn inputs(root: &Path, value: &Value, version: u8) -> Result<Inputs> {
+    // A v2 report has no group; any named group must be one this consumer witnesses.
+    ensure!(
+        value
+            .get("group")
+            .is_none_or(|group| group.as_str().is_some_and(|name| GROUPS.contains(&name))),
+        "unsupported inventory group"
+    );
     if value["group"] == "drafts" {
         ensure!(
             value["draftDriverSha256"].as_str()
                 == Some(sha(&read(&root.join("draft-driver.mjs"))?).as_str()),
             "draft driver selection mismatch"
+        );
+    }
+    if value["group"] == EFFECT_GROUP {
+        ensure!(
+            value["effectDriverSha256"].as_str()
+                == Some(sha(&read(&root.join("effect-driver.mts"))?).as_str()),
+            "effect driver selection mismatch"
+        );
+        ensure!(
+            value["effectLawpackSourceSha256"].as_str()
+                == Some(sha(&read(&root.join("basis/effects.lawpack.json"))?).as_str()),
+            "effect lawpack source selection mismatch"
         );
     }
     for (field, width, label) in [
@@ -233,6 +265,30 @@ fn source_selection(root: &Path, name: &str, files: &Index, selected: &Inputs) -
     Ok(())
 }
 
+/// Effect cases select only the standalone effect lawpack; every other case only the basis.
+fn lawpack_selection(root: &Path, name: &str, group: &Value) -> Result<()> {
+    let config: Value =
+        serde_json::from_slice(&read(&root.join(name).join("edict.application.json"))?)?;
+    let lawpacks = config["lawpacks"]
+        .as_array()
+        .context("application lawpack selection")?;
+    let vendor = if group == EFFECT_GROUP && name.starts_with(EFFECT_CASE_PREFIX) {
+        EFFECT_VENDOR
+    } else {
+        BASIS_VENDOR
+    };
+    ensure!(
+        lawpacks.len() == 1
+            && ["manifest", "exports", "adapter", "targetConfiguration"]
+                .iter()
+                .all(|field| lawpacks[0][*field]
+                    .as_str()
+                    .is_some_and(|path| path.starts_with(vendor))),
+        "application lawpack selection mismatch"
+    );
+    Ok(())
+}
+
 fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
     let cases = evidence["results"].as_array().context("case results")?;
     ensure!(
@@ -263,6 +319,7 @@ fn cases(root: &Path, evidence: &Value, selected: &Inputs) -> Result<()> {
             );
         }
         source_selection(root, name, &files, selected)?;
+        lawpack_selection(root, name, &evidence["selectedInputs"]["group"])?;
         closure(
             &files,
             ".build/echo-provider/",

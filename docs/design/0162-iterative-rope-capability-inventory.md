@@ -187,31 +187,31 @@ contracts apply. Do not build a second compiler or runtime adapter framework.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Define stage/provenance checks and reachable source fixtures;
+- [x] Slice 1: Define stage/provenance checks and reachable source fixtures;
   prove rejection of invalid controls and substituted inputs.
-- [ ] Slice 2: Run the current public compiler/provider tuple, including
+- [x] Slice 2: Run the current public compiler/provider tuple, including
   complete closures, positive controls, and generic execution where reached.
-- [ ] Slice 3: Reconcile upstream owners and update the canonical inventory
+- [x] Slice 3: Reconcile upstream owners and update the canonical inventory
   entrance with measured boundaries and unresolved requirements.
 - [ ] Slice 4: Prove existing supported behavior and unchanged rope obligations;
   complete current-head CI and independent review.
 
 ## Tests To Write First
 
-- [ ] The real public command rejects an invalid positive-control measurement.
-- [ ] Source/compiler/provider substitution and incomplete closures fail their
+- [x] The real public command rejects an invalid positive-control measurement.
+- [x] Source/compiler/provider substitution and incomplete closures fail their
   named provenance checks instead of being reported as unsupported language.
-- [ ] A reachable iterative shape differs observably from a declaration-only
+- [x] A reachable iterative shape differs observably from a declaration-only
   probe; refusal reports leave unreached stages unmeasured.
-- [ ] Supported controls preserve exact result/artifact expectations; generated
+- [x] Supported controls preserve exact result/artifact expectations; generated
   reports distinguish compiler, provider, and runtime boundaries.
 
 ## Acceptance Criteria
 
-- [ ] Exact public source/closure/component identities accompany every result.
-- [ ] First unsupported boundaries have reproducers and existing owners; any
+- [x] Exact public source/closure/component identities accompany every result.
+- [x] First unsupported boundaries have reproducers and existing owners; any
   proposed new issue has a concrete reproducer and is separately authorized.
-- [ ] Amblicit #261–268 are reconciled without closing broad issues from partial
+- [x] Amblicit #261–268 are reconciled without closing broad issues from partial
   evidence or scheduling an already-landed fold implementation.
 - [ ] Current supported behavior passes required checks; the 40-case rope oracle
   remains byte-for-byte unchanged and no new acceptance success is claimed.
@@ -330,18 +330,20 @@ A separate small probe reaches Target's `UndigestedCoreImport` for the draft's
 measurement does not establish the requested version-2 lawpack closure.
 See the [draft closure boundary](../../edict/replace-range-probes/compiler-inventory/draft-closures.md).
 
-The 2026-11-10 checkpoint adds no measurement. Six structured-effect sources
-and their lawpack additions had been left untracked inside the hashed probe
-directory, where they changed every group's `probeSources` identity without a
-registered case. They now wait in a
-[pending location](../../edict/replace-range-probes/compiler-inventory/pending-structured-effects/README.md)
-with the steps a measurement needs; `iterative/` again matches the 33 sources
-bound by the last complete report. The guarded worker refused admission before
-any command ran, so no compiler, provider or runtime stage was attempted and
-no host fallback was used. Amblicit and Echo main still equal the measured
-tuple, and the owner issues are unchanged. The
-[owner reconciliation](../../edict/replace-range-probes/compiler-inventory/upstream-status.md#measured-boundary-of-each-shape)
-now joins the five measured groups into one boundary table and lists three
-prerequisites that have no issue or recorded edge. No slice is complete:
-structured-effect stages, component regeneration, the full application gate
-and independent review remain. The oracle and production pins are unchanged.
+The structured-effect checkpoint publishes a standalone single-profile effect
+lawpack beside the unchanged basis. Merging the effect into `jedit.text@1`
+was measured first and refused twice: the lawpack builder admits one local
+resource per coordinate, and Echo's compiler adapter admits exactly one
+operation profile. Through the standalone lawpack, one `create` effect
+publishes as the fixed create-if-absent intrinsic; two effects stop in the
+provider lowerer; an effect inside a branch or a bounded loop stops at Target
+with `UnsupportedCoreNode`. All seven effect assertions and four effect
+admission assertions first failed against the preceding consumer, then pass
+in debug and optimized builds; the retained draft and primitive reports still
+pass with the new consumer. See the
+[structured-effect measurement](../../edict/replace-range-probes/compiler-inventory/structured-effects.md).
+The [owner reconciliation](../../edict/replace-range-probes/compiler-inventory/upstream-status.md#measured-boundary-of-each-shape)
+joins all six groups and gives every proposed prerequisite a reproducer, an
+existing owner and a reason. Runtime of the published effect package,
+component regeneration and full operation stay unmeasured. The oracle and
+production pins are unchanged; rope acceptance remains 0/40.

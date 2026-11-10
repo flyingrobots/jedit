@@ -1,10 +1,10 @@
 package jedit.iterative.effect_repeated@1;
-use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+use lawpack jedit.inventory.effects@1 digest "sha256:0000000000000000000000000000000000000000000000000000000000000000" as cell;
 type Output = { key: String<max=64>, message: String<max=256> };
-intent create(input: text.CreateInput) returns Output
-  profile text.createValue basis input.basis budget <= text.createBudget
+intent create(input: cell.CreateInput) returns Output
+  profile cell.createValue basis input.basis budget <= cell.createBudget
 {
-  let first: text.CreateReceipt = text.createValue(input) else { alreadyExists(existing) => text.AlreadyCreated };
-  let last: text.CreateReceipt = text.createValue(input) else { alreadyExists(existing) => text.AlreadyCreated };
+  let first: cell.CreateReceipt = cell.createValue(input) else { alreadyExists(existing) => cell.AlreadyCreated };
+  let last: cell.CreateReceipt = cell.createValue(input) else { alreadyExists(existing) => cell.AlreadyCreated };
   return { key: last.key, message: input.message };
 }

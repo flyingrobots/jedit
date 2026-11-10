@@ -15,15 +15,14 @@ includes changed-leaf and missing-leaf authentication controls. See
 `--group primitives` measures [arithmetic and byte shapes](primitives.md).
 `--group drafts` retains the [complete supplied draft source closures](draft-closures.md)
 and separately exposes their undigested version-2 lawpack import.
+`--group effects` measures [structured effect emission](structured-effects.md)
+through a standalone effect lawpack published beside the basis.
 [Upstream reconciliation](upstream-status.md) distinguishes landed prerequisites
 from broader open requirements and joins the groups into one
 [boundary table](upstream-status.md#measured-boundary-of-each-shape).
 This remains a bounded subset of
 [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-the requested version-2 lawpack closure and structured effects remain part of
-that cycle. The structured-effect sources are authored but unmeasured; they
-[wait outside `iterative/`](pending-structured-effects/README.md) so that they
-do not change any group's `probeSources` identity.
+the requested version-2 lawpack closure remains part of that cycle.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
 Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
@@ -118,14 +117,15 @@ only the duplicate working tree.
 Use the release consumer path to repeat admission with an optimized build.
 The positive-control assertion requires four runtime inputs for `controls`,
 thirty for `lists`, seven for `ranges`, six for `modules`, and twenty-eight for
-`primitives`; `drafts` executes the four existing control inputs. Use the same environment with
+`primitives`; `drafts` and `effects` execute the four existing control inputs. Use the same environment with
 `iterative-stage.test.mts` against a `ranges` inventory for stage assertions.
 Use `iterative-module.test.mts` against `modules` for authenticated-import assertions.
 Use `iterative-primitives.test.mts` against `primitives` for its stage assertions.
 Use `iterative-drafts.test.mts` against `drafts` for unchanged source closures and first refusals.
+Use `iterative-effects.test.mts` against `effects` for structured-effect stage boundaries.
 
 The repository's `tsconfig.json` covers only `src/`, so `npm run build` does
-not type-check the seven inventory `.mts` files. After `npm ci`, check them
+not type-check the nine inventory `.mts` files. After `npm ci`, check them
 from the Jedit checkout with the pinned Node. This needs no compiler, provider
 or worker:
 

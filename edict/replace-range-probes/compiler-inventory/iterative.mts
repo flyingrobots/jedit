@@ -8,7 +8,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildCompiler } from '../../replace-range/tests/compiler.mjs';
 import { DRAFT_CASES, MODULE_CASES, moduleSources } from './iterative-closures.mts';
-import { CREATE_CONFIGURATION, EFFECT_CASES, EFFECT_GROUP, withEffectAdditions } from './iterative-effects.mts';
+import { EFFECT_CASES, EFFECT_GROUP, EFFECT_LAWPACK, EFFECT_LAWPACK_BUILD, EFFECT_LAWPACK_OUTPUT, EFFECT_LAWPACK_SOURCE,
+    effectLawpacks } from './iterative-effects.mts';
 import { adapterTargets, withAdapterTargets, withImportDigest, lawpackManifestDigest }
     from '../../../scripts/deps/echo-edict-relock.mjs';
 
@@ -100,33 +101,22 @@ function configuration() {
 
 const selected = configuration();
 
-function run(cwd: string, request: object): { exitCode: number; diagnostics: object[] } {
+function run(cwd: string, request: object, prefix = ''): { exitCode: number; diagnostics: object[] } {
     const result = spawnSync(selected.compiler, [], { cwd, encoding: 'utf8',
         input: JSON.stringify(request) + '\n', timeout: MAX_PROCESS_MS, maxBuffer: MAX_PROCESS_BYTES });
-    writeFileSync(path.join(cwd, 'stdout.jsonl'), result.stdout ?? '', { flag: 'wx' });
-    writeFileSync(path.join(cwd, 'stderr.jsonl'), result.stderr ?? '', { flag: 'wx' });
+    writeFileSync(path.join(cwd, prefix + 'stdout.jsonl'), result.stdout ?? '', { flag: 'wx' });
+    writeFileSync(path.join(cwd, prefix + 'stderr.jsonl'), result.stderr ?? '', { flag: 'wx' });
     if (result.error || result.signal || result.status === null) throw new InventoryFailure('compiler process failed');
     const diagnostics = result.stderr.split('\n').filter(Boolean).map(line => JSON.parse(line));
     return { exitCode: result.status, diagnostics };
 }
 
-function writeBasisLawpack(lawpackFile: string): void {
-    const bound = withAdapterTargets(JSON.parse(readFileSync(lawpackFile, 'utf8')), adapterTargets(selected.provider));
-    if (selected.group.name === EFFECT_GROUP) {
-        writeFileSync(path.join(selected.output, 'effect-driver.mts'),
-            readFileSync(fileURLToPath(new URL('./iterative-effects.mts', import.meta.url))), { flag: 'wx' });
-    }
-    const lawpack = selected.group.name === EFFECT_GROUP
-        ? withEffectAdditions(bound, path.join(selected.output, 'fixture-sources')) : bound;
-    writeFileSync(lawpackFile, JSON.stringify(lawpack, null, 2) + '\n');
+function writeBoundLawpack(source: string, destination: string): void {
+    const bound = withAdapterTargets(JSON.parse(readFileSync(source, 'utf8')), adapterTargets(selected.provider));
+    writeFileSync(destination, JSON.stringify(bound, null, 2) + '\n', { flag: destination === source ? 'w' : 'wx' });
 }
 
-function publishBasis(): { root: string; baseline: string; digest: string } {
-    mkdirSync(selected.output);
-    writeFileSync(path.join(selected.output, 'driver.mts'), readFileSync(fileURLToPath(import.meta.url)), { flag: 'wx' });
-    writeFileSync(path.join(selected.output, 'closure-driver.mts'),
-        readFileSync(fileURLToPath(new URL('./iterative-closures.mts', import.meta.url))), { flag: 'wx' });
-    cpSync(fixtureRoot, path.join(selected.output, 'fixture-sources'), { recursive: true });
+function retainGroupDrivers(): void {
     if (selected.group.name === 'drafts') {
         const drafts = path.join(applicationRoot, 'draft');
         cpSync(drafts, path.join(selected.output, 'fixture-sources/drafts'), { recursive: true,
@@ -134,25 +124,49 @@ function publishBasis(): { root: string; baseline: string; digest: string } {
         writeFileSync(path.join(selected.output, 'draft-driver.mjs'),
             readFileSync(fileURLToPath(new URL('./draft-modules.mjs', import.meta.url))), { flag: 'wx' });
     }
+    if (selected.group.name === EFFECT_GROUP) {
+        writeFileSync(path.join(selected.output, 'effect-driver.mts'),
+            readFileSync(fileURLToPath(new URL('./iterative-effects.mts', import.meta.url))), { flag: 'wx' });
+    }
+}
+
+/** Publishes the standalone effect lawpack beside the unchanged basis lawpack; returns its digest. */
+function publishEffectLawpack(root: string): string {
+    if (selected.group.name !== EFFECT_GROUP) return '';
+    writeBoundLawpack(path.join(selected.output, 'fixture-sources', EFFECT_LAWPACK_SOURCE),
+        path.join(root, EFFECT_LAWPACK_BUILD));
+    const publication = run(root, { ...BUILD, lawpack: EFFECT_LAWPACK_BUILD }, 'effects-lawpack.');
+    if (publication.exitCode !== 0) throw new InventoryFailure('effect lawpack publication failed; no feature inference');
+    return lawpackManifestDigest(JSON.parse(readFileSync(path.join(root, EFFECT_LAWPACK_OUTPUT), 'utf8')));
+}
+
+function publishBasis(): { root: string; baseline: string; digest: string; effectDigest: string } {
+    mkdirSync(selected.output);
+    writeFileSync(path.join(selected.output, 'driver.mts'), readFileSync(fileURLToPath(import.meta.url)), { flag: 'wx' });
+    writeFileSync(path.join(selected.output, 'closure-driver.mts'),
+        readFileSync(fileURLToPath(new URL('./iterative-closures.mts', import.meta.url))), { flag: 'wx' });
+    cpSync(fixtureRoot, path.join(selected.output, 'fixture-sources'), { recursive: true });
+    retainGroupDrivers();
     mkdirSync(path.join(selected.output, 'authored-sources'));
     const root = path.join(selected.output, 'basis');
     cpSync(applicationRoot, root, { recursive: true,
         filter: source => !source.startsWith(path.join(applicationRoot, '.build')) });
     cpSync(selected.provider, path.join(root, '.build/echo-provider'), { recursive: true });
-    writeBasisLawpack(path.join(root, 'edict.lawpack.json'));
+    writeBoundLawpack(path.join(root, 'edict.lawpack.json'), path.join(root, 'edict.lawpack.json'));
     const publication = run(root, { ...BUILD, lawpack: 'edict.lawpack.json' });
     if (publication.exitCode !== 0) throw new InventoryFailure('lawpack publication failed; no feature inference');
     const published = JSON.parse(readFileSync(path.join(root, 'vendor/jedit-text/edict.lawpack-output.json'), 'utf8'));
     const digest = lawpackManifestDigest(published);
     const baseline = withImportDigest(readFileSync(path.join(root, 'src/ReplaceRange.edict'), 'utf8'), 'jedit.text@1', digest);
-    return { root, baseline, digest };
+    return { root, baseline, digest, effectDigest: publishEffectLawpack(root) };
 }
 
 const basis = publishBasis();
 const authored = ['baseline', ...selected.group.cases].map(name => {
     const fixture = MODULE_CASES.includes(name) ? 'module-fold' : name;
+    const [lawpack, digest] = EFFECT_CASES.includes(name) ? [EFFECT_LAWPACK, basis.effectDigest] : ['jedit.text@1', basis.digest];
     const source = DRAFT_CASES.includes(name) ? '' : name === 'baseline' ? basis.baseline : withImportDigest(
-        readFileSync(path.join(selected.output, 'fixture-sources', fixture + '.edict'), 'utf8'), 'jedit.text@1', basis.digest);
+        readFileSync(path.join(selected.output, 'fixture-sources', fixture + '.edict'), 'utf8'), lawpack, digest);
     const sources = moduleSources(path.join(selected.output, 'fixture-sources'), name, source);
     for (const file of sources) {
         const target = path.join(selected.output, 'source-closures', name, file.path);
@@ -173,6 +187,7 @@ const selectedInputs = {
     } : {}),
     ...(selected.group.name === EFFECT_GROUP ? {
         effectDriverSha256: hash(readFileSync(path.join(selected.output, 'effect-driver.mts'))),
+        effectLawpackSourceSha256: hash(readFileSync(path.join(basis.root, EFFECT_LAWPACK_BUILD))),
     } : {}),
     probeSources: inventory(path.join(selected.output, 'fixture-sources')), provider: selected.providerFiles,
     authoredSources: inventory(path.join(selected.output, 'authored-sources')),
@@ -202,7 +217,7 @@ function measure(name: string, source: string, sources: string[]) {
     const config = JSON.parse(readFileSync(path.join(basis.root, 'edict.application.json'), 'utf8'));
     config.coordinate = coordinate[1];
     config.sources = sources;
-    if (EFFECT_CASES.includes(name)) config.lawpacks[0].targetConfiguration = CREATE_CONFIGURATION;
+    if (EFFECT_CASES.includes(name)) config.lawpacks = effectLawpacks();
     writeFileSync(path.join(root, 'edict.application.json'), JSON.stringify(config, null, 2) + '\n', { flag: 'wx' });
     const result = run(root, { ...BUILD, application: 'edict.application.json' });
     console.log(JSON.stringify({ name, ...result }));

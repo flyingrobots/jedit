@@ -22,6 +22,7 @@ use std::path::Path;
 use warp_core::edict_pure::{evaluate, EvaluationError, EvaluationLimits};
 
 const APPENDED_VALUE: i128 = 7;
+const PURE_PROGRAM_KIND: &str = "compiler-produced-bounded-pure/v1";
 
 fn field<'a>(value: &'a Value, name: &str) -> Result<&'a Value> {
     let Value::Map(fields) = value else {
@@ -119,8 +120,7 @@ fn checked_report(package: &[u8], report: &[u8]) -> Result<[u8; 32]> {
             )?)?,
         "Target IR mismatch"
     );
-    let program = decode(bytes(field(&decoded, "program")?)?)?;
-    let projection = decode(bytes(field(&program, "result_projection_artifact")?)?)?;
+    let projection = projection_artifact(&decoded)?;
     ensure!(
         resource(
             field(&report, "applicationResultProjection")?,
@@ -129,6 +129,25 @@ fn checked_report(package: &[u8], report: &[u8]) -> Result<[u8; 32]> {
         "result projection mismatch"
     );
     Ok(pin)
+}
+
+/// A pure program carries its projection; a configured intrinsic package binds it at top level.
+fn projection_artifact(package: &Value) -> Result<Value> {
+    let program = decode(bytes(field(package, "program")?)?)?;
+    if text(field(&program, "kind")?)? == PURE_PROGRAM_KIND {
+        return Ok(decode(bytes(field(
+            &program,
+            "result_projection_artifact",
+        )?)?)?);
+    }
+    let binding = field(package, "application_result_projection")?;
+    let projection = decode(bytes(field(binding, "artifact_bytes")?)?)?;
+    ensure!(
+        bytes(field(binding, "artifact_identity")?)?
+            == digest("edict.result-projection.artifact/v1", &projection)?.as_slice(),
+        "result projection identity mismatch"
+    );
+    Ok(projection)
 }
 
 fn selected_pair(
@@ -298,7 +317,8 @@ fn runtime_names(evidence: &serde_json::Value) -> Result<Vec<&'static str>> {
     let mut names = vec!["scalar-fold", "bounded-list-fold", "record-worklist-fold"];
     match evidence["selectedInputs"].get("group") {
         None => {}
-        Some(serde_json::Value::String(group)) if group == "controls" || group == "drafts" => {}
+        Some(serde_json::Value::String(group))
+            if group == "controls" || group == "drafts" || group == "effects" => {}
         Some(serde_json::Value::String(group)) if group == "lists" => names.extend([
             "guarded-list-at",
             "list-concat",

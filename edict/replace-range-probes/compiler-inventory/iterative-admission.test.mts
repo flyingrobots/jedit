@@ -14,7 +14,8 @@ type Evidence = {
     schema: string;
     measurement?: string;
     selectedInputs: { compilerBinarySha256?: string; compilerCommit?: string; provider: FileEntry[];
-        group?: string; sourceClosures?: FileEntry[]; draftDriverSha256?: string };
+        group?: string; sourceClosures?: FileEntry[]; draftDriverSha256?: string; effectDriverSha256?: string;
+        effectLawpackSourceSha256?: string };
     results: Case[];
 };
 
@@ -243,6 +244,34 @@ test('the application must select its retained source closure', () => {
 
 const modulesOnly = { skip: evidence().selectedInputs.group !== 'modules' };
 const draftsOnly = { skip: evidence().selectedInputs.group !== 'drafts' };
+const effectsOnly = { skip: evidence().selectedInputs.group !== 'effects' };
+
+test('effect evidence must bind its effect driver', effectsOnly, () => {
+    const value = evidence();
+    delete value.selectedInputs.effectDriverSha256;
+    refused('missing-effect-driver', value, 'effect driver selection mismatch');
+});
+
+test('effect evidence must bind its standalone effect lawpack source', effectsOnly, () => {
+    const value = evidence();
+    delete value.selectedInputs.effectLawpackSourceSha256;
+    refused('missing-effect-lawpack-source', value, 'effect lawpack source selection mismatch');
+});
+
+test('the accepted effect package must bind its own verifier report', effectsOnly, () => {
+    const relative = '.build/application/verification-report.cbor';
+    const other = readFileSync(path.join(copy, 'scalar-fold', relative));
+    changedFile('effect-report-substitution', relative, other, 'package/report mismatch', 'effect-linear');
+});
+
+test('an accepted effect case cannot claim the basis lawpack under self-consistent metadata', effectsOnly, () => {
+    const relative = 'edict.application.json';
+    const config = JSON.parse(readFileSync(path.join(copy, 'scalar-fold', relative), 'utf8'));
+    config.coordinate = JSON.parse(readFileSync(path.join(copy, 'effect-linear', relative), 'utf8')).coordinate;
+    config.sources = ['src/Probe.edict'];
+    changedFile('effect-basis-lawpack', relative, Buffer.from(JSON.stringify(config) + '\n'),
+        'application lawpack selection mismatch', 'effect-linear');
+});
 
 test('draft evidence must bind its source-pin driver', draftsOnly, () => {
     const value = evidence();

@@ -15,16 +15,17 @@ artifact selections. No broad issue is closed by these bounded witnesses.
 | [Amblicit #264](https://github.com/flyingrobots/amblicit/issues/264) | Intent range constraints admit subtraction and slice; guarded helpers pass source/Core/Target but stop in the provider. | Function `where` declarations still refuse in parsing; caller contract propagation and provider branch facts remain incomplete. |
 | [Amblicit #265](https://github.com/flyingrobots/amblicit/issues/265) | The new reachable call fixture isolates a parse refusal at the function's `fails` declaration. | Failure propagation and caller mapping are unreached, not separately measured refusals. |
 | [Amblicit #266](https://github.com/flyingrobots/amblicit/issues/266) | Invoked `at`, `count`, and `isUtf8` helpers publish and execute over twelve byte-metric inputs with budget/identity/type controls. | Broader integration into the authored text/rope law remains separate; this run does not close the issue. |
-| [Amblicit #267](https://github.com/flyingrobots/amblicit/issues/267) | Structured Target lowering landed in PR #272. Root result projection work is recorded by closed #300. | Declared effect-budget requirements and generic structured effect execution/publication remain separate. |
+| [Amblicit #267](https://github.com/flyingrobots/amblicit/issues/267) | Structured Target lowering landed in PR #272. Root result projection work is recorded by closed #300. | A bounded `for` that emits an effect still refuses at Target with `UnsupportedCoreNode` against the selected provider ([structured effects](structured-effects.md)); the declared effect budget is unreached. |
 | [Amblicit #268](https://github.com/flyingrobots/amblicit/issues/268) | PRs #285/#286 and Echo #944 landed bounded folds and public pure/read witnesses. Current inventory adds record/list/variant and transitive-module execution. | Complete rope descent/rebuild, terminal-state effect behavior and full-operation obligations are not discharged by these probes. |
 
 The arithmetic/byte rows use the
 [primitive measurement](primitives.md), not the older declaration-only reports.
 Guarded helper refusal belongs to generic provider work under
 [Echo #684](https://github.com/flyingrobots/echo/issues/684), alongside the
-source contract owner #264. The narrower proposed branch-fact issue remains
-unpublished pending authorization. It must preserve these distinct source,
-lowerer, verifier and runtime evidence boundaries.
+source contract owner #264. Echo #684 stays the owner of the branch-fact gap
+until a narrower issue is authorized; that proposed issue remains unpublished.
+It must preserve these distinct source, lowerer, verifier and runtime evidence
+boundaries.
 
 ## Landed prerequisites are not new tasks
 
@@ -51,10 +52,10 @@ this inventory does not convert them into new full-operation evidence.
 [Echo #947](https://github.com/flyingrobots/echo/issues/947) is the open owner
 for generic structured loops/branches, independent verification, atomic
 buffering, reproducible components and public source witnesses. Its dependency
-on #300 is already represented in frontmatter. The #388 inventory has not
-measured any structured-effect stage. Six authored sources and their lawpack
-additions wait in [pending-structured-effects](pending-structured-effects/README.md),
-outside the hashed probe directory, until a registered group drives them.
+on #300 is already represented in frontmatter. The
+[structured-effect measurement](structured-effects.md) now places its first
+gaps: two effects in one intent stop in the provider lowerer, and an effect
+inside a branch or a bounded loop stops at Target.
 
 The [whole-draft measurement](draft-closures.md) now retains every supplied
 source module unchanged. Its four roots still refuse in parsing. A separate
@@ -64,7 +65,7 @@ The requested version-2 lawpack closure remains unresolved under Jedit #296.
 
 ## Measured boundary of each shape
 
-This table joins the five measured groups. Every row is bound to Amblicit
+This table joins the six measured groups. Every row is bound to Amblicit
 `66bf6bac369f67e32ddaee099c3198bd30f885a1` and Echo
 `089c849f766d5331835e7d10148a378cdb1237d5`; both were still their remote main
 heads on 2026-11-10, and every issue below was still open. Each group's page
@@ -90,22 +91,28 @@ names its report hash, compiler binary and provider manifest.
 | Draft Rope | None | Parse: recursive variant `depth`, line 24 | Jedit #296; Amblicit #262 |
 | Draft ReplaceRange | None | Parse: enum declaration, line 49 | Jedit #296; Amblicit #261 |
 | Small intent importing `jedit.text@2` | Core | Target: `UndigestedCoreImport` | Jedit #296; no version-2 lawpack input exists |
-| Structured effects: linear, repeated, branch, loop, nested | Unmeasured | Unmeasured | Echo #947 and Amblicit #267, once measured |
+| One `create` effect through a standalone effect lawpack | Verifier, as the fixed create-if-absent intrinsic | None; its runtime is unmeasured | Positive control for the effect family |
+| Two `create` effects in one intent | Target | Provider lowerer: `UnsupportedSemantics`, one Core body node | Echo #947 |
+| `create` inside an `if` arm | Core | Target: `UnsupportedCoreNode` `branch` | Echo #947 |
+| `create` inside a bounded `for`, alone or under a branch | Core | Target: `UnsupportedCoreNode` `for` | Amblicit #267 and Echo #947 |
+| A `create` profile added to the `jedit.text@1` lawpack | None | Lawpack publication or provider lowerer, depending on the resource coordinate | Jedit #296; provider path under Echo #947 and #684 |
 
-Dynamic fold bounds, unproved addition and subtraction, and changed or missing
-module leaves refuse in source as intended; they are controls, not gaps.
+Dynamic fold and effect-loop bounds, unproved addition and subtraction, and
+changed or missing module leaves refuse in source as intended; they are
+controls, not gaps.
 "Target" in the second column is inferred from the inspected compiler's
 command order, not from separately emitted Core or Target artifacts. The
 provider components are the selected checked bytes; regenerating them is
 unmeasured. No row measures a full operation, so the rope acceptance count
 stays 0/40. A first refusal says nothing about the stages behind it.
 
-## Prerequisites without an issue or a recorded edge
+## Prerequisites without a dedicated issue or a recorded edge
 
 These are findings for the roadmap owner. This inventory does not publish
 issues or change dependency edges.
 
-- **Branch facts in the provider's range proofs need a new Echo issue.** The
+- **Branch facts in the provider's range proofs.** Owner: Echo #684 until a
+  narrower Echo issue is authorized. The
   lowerer records a branch predicate on its path but proves addition,
   subtraction and slice from other facts
   ([range facts](README.md#range-facts-and-corroborated-stages),
@@ -117,20 +124,30 @@ issues or change dependency edges.
   `71ae487876901523e7538ad32ebb191ba033622ec75f0b9ab2b97200ced808ee`.
   Every measured fold that advances an index under a branch refuses there, so
   an iterative rope written in that shape cannot publish until the gap closes.
-  Echo #684 and Echo #960 are related but do not name this gap, and Jedit #296
-  has no edge to either.
+  Echo #684 covers generic checked arithmetic and bounded control flow but does
+  not name this gap; Echo #960 aligns range judgments for effect programs only.
+  Jedit #296 has no edge to either.
 - **The draft's first parse refusals have owners that do not block #296.**
-  Jedit #296 is blocked by Amblicit #260, Echo #926, #946 and #947, and Jedit
-  #389 and #403. Amblicit #261, #262, #263, #264 and #265 own syntax the
+  Jedit #296 is blocked by Amblicit #260, Echo #926, #946, #947 and #979, and
+  Jedit #389 and #403. Amblicit #261, #262, #263, #264 and #265 own syntax the
   current drafts use, yet none is a recorded blocker. Either the drafts are
   rewritten onto the measured iterative shapes within #296, or those edges are
   missing. Which holds is unresolved.
-- **No `jedit.text@2` authoring lawpack exists to publish.** The drafts import
-  it; this checkout has nothing to supply. Jedit #296 and #389 are the nearest
-  owners, and neither names the lawpack input as a deliverable.
+- **No `jedit.text@2` authoring lawpack exists to publish.** Owner: Jedit
+  #296, which owns the draft's version-2 application contract. The drafts
+  import it and this checkout has nothing to supply; the reproducer is
+  `missing-draft-lawpack.edict` in draft report
+  `40d6808fff828559f5100bbde8d76cd9f64ee007ca1b535117e71da6e826a76a`. #296
+  does not yet name the lawpack input as a deliverable.
+- **The rope's effects need a single-profile lawpack.** Owner: Jedit #296 for
+  authoring, Echo #947 and #684 for the provider path. A `jedit.text@1`
+  adapter cannot add a second operation profile for Echo's compiler-produced
+  path, and the pure adapter admits no semantic effects
+  ([structured effects](structured-effects.md#how-the-effect-lawpack-is-supplied)).
+  Reproducers are commits `8d234c4` and `1be66de` of this branch.
 
-## What #388 still lacks
+## What remains unmeasured
 
-Structured-effect stages, component regeneration, the full application gate on
-the final head and independent review remain. The retained ReplaceRange
-acceptance count is 0/40.
+Runtime of the one published effect package, regeneration of the selected
+provider components, and every full operation remain unmeasured. The retained
+ReplaceRange acceptance count is 0/40.
