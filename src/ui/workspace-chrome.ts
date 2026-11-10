@@ -1,4 +1,5 @@
 import { renderFooterLayout, type FooterPresentation } from './workspace-footer-presentation.js';
+import { LEADER_SETTINGS_COPY } from '../app/leader-settings-row.js';
 import { createSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
@@ -85,7 +86,7 @@ const FooterHintKeys = Object.freeze({
   EscCancel: 'esc_cancel',
 });
 
-const LEADER_CAPTURE_FOOTER_KEY = 'settings.rows.leader.capture';
+const LEADER_CAPTURE_FOOTER_KEY = LEADER_SETTINGS_COPY.Capture;
 
 type FooterHintTranslator = (key: string) => string;
 

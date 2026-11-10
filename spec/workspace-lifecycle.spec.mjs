@@ -433,6 +433,7 @@ test('workspace exposes runtime tokens for drawer, focus, file entry, and key di
   assert.equal(fileSystem.FileEntryKinds.Directory, 'dir');
   assert.equal(fileSystem.FileEntryKinds.Parent, 'parent');
   assert.equal(workspaceKey.WorkspaceKeys.Backtick, '`');
-  assert.equal(workspaceKey.isWorkspaceBackKey({ key: 'left' }), true);
+  assert.equal(workspaceKey.isWorkspaceBackKey({ key: 'backspace' }), true);
+  assert.equal(workspaceKey.isWorkspaceBackKey({ key: 'left' }), false);
   assert.equal(workspaceKey.isWorkspaceOpenKey({ key: 'enter' }), true);
 });

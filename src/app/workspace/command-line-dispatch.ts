@@ -36,6 +36,7 @@ import {
   WORKSPACE_INLINE_PANEL_TONE,
   workspaceInlinePanelAnchorFromEditor,
 } from "./workspace-why-range.js";
+import { cwdEntries } from './file-tree-expansion.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -293,7 +294,7 @@ function editCommandFileEntry(
   context: WorkspaceKeyBindingContext,
 ): FileEntry {
   return (
-    model.entries.find((entry) => editArgumentMatchesEntry(entry, argument)) ??
+    cwdEntries(model).find((entry) => editArgumentMatchesEntry(entry, argument)) ??
     {
       kind: FileEntryKinds.File,
       name: argument,

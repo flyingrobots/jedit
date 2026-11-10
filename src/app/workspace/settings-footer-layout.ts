@@ -10,6 +10,8 @@ import type { JeditSettingsActivationDelta } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 
+const SAVE_FAILED_COPY = Object.freeze({ Title: 'settings.toast.save_failed_title', Message: 'settings.toast.save_failed_message' } as const);
+
 export interface FooterLayoutSettingsContext {
   readonly footerPreferences?: FooterPreferencesPort;
   readonly sourceHighlighter?: SourceHighlighter;
@@ -23,15 +25,15 @@ export function cycleWorkspaceFooterLayout(
   context: FooterLayoutSettingsContext,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const layout = nextFooterLayout(model.footerLayout, delta);
-  if (context.footerPreferences?.save(layout).ok !== false) return reconcileFooterViewport(model, { ...model, footerLayout: layout }, context);
+  if (context.footerPreferences?.saveLayout(layout).ok !== false) return reconcileFooterViewport(model, { ...model, footerLayout: layout }, context);
   return footerPreferenceFailure(model, context);
 }
 
 function footerPreferenceFailure(model: WorkspaceModel, context: FooterLayoutSettingsContext): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (context.createNotificationTickCmd == null) return [model, []];
   return pushNotificationToast(model, {
-    title: model.i18n.t('settings.toast.save_failed_title'),
-    message: model.i18n.t('settings.toast.save_failed_message'),
+    title: model.i18n.t(SAVE_FAILED_COPY.Title),
+    message: model.i18n.t(SAVE_FAILED_COPY.Message),
     variant: NotificationVariants.Toast,
     tone: NotificationTones.Error,
     placement: NotificationPlacements.LowerRight,
@@ -40,7 +42,7 @@ function footerPreferenceFailure(model: WorkspaceModel, context: FooterLayoutSet
 
 export function cycleWorkspaceFilepaths(model: WorkspaceModel, context: FooterLayoutSettingsContext): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const filepathStyle = nextFilepathStyle(model.filepathStyle);
-  if (context.footerPreferences?.saveFilepaths?.(filepathStyle).ok === false) return footerPreferenceFailure(model, context);
+  if (context.footerPreferences?.saveFilepaths(filepathStyle).ok === false) return footerPreferenceFailure(model, context);
   return [{ ...model, filepathStyle }, []];
 }
 

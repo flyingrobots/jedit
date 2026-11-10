@@ -40,7 +40,7 @@ export function paintHighlightedSourceWindow(
     for (let col = ZERO_INDEX; col < safeWidth; col += 1) {
       const sourceCol = safeScrollCol + col;
       const char = sourceText[sourceCol] ?? SPACE_CHAR;
-      const style = styleAt(
+      const style = sourceHighlightStyleAt(
         highlight?.spans ?? [],
         sourceRow,
         sourceCol,
@@ -55,7 +55,7 @@ export function paintHighlightedSourceWindow(
   }
 }
 
-function styleAt(
+export function sourceHighlightStyleAt(
   spans: readonly SourceHighlightSpan[],
   row: number,
   column: number,

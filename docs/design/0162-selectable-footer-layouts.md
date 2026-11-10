@@ -7,10 +7,15 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-10-15"
-updated: "2026-10-15"
+updated: "2026-11-08"
 ---
 
 # DX-0162 - Selectable footer layouts
+
+> Status at a glance: the cycle's final record is "Review hardening" (Slice 9)
+> at the end. "Feedback refinement retrospective" records the accepted feedback,
+> and the first "Retrospective" covers Slices 1-4; it predates `filepathStyle`,
+> which the feedback refinement added.
 
 ## Linked Issue
 
@@ -46,7 +51,8 @@ Appearance settings are session-only. Settings uses directional choice rows.
 
 [settings-session.ts#229:44d28cb96458254076d9c181e16e38da927cfd01](https://github.com/flyingrobots/jedit/blob/44d28cb96458254076d9c181e16e38da927cfd01/src/app/settings-session.ts#L229)
 
-The branch stacks on #342, preserving its Files modal navigation and previews.
+The branch was stacked on #342, which merged on 2026-10-20 (as did #339); its
+base is now `main`. It preserves #342's Files modal navigation and previews.
 
 ## Problem
 
@@ -120,7 +126,9 @@ Layouts format these observations without collecting new authority.
 
 ## Lower Modes
 
-A and B reserve two rows; C reserves one; hidden footer reserves zero. Very
+A and B reserve two rows; C reserves one; hidden footer reserves zero (later
+refined: one row while the Files filter prompt owns input, see the accepted modal
+explorer refinement). Very
 small terminal notices retain their current priority. Plain terminal cells and
 translated text remain usable without custom fonts, graphics or animation.
 
@@ -188,7 +196,8 @@ Preferences tests first demonstrated missing-adapter failures, then cover restar
 raw JSON preservation, malformed/duplicate refusal, file mode and symlinks.
 
 - [x] Settings cycles A/B/C both ways and preserves the selected control.
-- [x] A/B reserve two rows, C one, and hidden footer zero.
+- [x] A/B reserve two rows, C one, and hidden footer zero (one while the filter
+  prompt owns input, from the modal explorer refinement).
 - [x] B segments follow actual pane boundaries and active focus.
 - [x] Files filter/nav facts never reuse editor coordinates.
 - [x] Compact preserves global counts during command input.
@@ -235,7 +244,7 @@ produce an error toast. No text/history authority moved into the preferences fil
 The final full local check passed 882 tests with 12 existing skips and no quality
 regressions. A further focused acceptance test confirms the real completion popup
 moves down one row with Compact and stays above input. The final CI run includes
-that test. Shard coverage passes for 136 specification files. Native production
+that test. Shard coverage passed for 136 specification files at `fcb12be2`. Native production
 Echo terminal witnesses cover all layouts at 100×32 and 60×16, filtered selection,
 preview, mouse events, opening/editing, command completion and mirrored locale.
 See the [witness gallery and receipt](0162-footer-witness/README.md).
@@ -248,8 +257,7 @@ separate durability posture helpers retain their own coverage.
 
 CI on implementation `fcb12be2` passed all twelve jobs in
 [run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
-The final published head is checked separately after these evidence updates.
-The branch remains stacked on #342; no dependency is merged here.
+Final-head validation for PR #344 remains pending until stacked PR #349 lands.
 
 
 ## Accepted footer feedback refinement
@@ -266,8 +274,8 @@ use a relative form; outside it, or without a Git root, they remain absolute.
 Only displayed paths change. Native paths used for opening, saving, search and
 Echo identity remain untouched. Root itself displays `.` in relative mode.
 
-The active mode badge uses the theme's normal cursor foreground/background and
-bold weight. Ordinary identities, coordinates, pane dividers and zero-state
+The active mode badge uses a theme-derived filled token with contrast correction
+and bold weight. Ordinary identities, coordinates, pane dividers and zero-state
 counts use the theme's muted foreground. Modified/read-only flags, pending
 operators and nonzero modified/pending counts use normal foreground. Command
 input remains normal foreground with existing error styling. Inactive pane modes
@@ -285,10 +293,13 @@ terminal witnesses must confirm the resulting hierarchy at wide/narrow sizes.
 
 ### Accepted modal explorer refinement
 
-Remove the permanent search field and separator. The drawer header shows Files
-or Filter: <query>; the list begins immediately below it. `/` activates a
+Remove the permanent search field and separator. The drawer header shows
+`files  / filter` when idle or `filter: <query>` when a query is active (both
+localized); the
+list begins immediately below it. `/` activates a
 footer filter prompt that owns typing and cursor movement. Escape/Enter return
-to navigation and keep the query. `/`, Ctrl+U, Escape clears it. Clicking the
+to navigation and keep the query. While the prompt is open, Ctrl+U clears the
+query. Clicking the
 active-filter header re-enters editing; clicking a list item still selects only.
 The footer prompt temporarily appears even when footer visibility is disabled,
 and disappears on exit, so hidden footers cannot produce invisible text input.
@@ -322,21 +333,43 @@ Nested and linked-worktree discovery, restart, write refusal and native path
 identity preservation are covered. Display formatting creates no Echo command.
 
 The final full local check passed 892 tests, 880 passed and 12 existing skips;
-quality reported no regressions. Forty-nine focused UI/preferences tests passed
-and all 137 specs have a CI shard. Native checks used production Echo at 100×32
+quality reported no regressions. Forty-nine focused UI/preferences tests passed.
+Native checks used production Echo at 100×32
 and 60×16, in light/dark themes, with real keys, mouse events and restart.
 See the [current witness gallery and receipts](0162-footer-feedback/README.md).
 Implementation CI run [38764169878](https://github.com/flyingrobots/jedit/actions/runs/38764169878)
-passed all twelve jobs; the final published head is checked before marking ready.
+passed all twelve jobs on `82060e45`, before the `c9ef3063` and `8a10e9a6`
+refinements above. These are historical results, not validation of the current
+stacked head; final-head validation for PR #344 remains pending.
 
 
 ### Review hardening
 
 Review identified inward dependency direction, RTL alignment, editor viewport
-reconciliation after row-count changes, cooperative preferences serialization,
+reconciliation after row-count changes, preferences serialization (first a
+footer-writer lock file, later replaced by the re-read before rename because the
+leader-key writer takes no lock),
 dangling-symlink refusal and grapheme-safe filename clipping. These are required
 corrections within this cycle. New runtime tests first reproduced RTL, viewport,
-lock/symlink and grapheme failures. Application observations will remain free of
-terminal geometry/style contracts; UI composition owns their placement.
+lock/symlink and grapheme failures. Application observations carry no terminal
+geometry or style; UI composition owns their placement. Some app modules still
+import UI geometry and painting helpers; that reversed direction is tracked in
+[#398](https://github.com/flyingrobots/jedit/issues/398).
 
-- [ ] Slice 9: Address review boundaries and runtime edge cases; validate final head.
+- [x] Slice 9a: Address review boundaries and runtime edge cases.
+  After `origin/main` merged in, review on the stacked explorer branch
+  renamed the port's layout methods to `loadLayout`/`saveLayout`, removed the
+  footer-writer lock file, applied the preserved mode (including setuid and
+  sticky bits) after writing, kept CRLF line endings, shared the `~/.jimrc`
+  constants with the leader-key writer (which now also applies the mode after
+  writing), named the footer copy keys, and ended filter editing whenever focus
+  leaves Files (Graft toggles, Graft outline jumps, buffer switches and
+  completed opens). The footer's leader-capture hint can be clipped in narrow
+  layouts and the Settings drawer; fitting it is tracked in #401.
+- [ ] Slice 9b: Validate the final PR #344 head after stacked PR #349 lands.
+  Explorer review evidence belongs to PR #349 and does not close this gate.
+
+Historical artifact note: `f18cc09` removed `feedback-filter-60x16.png`, and
+`22df22c` removed its receipt entry. The retained final filter capture supersedes
+it. Earlier validation used `ENFORCE_FROZEN=false`; it does not establish frozen
+evidence enforcement.

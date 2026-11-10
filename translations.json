@@ -57,7 +57,7 @@
             "ctrl_b_files": "ctrl+b files",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h history",
-            "enter_open": "enter open",
+            "enter_open": "enter open / toggle",
             "backspace_up": "backspace up",
             "ctrl_b_close": "ctrl+b close",
             "enter_jump": "enter jump",
@@ -216,14 +216,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Search",
           "placeholder": "Filter files…",
           "empty": "No matches",
           "preview_label": "Preview",
           "preview_loading": "Loading preview…",
           "preview_binary": "Binary file — preview unavailable",
           "preview_unavailable": "Preview unavailable",
-          "preview_truncated": "Preview truncated"
+          "preview_truncated": "Preview truncated",
+          "preview_unsaved_buffer": "Unsaved changes; Enter opens them"
         }
       }
     },
@@ -284,7 +284,7 @@
             "ctrl_b_files": "ctrl+b fichiers",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historique",
-            "enter_open": "enter ouvrir",
+            "enter_open": "entrée ouvrir / déplier",
             "backspace_up": "backspace haut",
             "ctrl_b_close": "ctrl+b fermer",
             "enter_jump": "enter aller",
@@ -443,14 +443,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Recherche",
           "placeholder": "Filtrer les fichiers…",
           "empty": "Aucun résultat",
           "preview_label": "Aperçu",
           "preview_loading": "Chargement de l’aperçu…",
           "preview_binary": "Fichier binaire — aperçu indisponible",
           "preview_unavailable": "Aperçu indisponible",
-          "preview_truncated": "Aperçu tronqué"
+          "preview_truncated": "Aperçu tronqué",
+          "preview_unsaved_buffer": "Non enregistré ; Entrée ouvre"
         }
       }
     },
@@ -511,7 +511,7 @@
             "ctrl_b_files": "ctrl+b file",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h cronologia",
-            "enter_open": "enter apri",
+            "enter_open": "invio apri / espandi",
             "backspace_up": "backspace su",
             "ctrl_b_close": "ctrl+b chiudi",
             "enter_jump": "enter vai",
@@ -670,14 +670,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Cerca",
           "placeholder": "Filtra file…",
           "empty": "Nessun risultato",
           "preview_label": "Anteprima",
           "preview_loading": "Caricamento anteprima…",
           "preview_binary": "File binario — anteprima non disponibile",
           "preview_unavailable": "Anteprima non disponibile",
-          "preview_truncated": "Anteprima troncata"
+          "preview_truncated": "Anteprima troncata",
+          "preview_unsaved_buffer": "Modifiche non salvate; Invio apre"
         }
       }
     },
@@ -738,7 +738,7 @@
             "ctrl_b_files": "ctrl+b dateien",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h verlauf",
-            "enter_open": "enter öffnen",
+            "enter_open": "eingabe öffnen / aufklappen",
             "backspace_up": "backspace hoch",
             "ctrl_b_close": "ctrl+b schließen",
             "enter_jump": "enter springen",
@@ -897,14 +897,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Suche",
           "placeholder": "Dateien filtern…",
           "empty": "Keine Treffer",
           "preview_label": "Vorschau",
           "preview_loading": "Vorschau wird geladen…",
           "preview_binary": "Binärdatei — keine Vorschau",
           "preview_unavailable": "Vorschau nicht verfügbar",
-          "preview_truncated": "Vorschau gekürzt"
+          "preview_truncated": "Vorschau gekürzt",
+          "preview_unsaved_buffer": "Ungespeichert; Enter öffnet"
         }
       }
     },
@@ -965,7 +965,7 @@
             "ctrl_b_files": "ctrl+b archivos",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historial",
-            "enter_open": "enter abrir",
+            "enter_open": "intro abrir / desplegar",
             "backspace_up": "backspace arriba",
             "ctrl_b_close": "ctrl+b cerrar",
             "enter_jump": "enter saltar",
@@ -1124,14 +1124,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Buscar",
           "placeholder": "Filtrar archivos…",
           "empty": "Sin resultados",
           "preview_label": "Vista previa",
           "preview_loading": "Cargando vista previa…",
           "preview_binary": "Archivo binario — sin vista previa",
           "preview_unavailable": "Vista previa no disponible",
-          "preview_truncated": "Vista previa truncada"
+          "preview_truncated": "Vista previa truncada",
+          "preview_unsaved_buffer": "Cambios sin guardar; Intro abre"
         }
       }
     },
@@ -1192,7 +1192,7 @@
             "ctrl_b_files": "ctrl+b 파일",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 기록",
-            "enter_open": "enter 열기",
+            "enter_open": "enter 열기 / 펼치기",
             "backspace_up": "backspace 위로",
             "ctrl_b_close": "ctrl+b 닫기",
             "enter_jump": "enter 이동",
@@ -1351,14 +1351,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "검색",
           "placeholder": "파일 필터…",
           "empty": "일치 항목 없음",
           "preview_label": "미리 보기",
           "preview_loading": "미리 보기 불러오는 중…",
           "preview_binary": "바이너리 파일 — 미리 보기 불가",
           "preview_unavailable": "미리 보기 불가",
-          "preview_truncated": "미리 보기 생략됨"
+          "preview_truncated": "미리 보기 생략됨",
+          "preview_unsaved_buffer": "저장 안 된 변경, Enter로 열기"
         }
       }
     },
@@ -1419,7 +1419,7 @@
             "ctrl_b_files": "ctrl+b ファイル",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 履歴",
-            "enter_open": "enter 開く",
+            "enter_open": "enter 開く / 展開",
             "backspace_up": "backspace 上へ",
             "ctrl_b_close": "ctrl+b 閉じる",
             "enter_jump": "enter 移動",
@@ -1578,14 +1578,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "検索",
           "placeholder": "ファイルを絞り込む…",
           "empty": "一致なし",
           "preview_label": "プレビュー",
           "preview_loading": "プレビューを読み込み中…",
           "preview_binary": "バイナリファイル — プレビュー不可",
           "preview_unavailable": "プレビュー不可",
-          "preview_truncated": "プレビューを省略"
+          "preview_truncated": "プレビューを省略",
+          "preview_unsaved_buffer": "未保存の変更。Enterで開く"
         }
       }
     },
@@ -1646,7 +1646,7 @@
             "ctrl_b_files": "ctrl+b 文件",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h 历史",
-            "enter_open": "enter 打开",
+            "enter_open": "enter 打开 / 展开",
             "backspace_up": "backspace 上一级",
             "ctrl_b_close": "ctrl+b 关闭",
             "enter_jump": "enter 跳转",
@@ -1805,14 +1805,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "搜索",
           "placeholder": "筛选文件…",
           "empty": "无匹配项",
           "preview_label": "预览",
           "preview_loading": "正在加载预览…",
           "preview_binary": "二进制文件 — 无法预览",
           "preview_unavailable": "无法预览",
-          "preview_truncated": "预览已截断"
+          "preview_truncated": "预览已截断",
+          "preview_unsaved_buffer": "有未保存更改，按 Enter 打开"
         }
       }
     },
@@ -1873,7 +1873,7 @@
             "ctrl_b_files": "ctrl+b arquivos",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h histórico",
-            "enter_open": "enter abrir",
+            "enter_open": "enter abrir / expandir",
             "backspace_up": "backspace subir",
             "ctrl_b_close": "ctrl+b fechar",
             "enter_jump": "enter ir",
@@ -2032,14 +2032,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Buscar",
           "placeholder": "Filtrar arquivos…",
           "empty": "Nenhum resultado",
           "preview_label": "Prévia",
           "preview_loading": "Carregando prévia…",
           "preview_binary": "Arquivo binário — sem prévia",
           "preview_unavailable": "Prévia indisponível",
-          "preview_truncated": "Prévia truncada"
+          "preview_truncated": "Prévia truncada",
+          "preview_unsaved_buffer": "Alterações não salvas; Enter abre"
         }
       }
     },
@@ -2100,7 +2100,7 @@
             "ctrl_b_files": "ctrl+b файлы",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h история",
-            "enter_open": "enter открыть",
+            "enter_open": "enter открыть / развернуть",
             "backspace_up": "backspace вверх",
             "ctrl_b_close": "ctrl+b закрыть",
             "enter_jump": "enter перейти",
@@ -2259,14 +2259,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Поиск",
           "placeholder": "Фильтр файлов…",
           "empty": "Нет совпадений",
           "preview_label": "Просмотр",
           "preview_loading": "Загрузка просмотра…",
           "preview_binary": "Двоичный файл — просмотр недоступен",
           "preview_unavailable": "Просмотр недоступен",
-          "preview_truncated": "Просмотр сокращён"
+          "preview_truncated": "Просмотр сокращён",
+          "preview_unsaved_buffer": "Не сохранено; Enter откроет"
         }
       }
     },
@@ -2327,7 +2327,7 @@
             "ctrl_b_files": "ctrl+b ملفات",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h سجل",
-            "enter_open": "enter فتح",
+            "enter_open": "enter فتح / توسيع",
             "backspace_up": "backspace أعلى",
             "ctrl_b_close": "ctrl+b إغلاق",
             "enter_jump": "enter انتقال",
@@ -2486,14 +2486,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "بحث",
           "placeholder": "تصفية الملفات…",
           "empty": "لا نتائج",
           "preview_label": "معاينة",
           "preview_loading": "جارٍ تحميل المعاينة…",
           "preview_binary": "ملف ثنائي — المعاينة غير متاحة",
           "preview_unavailable": "المعاينة غير متاحة",
-          "preview_truncated": "المعاينة مختصرة"
+          "preview_truncated": "المعاينة مختصرة",
+          "preview_unsaved_buffer": "تغييرات غير محفوظة؛ Enter يفتحها"
         }
       }
     },
@@ -2554,7 +2554,7 @@
             "ctrl_b_files": "ctrl+b berkas",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h riwayat",
-            "enter_open": "enter buka",
+            "enter_open": "enter buka / luaskan",
             "backspace_up": "backspace naik",
             "ctrl_b_close": "ctrl+b tutup",
             "enter_jump": "enter lompat",
@@ -2713,14 +2713,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Cari",
           "placeholder": "Filter berkas…",
           "empty": "Tidak ada hasil",
           "preview_label": "Pratinjau",
           "preview_loading": "Memuat pratinjau…",
           "preview_binary": "Berkas biner — pratinjau tidak tersedia",
           "preview_unavailable": "Pratinjau tidak tersedia",
-          "preview_truncated": "Pratinjau dipotong"
+          "preview_truncated": "Pratinjau dipotong",
+          "preview_unsaved_buffer": "Belum disimpan; Enter membuka"
         }
       }
     },
@@ -2781,7 +2781,7 @@
             "ctrl_b_files": "ctrl+b dosyalar",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h geçmiş",
-            "enter_open": "enter aç",
+            "enter_open": "enter aç / genişlet",
             "backspace_up": "backspace yukarı",
             "ctrl_b_close": "ctrl+b kapat",
             "enter_jump": "enter git",
@@ -2940,14 +2940,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Ara",
           "placeholder": "Dosyaları filtrele…",
           "empty": "Eşleşme yok",
           "preview_label": "Önizleme",
           "preview_loading": "Önizleme yükleniyor…",
           "preview_binary": "İkili dosya — önizleme yok",
           "preview_unavailable": "Önizleme kullanılamıyor",
-          "preview_truncated": "Önizleme kısaltıldı"
+          "preview_truncated": "Önizleme kısaltıldı",
+          "preview_unsaved_buffer": "Kaydedilmemiş; Enter açar"
         }
       }
     },
@@ -3008,7 +3008,7 @@
             "ctrl_b_files": "ctrl+b फाइलें",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h इतिहास",
-            "enter_open": "enter खोलें",
+            "enter_open": "enter खोलें / फैलाएँ",
             "backspace_up": "backspace ऊपर",
             "ctrl_b_close": "ctrl+b बंद",
             "enter_jump": "enter जाएं",
@@ -3167,14 +3167,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "खोज",
           "placeholder": "फ़ाइलें छाँटें…",
           "empty": "कोई मेल नहीं",
           "preview_label": "पूर्वावलोकन",
           "preview_loading": "पूर्वावलोकन लोड हो रहा है…",
           "preview_binary": "बाइनरी फ़ाइल — पूर्वावलोकन उपलब्ध नहीं",
           "preview_unavailable": "पूर्वावलोकन उपलब्ध नहीं",
-          "preview_truncated": "पूर्वावलोकन संक्षिप्त है"
+          "preview_truncated": "पूर्वावलोकन संक्षिप्त है",
+          "preview_unsaved_buffer": "असहेजे बदलाव; Enter से खोलें"
         }
       }
     },
@@ -3235,7 +3235,7 @@
             "ctrl_b_files": "ctrl+b bestanden",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h geschiedenis",
-            "enter_open": "enter openen",
+            "enter_open": "enter openen / uitklappen",
             "backspace_up": "backspace omhoog",
             "ctrl_b_close": "ctrl+b sluiten",
             "enter_jump": "enter springen",
@@ -3394,14 +3394,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Zoeken",
           "placeholder": "Bestanden filteren…",
           "empty": "Geen resultaten",
           "preview_label": "Voorbeeld",
           "preview_loading": "Voorbeeld laden…",
           "preview_binary": "Binair bestand — geen voorbeeld",
           "preview_unavailable": "Voorbeeld niet beschikbaar",
-          "preview_truncated": "Voorbeeld ingekort"
+          "preview_truncated": "Voorbeeld ingekort",
+          "preview_unsaved_buffer": "Niet opgeslagen; Enter opent"
         }
       }
     },
@@ -3462,7 +3462,7 @@
             "ctrl_b_files": "ctrl+b pliki",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h historia",
-            "enter_open": "enter otwórz",
+            "enter_open": "enter otwórz / rozwiń",
             "backspace_up": "backspace w górę",
             "ctrl_b_close": "ctrl+b zamknij",
             "enter_jump": "enter skocz",
@@ -3621,14 +3621,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Szukaj",
           "placeholder": "Filtruj pliki…",
           "empty": "Brak wyników",
           "preview_label": "Podgląd",
           "preview_loading": "Wczytywanie podglądu…",
           "preview_binary": "Plik binarny — brak podglądu",
           "preview_unavailable": "Podgląd niedostępny",
-          "preview_truncated": "Podgląd skrócony"
+          "preview_truncated": "Podgląd skrócony",
+          "preview_unsaved_buffer": "Niezapisane zmiany; Enter otwiera"
         }
       }
     },
@@ -3689,7 +3689,7 @@
             "ctrl_b_files": "ctrl+b tệp",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h lịch sử",
-            "enter_open": "enter mở",
+            "enter_open": "enter mở / mở rộng",
             "backspace_up": "backspace lên",
             "ctrl_b_close": "ctrl+b đóng",
             "enter_jump": "enter nhảy",
@@ -3848,14 +3848,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "Tìm",
           "placeholder": "Lọc tệp…",
           "empty": "Không khớp",
           "preview_label": "Xem trước",
           "preview_loading": "Đang tải bản xem trước…",
           "preview_binary": "Tệp nhị phân — không thể xem trước",
           "preview_unavailable": "Không thể xem trước",
-          "preview_truncated": "Bản xem trước bị cắt"
+          "preview_truncated": "Bản xem trước bị cắt",
+          "preview_unsaved_buffer": "Chưa lưu; Enter để mở"
         }
       }
     },
@@ -3916,7 +3916,7 @@
             "ctrl_b_files": "ctrl+b ไฟล์",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h ประวัติ",
-            "enter_open": "enter เปิด",
+            "enter_open": "enter เปิด / ขยาย",
             "backspace_up": "backspace ขึ้น",
             "ctrl_b_close": "ctrl+b ปิด",
             "enter_jump": "enter ไป",
@@ -4075,14 +4075,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "ค้นหา",
           "placeholder": "กรองไฟล์…",
           "empty": "ไม่พบผลลัพธ์",
           "preview_label": "ตัวอย่าง",
           "preview_loading": "กำลังโหลดตัวอย่าง…",
           "preview_binary": "ไฟล์ไบนารี — ไม่สามารถแสดงตัวอย่าง",
           "preview_unavailable": "ไม่สามารถแสดงตัวอย่าง",
-          "preview_truncated": "ตัวอย่างถูกตัด"
+          "preview_truncated": "ตัวอย่างถูกตัด",
+          "preview_unsaved_buffer": "ยังไม่บันทึก กด Enter เพื่อเปิด"
         }
       }
     },
@@ -4143,7 +4143,7 @@
             "ctrl_b_files": "ctrl+b فایل‌ها",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h تاریخچه",
-            "enter_open": "enter باز کردن",
+            "enter_open": "enter باز کردن / گسترش",
             "backspace_up": "backspace بالا",
             "ctrl_b_close": "ctrl+b بستن",
             "enter_jump": "enter پرش",
@@ -4302,14 +4302,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "جستجو",
           "placeholder": "فیلتر پرونده‌ها…",
           "empty": "بدون نتیجه",
           "preview_label": "پیش‌نمایش",
           "preview_loading": "در حال بارگذاری پیش‌نمایش…",
           "preview_binary": "فایل دودویی — پیش‌نمایش در دسترس نیست",
           "preview_unavailable": "پیش‌نمایش در دسترس نیست",
-          "preview_truncated": "پیش‌نمایش کوتاه شده"
+          "preview_truncated": "پیش‌نمایش کوتاه شده",
+          "preview_unsaved_buffer": "ذخیره‌نشده؛ Enter باز می‌کند"
         }
       }
     },
@@ -4370,7 +4370,7 @@
             "ctrl_b_files": "ctrl+b קבצים",
             "ctrl_g_graft": "ctrl+g graft",
             "ctrl_h_history": "ctrl+h היסטוריה",
-            "enter_open": "enter פתח",
+            "enter_open": "enter פתיחה / הרחבה",
             "backspace_up": "backspace למעלה",
             "ctrl_b_close": "ctrl+b סגור",
             "enter_jump": "enter קפוץ",
@@ -4529,14 +4529,14 @@
           "range_obstructed_title": "Why range obstructed"
         },
         "fileExplorer": {
-          "search_label": "חיפוש",
           "placeholder": "סינון קבצים…",
           "empty": "אין התאמות",
           "preview_label": "תצוגה מקדימה",
           "preview_loading": "טוען תצוגה מקדימה…",
           "preview_binary": "קובץ בינארי — אין תצוגה מקדימה",
           "preview_unavailable": "תצוגה מקדימה אינה זמינה",
-          "preview_truncated": "תצוגה מקדימה מקוצרת"
+          "preview_truncated": "תצוגה מקדימה מקוצרת",
+          "preview_unsaved_buffer": "שינויים לא שמורים; Enter פותח"
         }
       }
     }

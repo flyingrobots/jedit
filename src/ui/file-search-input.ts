@@ -7,6 +7,7 @@ import { fitLine, visibleLineLength } from './fit-line.js';
 const INPUT_HEIGHT = 1;
 const MIN_INPUT_WIDTH = 1;
 const EMPTY_INPUT = '';
+export const FILE_FILTER_PROMPT_LABEL = '/';
 const LABEL_SUFFIX = ': ';
 const CHARACTER_STEP = 1;
 
@@ -43,7 +44,8 @@ export function renderFileSearchInput(options: FileSearchInputOptions): Surface 
 }
 
 function inputWindow(options: FileSearchInputOptions): FileSearchInputWindow {
-  const prefix = clipToWidth(options.label === '/' ? '/' : `${options.label}${LABEL_SUFFIX}`, Math.max(0, options.width - MIN_INPUT_WIDTH));
+  const label = options.label === FILE_FILTER_PROMPT_LABEL ? FILE_FILTER_PROMPT_LABEL : `${options.label}${LABEL_SUFFIX}`;
+  const prefix = clipToWidth(label, Math.max(0, options.width - MIN_INPUT_WIDTH));
   const prefixWidth = visibleLineLength(prefix);
   const capacity = Math.max(MIN_INPUT_WIDTH, options.width - prefixWidth);
   const characters = Array.from(options.state.input);
