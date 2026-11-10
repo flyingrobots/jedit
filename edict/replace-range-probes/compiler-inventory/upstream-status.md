@@ -51,8 +51,10 @@ this inventory does not convert them into new full-operation evidence.
 [Echo #947](https://github.com/flyingrobots/echo/issues/947) is the open owner
 for generic structured loops/branches, independent verification, atomic
 buffering, reproducible components and public source witnesses. Its dependency
-on #300 is already represented in frontmatter. The current #388 checkpoint has
-not yet measured that complete structured-effect route.
+on #300 is already represented in frontmatter. The #388 inventory has not
+measured any structured-effect stage. Six authored sources and their lawpack
+additions wait in [pending-structured-effects](pending-structured-effects/README.md),
+outside the hashed probe directory, until a registered group drives them.
 
 The [whole-draft measurement](draft-closures.md) now retains every supplied
 source module unchanged. Its four roots still refuse in parsing. A separate
@@ -60,6 +62,75 @@ small probe reaches Target's `UndigestedCoreImport` refusal for `jedit.text@2`;
 the selected application supplies only the published version-1 lawpack.
 The requested version-2 lawpack closure remains unresolved under Jedit #296.
 
-Structured effects, remaining composite shapes, full application gates and
-independent review still belong to #388's unfinished acceptance work. The
-retained ReplaceRange acceptance count is 0/40.
+## Measured boundary of each shape
+
+This table joins the five measured groups. Every row is bound to Amblicit
+`66bf6bac369f67e32ddaee099c3198bd30f885a1` and Echo
+`089c849f766d5331835e7d10148a378cdb1237d5`; both were still their remote main
+heads on 2026-11-10, and every issue below was still open. Each group's page
+names its report hash, compiler binary and provider manifest.
+
+| Shape | Furthest accepted stage | First stable refusal | Owner |
+| --- | --- | --- | --- |
+| Flat-text baseline | Verifier | None; this consumer does not execute it | Positive control |
+| Scalar, bounded-list and record-list folds | Generic pure runtime | None | Progress under Amblicit #268 |
+| Guarded list lookup, concatenation, record-state fold, record-field lookup, guarded transfer | Generic pure runtime | None | Progress under Amblicit #262/#268 |
+| Variant-state fold with construction and matching | Generic pure runtime | None | Progress under Amblicit #261 |
+| Fold step imported through two digest-bound modules | Generic pure runtime | None | Progress under Amblicit #268 |
+| Addition, subtraction and slice under an intent `where` | Generic pure runtime | None | Progress under Amblicit #263/#264 |
+| Invoked `at`, `count` and `isUtf8` helpers | Generic pure runtime | None | Progress under Amblicit #266 |
+| Addition guarded by a branch: inline intent, scalar helper, indexed record fold | Target | Provider lowerer: `ProviderLowererRefused` | Echo #684 and Amblicit #264; narrower issue proposed below |
+| Subtraction or slice in a guarded helper | Target | Provider lowerer: `ProviderLowererRefused` | Echo #684 and Amblicit #264; narrower issue proposed below |
+| List-rebuilding fold, with conjunctive or nested guards | Target | Provider lowerer: `ProviderLowererRefused` | Echo #684; rebuild composition under Amblicit #262 |
+| `min` and `max` | None | Source type check: `UnresolvedFunction` | Amblicit #263 |
+| Function `where` declaration | None | Parse: `ExpectedToken` | Amblicit #264 |
+| Function `fails` declaration | None | Parse: `ExpectedToken` | Amblicit #265 |
+| Draft Text | None | Parse: `contentId<T>`, line 90 | Jedit #296; identity inputs under Amblicit #260 |
+| Draft Reference | None | Parse: nested read-expression `else`, line 55 | Jedit #296; reads under Echo #926 |
+| Draft Rope | None | Parse: recursive variant `depth`, line 24 | Jedit #296; Amblicit #262 |
+| Draft ReplaceRange | None | Parse: enum declaration, line 49 | Jedit #296; Amblicit #261 |
+| Small intent importing `jedit.text@2` | Core | Target: `UndigestedCoreImport` | Jedit #296; no version-2 lawpack input exists |
+| Structured effects: linear, repeated, branch, loop, nested | Unmeasured | Unmeasured | Echo #947 and Amblicit #267, once measured |
+
+Dynamic fold bounds, unproved addition and subtraction, and changed or missing
+module leaves refuse in source as intended; they are controls, not gaps.
+"Target" in the second column is inferred from the inspected compiler's
+command order, not from separately emitted Core or Target artifacts. The
+provider components are the selected checked bytes; regenerating them is
+unmeasured. No row measures a full operation, so the rope acceptance count
+stays 0/40. A first refusal says nothing about the stages behind it.
+
+## Prerequisites without an issue or a recorded edge
+
+These are findings for the roadmap owner. This inventory does not publish
+issues or change dependency edges.
+
+- **Branch facts in the provider's range proofs need a new Echo issue.** The
+  lowerer records a branch predicate on its path but proves addition,
+  subtraction and slice from other facts
+  ([range facts](README.md#range-facts-and-corroborated-stages),
+  [branch-fact boundary](primitives.md#branch-fact-boundary)). The smallest
+  reproducer is `iterative/intent-guarded-add.edict` in range report
+  `95af84cce76d08c96664b5491ad3b2839f19c87f5baed9fc63cb179f5287def5`;
+  `subtraction-helper.edict` and `byte-slice-helper.edict` reproduce it in
+  primitive report
+  `71ae487876901523e7538ad32ebb191ba033622ec75f0b9ab2b97200ced808ee`.
+  Every measured fold that advances an index under a branch refuses there, so
+  an iterative rope written in that shape cannot publish until the gap closes.
+  Echo #684 and Echo #960 are related but do not name this gap, and Jedit #296
+  has no edge to either.
+- **The draft's first parse refusals have owners that do not block #296.**
+  Jedit #296 is blocked by Amblicit #260, Echo #926, #946 and #947, and Jedit
+  #389 and #403. Amblicit #261, #262, #263, #264 and #265 own syntax the
+  current drafts use, yet none is a recorded blocker. Either the drafts are
+  rewritten onto the measured iterative shapes within #296, or those edges are
+  missing. Which holds is unresolved.
+- **No `jedit.text@2` authoring lawpack exists to publish.** The drafts import
+  it; this checkout has nothing to supply. Jedit #296 and #389 are the nearest
+  owners, and neither names the lawpack input as a deliverable.
+
+## What #388 still lacks
+
+Structured-effect stages, component regeneration, the full application gate on
+the final head and independent review remain. The retained ReplaceRange
+acceptance count is 0/40.

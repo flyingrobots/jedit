@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-11-08"
-updated: "2026-11-09"
+updated: "2026-11-10"
 ---
 
 # DL-0162 - Iterative Rope Capability Inventory
@@ -329,3 +329,19 @@ A separate small probe reaches Target's `UndigestedCoreImport` for the draft's
 `jedit.text@2` import. The selected publication remains version 1, so this
 measurement does not establish the requested version-2 lawpack closure.
 See the [draft closure boundary](../../edict/replace-range-probes/compiler-inventory/draft-closures.md).
+
+The 2026-11-10 checkpoint adds no measurement. Six structured-effect sources
+and their lawpack additions had been left untracked inside the hashed probe
+directory, where they changed every group's `probeSources` identity without a
+registered case. They now wait in a
+[pending location](../../edict/replace-range-probes/compiler-inventory/pending-structured-effects/README.md)
+with the steps a measurement needs; `iterative/` again matches the 33 sources
+bound by the last complete report. The guarded worker refused admission before
+any command ran, so no compiler, provider or runtime stage was attempted and
+no host fallback was used. Amblicit and Echo main still equal the measured
+tuple, and the owner issues are unchanged. The
+[owner reconciliation](../../edict/replace-range-probes/compiler-inventory/upstream-status.md#measured-boundary-of-each-shape)
+now joins the five measured groups into one boundary table and lists three
+prerequisites that have no issue or recorded edge. No slice is complete:
+structured-effect stages, component regeneration, the full application gate
+and independent review remain. The oracle and production pins are unchanged.

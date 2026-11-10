@@ -16,11 +16,14 @@ includes changed-leaf and missing-leaf authentication controls. See
 `--group drafts` retains the [complete supplied draft source closures](draft-closures.md)
 and separately exposes their undigested version-2 lawpack import.
 [Upstream reconciliation](upstream-status.md) distinguishes landed prerequisites
-from broader open requirements.
+from broader open requirements and joins the groups into one
+[boundary table](upstream-status.md#measured-boundary-of-each-shape).
 This remains a bounded subset of
 [DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
-the requested version-2 lawpack closure, structured effects, and remaining composite shapes
-remain part of that cycle.
+the requested version-2 lawpack closure and structured effects remain part of
+that cycle. The structured-effect sources are authored but unmeasured; they
+[wait outside `iterative/`](pending-structured-effects/README.md) so that they
+do not change any group's `probeSources` identity.
 
 Run inside the admitted guarded Docker worker, with copied sources, the pinned
 Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
