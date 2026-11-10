@@ -258,6 +258,52 @@ test('effect evidence must bind its standalone effect lawpack source', effectsOn
     refused('missing-effect-lawpack-source', value, 'effect lawpack source selection mismatch');
 });
 
+function changedSelectedInput(name: string, relative: string, message: string): void {
+    const file = path.join(copy, relative);
+    const saved = readFileSync(file);
+    try {
+        writeDetached(file, Buffer.concat([saved, Buffer.from('\n')]));
+        refused(name, evidence(), message);
+    } finally {
+        writeDetached(file, saved);
+    }
+}
+
+test('changed effect driver bytes refuse under the reported identity', effectsOnly, () => {
+    changedSelectedInput('changed-effect-driver', 'effect-driver.mts', 'effect driver selection mismatch');
+});
+
+test('a changed effect lawpack build document refuses under the reported identity', effectsOnly, () => {
+    changedSelectedInput('changed-effect-lawpack-source', 'basis/effects.lawpack.json',
+        'effect lawpack source selection mismatch');
+});
+
+function lawpackSelection(name: string, caseName: string, select: (lawpack: Record<string, string>) => void): void {
+    const relative = 'edict.application.json';
+    const config = JSON.parse(readFileSync(path.join(copy, caseName, relative), 'utf8'));
+    select(config.lawpacks[0]);
+    changedFile(name, relative, Buffer.from(JSON.stringify(config) + '\n'), 'application lawpack selection mismatch', caseName);
+}
+
+test('an effect lawpack path cannot traverse into another lawpack', effectsOnly, () => {
+    lawpackSelection('effect-lawpack-traversal', 'effect-linear', lawpack => {
+        lawpack['manifest'] = 'vendor/jedit-inventory-effects/../jedit-text/manifest.cbor';
+    });
+});
+
+test('an effect lawpack selection cannot carry extra fields', effectsOnly, () => {
+    lawpackSelection('effect-lawpack-extra-field', 'effect-linear', lawpack => {
+        lawpack['verifierRules'] = 'vendor/jedit-inventory-effects/rules.cbor';
+    });
+});
+
+test('a control case cannot select the effect lawpack', effectsOnly, () => {
+    const effect = JSON.parse(readFileSync(path.join(copy, 'effect-linear', 'edict.application.json'), 'utf8'));
+    lawpackSelection('control-selects-effect-lawpack', 'scalar-fold', lawpack => {
+        Object.assign(lawpack, effect.lawpacks[0]);
+    });
+});
+
 test('the accepted effect package must bind its own verifier report', effectsOnly, () => {
     const relative = '.build/application/verification-report.cbor';
     const other = readFileSync(path.join(copy, 'scalar-fold', relative));

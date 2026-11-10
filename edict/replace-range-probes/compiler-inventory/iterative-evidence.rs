@@ -17,8 +17,25 @@ const MAX_DEPTH: usize = 8;
 const MAX_TREE_BYTES: u64 = 20_971_520;
 const EFFECT_GROUP: &str = "effects";
 const EFFECT_CASE_PREFIX: &str = "effect-";
-const EFFECT_VENDOR: &str = "vendor/jedit-inventory-effects/";
-const BASIS_VENDOR: &str = "vendor/jedit-text/";
+type LawpackFiles = [(&'static str, &'static str); 4];
+const EFFECT_LAWPACK: LawpackFiles = [
+    ("manifest", "vendor/jedit-inventory-effects/manifest.cbor"),
+    ("exports", "vendor/jedit-inventory-effects/exports.cbor"),
+    ("adapter", "vendor/jedit-inventory-effects/adapter.cbor"),
+    (
+        "targetConfiguration",
+        "vendor/jedit-inventory-effects/create-configuration.cbor",
+    ),
+];
+const BASIS_LAWPACK: LawpackFiles = [
+    ("manifest", "vendor/jedit-text/manifest.cbor"),
+    ("exports", "vendor/jedit-text/exports.cbor"),
+    ("adapter", "vendor/jedit-text/adapter.cbor"),
+    (
+        "targetConfiguration",
+        "vendor/jedit-text/echo-operation-configuration.cbor",
+    ),
+];
 const GROUPS: [&str; 7] = [
     "controls",
     "lists",
@@ -265,25 +282,24 @@ fn source_selection(root: &Path, name: &str, files: &Index, selected: &Inputs) -
     Ok(())
 }
 
-/// Effect cases select only the standalone effect lawpack; every other case only the basis.
+/// Effect cases select exactly the standalone effect lawpack files; every other case exactly the basis.
 fn lawpack_selection(root: &Path, name: &str, group: &Value) -> Result<()> {
     let config: Value =
         serde_json::from_slice(&read(&root.join(name).join("edict.application.json"))?)?;
     let lawpacks = config["lawpacks"]
         .as_array()
         .context("application lawpack selection")?;
-    let vendor = if group == EFFECT_GROUP && name.starts_with(EFFECT_CASE_PREFIX) {
-        EFFECT_VENDOR
+    let files = if group == EFFECT_GROUP && name.starts_with(EFFECT_CASE_PREFIX) {
+        EFFECT_LAWPACK
     } else {
-        BASIS_VENDOR
+        BASIS_LAWPACK
     };
+    let expected: serde_json::Map<String, Value> = files
+        .iter()
+        .map(|(field, path)| ((*field).to_owned(), Value::from(*path)))
+        .collect();
     ensure!(
-        lawpacks.len() == 1
-            && ["manifest", "exports", "adapter", "targetConfiguration"]
-                .iter()
-                .all(|field| lawpacks[0][*field]
-                    .as_str()
-                    .is_some_and(|path| path.starts_with(vendor))),
+        lawpacks.len() == 1 && lawpacks[0].as_object() == Some(&expected),
         "application lawpack selection mismatch"
     );
     Ok(())

@@ -95,7 +95,7 @@ names its report hash, compiler binary and provider manifest.
 | Two `create` effects in one intent | Target | Provider lowerer: `UnsupportedSemantics`, one Core body node | Echo #947 |
 | `create` inside an `if` arm | Core | Target: `UnsupportedCoreNode` `branch` | Echo #947 |
 | `create` inside a bounded `for`, alone or under a branch | Core | Target: `UnsupportedCoreNode` `for` | Amblicit #267 and Echo #947 |
-| A `create` profile added to the `jedit.text@1` lawpack | None | Lawpack publication or provider lowerer, depending on the resource coordinate | Jedit #296; provider path under Echo #947 and #684 |
+| A `create` profile added to `jedit.text@1`'s single adapter | Lawpack publication refused (shared coordinate, `8d234c4`); with its own coordinate the lawpack publishes and the baseline reaches Target (`1be66de`) | Lawpack builder `LawpackAuthoringDuplicateIdentity`, then provider lowerer `UnsupportedSemantics`, one operation profile per adapter | Jedit #296; provider path under Echo #947 and #684 |
 
 Dynamic fold and effect-loop bounds, unproved addition and subtraction, and
 changed or missing module leaves refuse in source as intended; they are
@@ -139,10 +139,10 @@ issues or change dependency edges.
   `missing-draft-lawpack.edict` in draft report
   `40d6808fff828559f5100bbde8d76cd9f64ee007ca1b535117e71da6e826a76a`. #296
   does not yet name the lawpack input as a deliverable.
-- **The rope's effects need a single-profile lawpack.** Owner: Jedit #296 for
-  authoring, Echo #947 and #684 for the provider path. A `jedit.text@1`
-  adapter cannot add a second operation profile for Echo's compiler-produced
-  path, and the pure adapter admits no semantic effects
+- **Where the rope's effects are declared.** Owner: Jedit #296 for authoring,
+  Echo #947 and #684 for the provider path. `jedit.text@1`'s single adapter
+  cannot add a second operation profile for Echo's compiler-produced path, and
+  the pure adapter admits no semantic effects; a second adapter is unmeasured
   ([structured effects](structured-effects.md#how-the-effect-lawpack-is-supplied)).
   Reproducers are commits `8d234c4` and `1be66de` of this branch.
 

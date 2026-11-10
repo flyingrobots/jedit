@@ -17,8 +17,13 @@ profile and one `anchored-node-attachment-create-if-absent/v1` target
 configuration. The runner publishes it beside the unchanged `jedit.text@1`
 basis, so the baseline and fold controls keep their existing lawpack and
 digest. Each effect case selects only the effect lawpack. The v3 report adds
-`effectDriverSha256` and `effectLawpackSourceSha256`; the consumer checks both
-and refuses an effect case that selects any other lawpack.
+`effectDriverSha256` and `effectLawpackSourceSha256`; the consumer checks both.
+Each case's application must select exactly the four expected lawpack files,
+the effect lawpack for effect cases and the basis for every other case. The
+consumer binds the effect build document and the published vendor bytes
+separately; like the basis lawpack, it does not prove that one was produced
+from the other. The publication streams are retained in the archive, not in
+the report.
 
 Two earlier attempts put the effect inside `jedit.text@1` instead. Both were
 measured with the selected compiler and provider and both refused before any
@@ -35,7 +40,8 @@ The second is Echo's compiler-adapter rule
 ([executable_operation.rs#510:089c849f766d5331835e7d10148a378cdb1237d5](https://github.com/flyingrobots/echo/blob/089c849f766d5331835e7d10148a378cdb1237d5/crates/echo-edict-provider-lowerer/src/executable_operation.rs#L510)).
 Together they mean one `jedit.text@1` adapter cannot carry the pure
 `replaceRange` profile and a separate create profile for Echo's
-compiler-produced path.
+compiler-produced path. Both attempts used the lawpack's single adapter; a
+second adapter inside `jedit.text@1` is unmeasured.
 
 ## Selected artifacts
 
@@ -79,7 +85,7 @@ still refuses in source checking.
 
 - **Runtime of the linear effect.** The consumer's runtime witness is pure
   evaluation, which cannot execute an effect. Echo's public
-  [`run-edict-operation` command#161:089c849f766d5331835e7d10148a378cdb1237d5](https://github.com/flyingrobots/echo/blob/089c849f766d5331835e7d10148a378cdb1237d5/xtask/src/main.rs#L161)
+  [`run-edict-operation` command#491:089c849f766d5331835e7d10148a378cdb1237d5](https://github.com/flyingrobots/echo/blob/089c849f766d5331835e7d10148a378cdb1237d5/xtask/src/main.rs#L491)
   is the candidate host witness for this intrinsic package. It was not run.
   Because the package is the fixed create-if-absent intrinsic, running it would
   not test a structured shape.
@@ -95,10 +101,13 @@ still refuses in source checking.
 ## Validation and retained evidence
 
 The preceding consumer fails all seven effect assertions and all four effect
-admission assertions; it stops at `unsupported inventory group`. The completed
-consumer passes seven effect assertions and twenty applicable admission
-assertions in debug and optimized builds; six assertions for other groups are
-skipped. Both builds execute the four control inputs with exact and
+admission assertions; it stops at `unsupported inventory group`. Review then
+added five admission assertions. Against the consumer at `377e3c5`, a
+path that traverses into the basis lawpack and an extra lawpack field were both
+admitted; the other three, which change bound bytes or make a control select
+the effect lawpack, already refused. The completed consumer passes seven effect
+assertions and twenty-five applicable admission assertions in debug and
+optimized builds; six assertions for other groups are skipped. Both builds execute the four control inputs with exact and
 insufficient budgets and identity/type refusals, and their runtime transcripts
 match byte for byte. Rust formatting and Clippy pass. With the same debug and
 optimized consumers, the retained draft report `40d6808f…` and primitive report
@@ -106,10 +115,10 @@ optimized consumers, the retained draft report `40d6808f…` and primitive repor
 
 The complete public snapshot is `jedit-388-effects-v3.tar.gz`, SHA-256
 `2790e927531fb51e692f0cd8cf268f02dc2e5c79a27746a0a20a060a1b89872d`.
-Debug evidence is `jedit-388-effects-debug-5.tar.gz`, SHA-256
-`85cb231a7638172b2c60dd6d7db1e8d6823f4b73cf4524d2445b99cfb35e96ec`;
-optimized evidence is `jedit-388-effects-release-5.tar.gz`, SHA-256
-`2afa73c5f1035839b26bc313b06aebdc9e64e418d643644a488019c6ba27f763`.
+Debug evidence is `jedit-388-effects-debug-6.tar.gz`, SHA-256
+`6406a72e66fa81f232e0d72bf1523da9c915809c0b85e69a10b9f3bfceb7f483`;
+optimized evidence is `jedit-388-effects-release-6.tar.gz`, SHA-256
+`8c4b3075f9b3048ceb85afc905d635d897b4dbe86f5fc952aebc30c42f28c687`.
 The RED runs are `jedit-388-effects-red.tar.gz`, SHA-256
 `b5b623842f8cf8610b6bbdd35de14c33254bef2fb7f072cebb1e2ab5b1a2a2fd`, and
 `jedit-388-effects-red-report.tar.gz`, SHA-256
@@ -133,10 +142,12 @@ effect budget; the loop and nested refusals reproduce its stated gap. No open
 issue names Target lowering of an effect inside a branch on its own; Echo #947
 is its nearest owner.
 
-The rope's own effects cannot be added to `jedit.text@1` as a second operation
-profile, as the two refused attempts show. They must belong to the single
-`replaceRange` profile on a provider path that admits compiler-produced
-programs with semantic effects. That authoring decision belongs to
+The two refused attempts show that the rope's effects cannot be added as a
+second operation profile on `jedit.text@1`'s single adapter. Whether they
+belong in the `replaceRange` profile itself, in a second adapter or in a
+separate lawpack is unresolved; each needs a provider path that admits
+compiler-produced programs with semantic effects. That authoring decision
+belongs to
 [Jedit #296](https://github.com/flyingrobots/jedit/issues/296); the provider
 path belongs to Echo #947 and
 [Echo #684](https://github.com/flyingrobots/echo/issues/684).
