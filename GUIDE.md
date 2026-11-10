@@ -51,8 +51,8 @@ builds do not require a sibling Echo checkout or generator invocation.
 Ctrl+B opens Files in navigation mode. Click a folder or press Enter to expand
 or collapse it inline. Right/l expands a folder or selects its first visible
 child; on a file it opens the file, like Enter. Left/h collapses a folder or
-selects its parent and does nothing at the top level. Backspace, Alt+Up, and
-Enter or Right/l on the `..` row move the explorer root upward; clicking `..`
+selects its parent and does nothing at the top level. Backspace and Alt+Up move
+the root upward from any row. Enter or Right/l do so only on `..`; clicking `..`
 only selects it. Refresh with r or Ctrl+R reloads the root and collapses
 expanded branches.
 
@@ -60,7 +60,9 @@ Click a file to select it and preview its contents in the main viewer. Enter
 opens that file for editing. Previews use Graft syntax colors, show unsaved
 open-buffer text, and remain read-only. When a modified buffer's text is not
 loaded from the top of the file, the preview shows an unsaved-changes notice
-instead of the saved file. Unsupported syntax or a parser failure leaves a
+instead of the saved file. A dirty editor projection over a clean authority,
+or a pending edit, also shows this notice even at the file head.
+Unsupported syntax or a parser failure leaves a
 readable plain-text preview.
 
 Press / to filter known visible paths; matching children retain their folder

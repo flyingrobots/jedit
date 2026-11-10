@@ -338,11 +338,12 @@ apply the preserved mode after writing so setuid and sticky bits survive. The fo
 endings and file permissions (including setuid and sticky bits), and refuses
 malformed or ambiguous documents. The leader-key adapter in
 `src/adapters/jim-settings.ts` rewrites the whole document for
-`keybindings.leader`. Neither interprets or drops the other's keys; a leader save
-reformats the file. Neither takes a lock: the footer adapter re-reads the
-document just before its atomic rename and refuses the save if it changed,
-while the leader-key adapter does neither, so concurrent saves from two
-processes can still lose an update. Consolidating both into one adapter is
+`keybindings.leader`. A leader save parses and reformats the whole document;
+duplicate keys collapse during parsing. Neither takes a lock: the footer adapter
+re-reads the document just before its atomic rename and refuses changes observed
+at that read. A write between that read and rename can still be lost. The
+leader-key adapter has no such re-read check, so concurrent saves from two
+processes can lose an update through either writer. Consolidating both is
 tracked in [#391](https://github.com/flyingrobots/jedit/issues/391).
 
 The model changes after a successful save. A failed save reports an error and

@@ -257,7 +257,7 @@ separate durability posture helpers retain their own coverage.
 
 CI on implementation `fcb12be2` passed all twelve jobs in
 [run 38696157186](https://github.com/flyingrobots/jedit/actions/runs/38696157186).
-Final-head validation is recorded on PR #344.
+Final-head validation for PR #344 remains pending until stacked PR #349 lands.
 
 
 ## Accepted footer feedback refinement
@@ -333,13 +333,14 @@ Nested and linked-worktree discovery, restart, write refusal and native path
 identity preservation are covered. Display formatting creates no Echo command.
 
 The final full local check passed 892 tests, 880 passed and 12 existing skips;
-quality reported no regressions. Forty-nine focused UI/preferences tests passed
-and all 137 specs had a CI shard at that point. Native checks used production Echo at 100×32
+quality reported no regressions. Forty-nine focused UI/preferences tests passed.
+Native checks used production Echo at 100×32
 and 60×16, in light/dark themes, with real keys, mouse events and restart.
 See the [current witness gallery and receipts](0162-footer-feedback/README.md).
 Implementation CI run [38764169878](https://github.com/flyingrobots/jedit/actions/runs/38764169878)
 passed all twelve jobs on `82060e45`, before the `c9ef3063` and `8a10e9a6`
-refinements above; final-head validation is recorded on PR #344.
+refinements above. These are historical results, not validation of the current
+stacked head; final-head validation for PR #344 remains pending.
 
 
 ### Review hardening
@@ -355,8 +356,8 @@ geometry or style; UI composition owns their placement. Some app modules still
 import UI geometry and painting helpers; that reversed direction is tracked in
 [#398](https://github.com/flyingrobots/jedit/issues/398).
 
-- [x] Slice 9: Address review boundaries and runtime edge cases; validate final
-  head. After `origin/main` merged in, review on the stacked explorer branch
+- [x] Slice 9a: Address review boundaries and runtime edge cases.
+  After `origin/main` merged in, review on the stacked explorer branch
   renamed the port's layout methods to `loadLayout`/`saveLayout`, removed the
   footer-writer lock file, applied the preserved mode (including setuid and
   sticky bits) after writing, kept CRLF line endings, shared the `~/.jimrc`
@@ -364,5 +365,11 @@ import UI geometry and painting helpers; that reversed direction is tracked in
   writing), named the footer copy keys, and ended filter editing whenever focus
   leaves Files (Graft toggles, Graft outline jumps, buffer switches and
   completed opens). The footer's leader-capture hint can be clipped in narrow
-  per-pane and compact footers; the Settings drawer always shows it in full.
-  Validation of the reviewed head is recorded on PR #344.
+  layouts and the Settings drawer; fitting it is tracked in #401.
+- [ ] Slice 9b: Validate the final PR #344 head after stacked PR #349 lands.
+  Explorer review evidence belongs to PR #349 and does not close this gate.
+
+Historical artifact note: `f18cc09` removed `feedback-filter-60x16.png`, and
+`22df22c` removed its receipt entry. The retained final filter capture supersedes
+it. Earlier validation used `ENFORCE_FROZEN=false`; it does not establish frozen
+evidence enforcement.

@@ -71,8 +71,8 @@ Right/l expands a closed folder or enters its first child; on a file it opens
 the file like Enter. Left/h collapses an open folder or selects its parent and
 is inert on a top-level row. Collapsing a folder that a filter only matched
 through its descendants clears the filter so the folder stays selected.
-Backspace, Alt+Up, and Enter or Right/l on the `..` row change the explorer
-root; clicking `..` only selects it. Left/h no longer move the root (before this
+Backspace and Alt+Up move the explorer root upward from any row. Enter or Right/l
+do so only on `..`; clicking `..` only selects it. Left/h no longer move the root (before this
 cycle they matched the workspace back key alongside Backspace). Refresh reloads
 the current root and collapses expanded branches.
 An empty folder still shows its open disclosure. An unreadable folder shows the
@@ -86,7 +86,9 @@ opens it. Folder actions do not modify cwd, editor text or Echo authority.
 Source previews load/highlight asynchronously. Parser errors or unsupported
 languages retain readable text. The existing loading/binary/unavailable/truncated
 labels remain, and a new unsaved-changes label covers a modified buffer whose
-text is not loaded from the file head. Header and notices receive no source
+text is not loaded from the file head. A dirty editor projection over a clean
+authority or a pending edit also shows this notice, even at the file head.
+Header and notices receive no source
 syntax colors.
 
 ### User Journey
@@ -97,7 +99,8 @@ browsing. Closing Files reveals the existing editor unchanged.
 
 ### Wide UI Mockup
 
-100x32, current theme. [Native capture](0164-explorer-witness/nested-syntax-dark-100x32.png):
+Illustrative 100x32 layout, not a transcription of the
+[native capture](0164-explorer-witness/nested-syntax-dark-100x32.png), which selects panel.ts:
 
 ```text
 files  / filter             Preview · main.ts
@@ -134,9 +137,10 @@ basis for previews. One pure function, `filePreviewSourceLines` in
 highlighter parses those lines and the preview view passes the same lines to the
 painter in `src/ui/file-preview-syntax.ts`. The existing preview request identity
 gates the combined text/syntax result. Open-buffer text remains preferred; a
-modified buffer (dirty authority or dirty editor projection) whose reading
-window is not at the file head reports its unsaved state instead of silently
-previewing the saved file.
+modified authority whose reading window is not at the file head reports its
+unsaved state instead of silently previewing the saved file. A dirty editor
+projection over a clean authority or a pending edit also reports unsaved
+state even when the reading starts at the file head.
 
 The preview view and the Files pointer import `ui/file-preview-syntax` and
 `ui/workspace-file-filter-prompt`. These app→ui imports join the existing
@@ -167,6 +171,8 @@ until an explicit file open; hover performs no filesystem read.
 Reuse localized preview and directory-error copy. Keep literal path order in
 RTL locales and reuse the existing Files indentation convention. Update the
 existing Enter hint to communicate toggle/open in all 20 authored locales.
+That hint currently renders only through the legacy footer path (#393); its
+`enter_open` key name is tracked in #394.
 
 ## Agent Inspectability / Explainability Posture
 
@@ -203,7 +209,8 @@ startup-picker and explicit file-opening behaviors.
 - [x] Enter/click expand and collapse nested directories without changing root.
 - [x] Sibling branches, selection, indentation and filter ancestors stay coherent.
 - [x] Empty/unreadable directories and root refresh preserve safe navigation.
-- [x] Real Graft syntax colors reach the preview, including unsaved buffer text.
+- [x] Real Graft syntax colors reach saved-file previews; sanitized unsaved text
+  reaches the highlighter and remains readable when parsing fails.
 - [x] Stale results, parser failure, tabs, Unicode and truncation remain safe.
 
 ## Acceptance Criteria
@@ -263,8 +270,8 @@ never leave the tree, a filtered collapse keeps the folder selected, a modified
 buffer reports unsaved state instead of previewing disk, `~/.jimrc` saves keep
 special mode bits and line endings (the port's layout methods became
 `loadLayout`/`saveLayout`), Ctrl+G releases the filter prompt, and the
-leader-capture hint renders through the live footer (per-pane and compact
-footers may clip it; the Settings drawer always shows it in full). Commit
+leader-capture hint renders through the live footer. Narrow footer layouts and
+the Settings drawer can clip the hint; fitting it is tracked in #401. Commit
 `c7916e5` added the
 Ctrl+G spec one commit before its fix in `9e79b4e`. Round two
 (`ce82d0d`..`287415c`): closing an open Graft drawer also releases the prompt,
@@ -273,7 +280,7 @@ rename, the preserved mode is applied after writing so setuid survives, a dirty
 editor projection also reports unsaved changes, the `..` row behaviour is
 pinned, several literals are named, and the footer specs are formatted one
 statement per line. Round three (after `af506b5`): the unsaved notice fits the
-36 text cells of a 60-column terminal's preview in every locale (a spec renders
+36 text cells of a 60-column terminal's preview with Graft closed, in every locale (a spec renders
 each locale at that width), a dirty projection over a clean head reading also
 reports unsaved changes, every focus change away from Files ends filter
 editing, the footer observation and explorer header name their copy keys, the
@@ -283,15 +290,17 @@ and preview specs are formatted one statement per line.
 The merge changed the spec inventory: `origin/main` deleted 12 specs that read
 documentation or audited deleted documents (`c508964`, `9ee2435`; they included
 `graph-rope-runtime-red-matrix.spec.mjs` and its skipped cases) and added 8.
-Validation of the reviewed head (full local check, quality gate, shard coverage
-and a dispatched hosted run, since CI does not trigger for a PR whose base is
-not `main`) is recorded on the PR rather than in this file. Deferred findings
-are listed under Follow-On Debt.
+Validation records on PR #349 must name the tested head. Historical full checks
+and captures do not validate the later review repairs. A fresh full local check
+and hosted run remain gates before merge; CI does not automatically trigger for
+this PR's non-main base. Deferred findings are listed under Follow-On Debt.
 
 [Native evidence](0164-explorer-witness/README.md) covers mouse and Enter toggles,
 root preservation, nested/filtered rows, dark 100x32 and minimum 60x12, and Arabic
-light 60x16. Graft produced 13 syntax spans while preview authority remained none
-and textRequestId remained 0. Only explicit file Enter opened a buffer.
+light 60x16. The original observation reported 13 syntax spans, no preview
+authority and textRequestId 0; the retained receipt records dimensions and cell
+digests, not those runtime values. Only explicit file Enter opened a buffer in
+that observation.
 Arabic rasterization proves alignment, not terminal-specific shaping. The
 captures were taken at `26bba006` and were not re-captured after the main merge
 or the review fixes. `f18cc09` rewrote the filtered-collapse path shown in the

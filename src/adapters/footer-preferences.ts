@@ -33,7 +33,8 @@ type PreferenceEdit = (document: ReturnType<typeof footerPreferenceDocument>) =>
 
 // No lock file: a lock the leader-key writer ignores would exclude nobody, and a
 // stale one would refuse every later save. The document is re-read just before
-// the rename instead, and a concurrent change refuses the save.
+// the rename instead, and a change observed at that read refuses the save.
+// Another writer can still change the document between that read and rename.
 function saveDocument(path: string, edit: PreferenceEdit): void {
   replaceDocument(preferenceTarget(path), edit);
 }

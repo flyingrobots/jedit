@@ -73,7 +73,7 @@ test('Preview Graft projections omit an editor-head basis', async () => {
   assert.deepEqual(calls[1].options.basis, { kind: 'editor_head', headId: 'real-head', tick: 2 });
 });
 
-test('Unsaved preview text is highlighted without disk reads and parser failure keeps readable text', async () => {
+test('Sanitized unsaved preview text reaches the highlighter without disk reads and parser failure keeps readable text', async () => {
   const inputs = [];
   const editor = { path: entry.path, lines: ['\tconst unsaved = 7;\u001b'], dirty: true };
   const fixture = await setup({

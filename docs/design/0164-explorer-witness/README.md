@@ -12,7 +12,7 @@ TypeScript source. The committed helper reproduces the flow.
 | [Minimum-size dark, 60x12](nested-syntax-dark-60x12.png) | Enter expanded both levels; selection/indentation and keyword/string/number colors fit. |
 | [Arabic/light, 60x16](nested-syntax-light-rtl-60x16.png) | Localized preview label and footer, literal paths/source, themed syntax colors. |
 
-Recorded native observations:
+Original native observations (the receipt does not retain these runtime values):
 
 - The explorer cwd stayed identical across all wide-run operations.
 - The selected preview contained 13 Graft syntax spans; textRequestId stayed 0
@@ -24,7 +24,9 @@ Recorded native observations:
 The cell images use Menlo with Apple Symbols/Geeza Pro fallback fonts.
 Arabic glyph shaping is terminal-dependent; this rasterization verifies cell
 alignment and literal code/path order, not full Arabic shaping.
-`receipt.json` records dimensions and captured-cell digests.
+`receipt.json` records dimensions and captured-cell digests, not the syntax-span
+count, authority or request IDs. Those values above are historical observations,
+not assertions reproducible from that receipt alone.
 
 Reproduce after `npm run build`:
 
