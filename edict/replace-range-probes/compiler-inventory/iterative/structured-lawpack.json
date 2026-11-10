@@ -56,7 +56,7 @@
   },
   "configuration": {
     "name": "create-config",
-    "coordinate": "echo.operation-lowering-configuration/v1",
+    "coordinate": "jedit.text.echo-create-configuration/v1",
     "output": "echo-create-configuration.cbor",
     "value": {
       "apiVersion": "echo.operation-lowering-configuration/v1",
