@@ -193,7 +193,7 @@ contracts apply. Do not build a second compiler or runtime adapter framework.
   complete closures, positive controls, and generic execution where reached.
 - [x] Slice 3: Reconcile upstream owners and update the canonical inventory
   entrance with measured boundaries and unresolved requirements.
-- [ ] Slice 4: Prove existing supported behavior and unchanged rope obligations;
+- [x] Slice 4: Prove existing supported behavior and unchanged rope obligations;
   complete current-head CI and independent review.
 
 ## Tests To Write First
@@ -213,9 +213,9 @@ contracts apply. Do not build a second compiler or runtime adapter framework.
   proposed new issue has a concrete reproducer and is separately authorized.
 - [x] Amblicit #261–268 are reconciled without closing broad issues from partial
   evidence or scheduling an already-landed fold implementation.
-- [ ] Current supported behavior passes required checks; the 40-case rope oracle
+- [x] Current supported behavior passes required checks; the 40-case rope oracle
   remains byte-for-byte unchanged and no new acceptance success is claimed.
-- [ ] Documentation, linked issue, current-head CI, and independent review agree.
+- [x] Documentation, linked issue, current-head CI, and independent review agree.
 
 ## Validation Plan
 
@@ -350,3 +350,9 @@ joins all six groups and gives every proposed prerequisite a reproducer, an
 existing owner and a reason. Runtime of the published effect package,
 component regeneration and full operation stay unmeasured. The oracle and
 production pins are unchanged; rope acceptance remains 0/40.
+
+Required CI passes on the final head. A safety review, whose break-it passes
+ran in a separate code-only subagent, raised a prefix-only lawpack selection
+check, weak effect admission tests and two overclaims. Each was fixed and
+re-reviewed until no blocking finding remained. CodeRabbit does not review draft
+pull requests, so that safety review is the independent gate for this cycle.
