@@ -124,6 +124,18 @@ Use `iterative-module.test.mts` against `modules` for authenticated-import asser
 Use `iterative-primitives.test.mts` against `primitives` for its stage assertions.
 Use `iterative-drafts.test.mts` against `drafts` for unchanged source closures and first refusals.
 
+The repository's `tsconfig.json` covers only `src/`, so `npm run build` does
+not type-check the seven inventory `.mts` files. After `npm ci`, check them
+from the Jedit checkout with the pinned Node. This needs no compiler, provider
+or worker:
+
+```sh
+node node_modules/typescript/bin/tsc --noEmit --allowJs --checkJs false \
+  --module nodenext --target es2023 --strict --skipLibCheck \
+  --allowImportingTsExtensions \
+  edict/replace-range-probes/compiler-inventory/*.mts
+```
+
 The consumer rejects v1 reports: those lack the retained source snapshots and
 completion marker required by v2. Historical measurements below retain their
 original identities and can be replayed with their matching consumer revision.
