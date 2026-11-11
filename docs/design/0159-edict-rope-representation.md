@@ -7,7 +7,7 @@ status: "draft"
 owners:
   - "@flyingrobots"
 created: "2026-10-15"
-updated: "2026-10-31"
+updated: "2026-11-10"
 ---
 
 # DL-0159 - Edict-Authored Rope Representation
@@ -812,6 +812,70 @@ must adopt this representation-specific comparison explicitly, with the
 counterpart decisions reviewed before any affected row can pass. Until then,
 full oracle acceptance remains unresolved, even if individual source helpers
 compile or some graph edits succeed.
+
+### Executable fixtures and counterpart decisions
+
+[#389](https://github.com/flyingrobots/jedit/issues/389) publishes the register as
+data: [`replace-range-schema-2.fixtures.json`](../../contracts/jedit/acceptance/replace-range-schema-2/replace-range-schema-2.fixtures.json),
+designed in [DL-0163](0163-schema-2-rope-fixtures.md). Every row is
+`unexecuted`; the count of passing rows stays 0/40. All 40 retained
+invocations keep their exact start, end and replacement bytes; Buffer and head
+ids are schema-2 ids. No `carry` row is reclassified. Three carry rows
+(`middle-ascii-insert`, `unicode-replacement`, `cross-leaf-rebalance`) store
+the same text as a different leaf shape, so that an untouched subtree exists
+whose identity the edit must keep. Three carry rows
+(`branch-extent-mismatch-*`) keep their obligation but change outcome category:
+schema 1 called the inconsistent branch a malformed fact, while schema 2 decodes
+it and rejects the broken rope invariant as MalformedRope. Each such departure
+carries a written decision in the artifact.
+
+Obstructed rows are decided by the first failing check in this order: Buffer
+presence, Buffer decode, basis, range order, replacement validity, envelope,
+Head decode, range bounds against the Head's claimed length, closure
+validation, character boundaries, no-op, counters. Closure validation covers
+every node the operation resolves, including nodes read by the reconstruction
+or the no-op comparison, and completes before any endpoint is classified. Echo
+admission is a separate boundary.
+
+| Counterpart | Schema-2 fixture | Outcome at check |
+| --- | --- | --- |
+| malformed-buffer | Buffer atom with well-typed fields in non-canonical order | FactMalformed at buffer decode |
+| bad-blob-content-hash | Root leaf stored under an id that is not its address; Echo refuses it (IdentityLawViolation) | ContentIdentityMismatch at closure validation |
+| cyclic-right-endpoint | Branch whose right edge targets itself; no admitted id can do that (IdentityLawViolation) | ContentIdentityMismatch at closure validation; identity precedes structure |
+| leaf-ends-inside-codepoint-at-exact-end | Leaf holding the lone byte 0xC3 | MalformedRope at closure validation, before the boundary check |
+| leaf-exceeds-blob-at-zero | Head claims 4 bytes over a 3-byte leaf; edit at 0 | MalformedRope at closure validation |
+| leaf-exceeds-blob-at-exact-end | Same state; edit at the claimed end, which passes the bounds check | MalformedRope at closure validation |
+| leaf-exceeds-blob-at-internal-boundary | Root claims 4,097 bytes over 4,095 + 1; edit at 4,096 | MalformedRope at closure validation |
+| leaf-range-start-overflow | Child extent sum overflows below the root, on the descent path | ArithmeticOverflow at closure validation |
+| leaf-range-end-overflow | Child extent sum overflows at the root, with the huge claim as right operand | ArithmeticOverflow at closure validation |
+| leaf-extent-u64-max-at-zero | Head claims U64::MAX bytes over a 1-byte leaf | MalformedRope at closure validation |
+| rope-utf16-length-overflow | Leaf atom that still carries `utf16Length` | FactMalformed at closure validation |
+| branch-height-u32-max-at-zero | Branch claims height 255 (a valid U8) over two leaves | MalformedRope at closure validation |
+
+Moved and removed representations:
+
+- **UTF-16.** The checked UTF-16 arithmetic of `rope-utf16-length-overflow`
+  moves to the UTF-16 derived reading (Coordinates, Follow-On Debt). That
+  obligation stays a gap until the derived reading discharges it. No issue
+  tracks it yet; #389 reports the missing owner instead of filing one.
+- **Rewrite, Diff and stored UTF-16 on committed rows.** The six retained
+  committable cases also expected Rewrite/Diff facts and a stored UTF-16 length.
+  Schema 2 has neither; each committed row records both moves (Rewrite and
+  Diff facts under Follow-On Debt, UTF-16 under the derived reading). They stay
+  gaps until those surfaces exist, and no issue tracks them yet.
+- **Blob.** Blob slices and offsets no longer exist. Their extent and arithmetic
+  coverage moves to ancestor extent claims and checked child sums, as above.
+- **Height.** The U32 height becomes a U8 codec bound. The child-consistency
+  half is the row above; the codec half is the addition `branch-height-exceeds-u8`.
+- **NoOp masks.** The two retained no-op-mask rows cannot reach NoOp in schema 2
+  (their lengths differ). Their precedence obligation moves to the additions
+  `malformed-closure-masks-no-op` and `empty-root-masks-no-op`, which declare
+  `no-op` as a verified competing check.
+The artifact also carries schema-2 additions: the positive shared Head, equal
+leaves, constructor leaf counts, invalid replacement bytes, malformed edges, and two
+malformed closures that would otherwise be NoOp, which pin closure validation
+before the no-op check, overflow of the edit's own new head, and lawfully
+addressed nodes carrying an unexpected edge type.
 
 The remaining operation gates are unchanged: exact public Core/Target/package,
 manifest and codecs with separate verification; generic Echo consumption with
