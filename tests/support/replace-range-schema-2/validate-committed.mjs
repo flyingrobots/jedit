@@ -5,7 +5,8 @@
 // retained text outcome, share what the row says it shares, and propose exactly
 // the effects Echo's canonical order requires.
 import { decode as cborDecode } from 'cbor-x';
-import { attachmentDigest, compareBytes, hex, unhex } from './content-address-v1.mts';
+import { attachmentDigest, compareBytes, hex, slotEdgeId, unhex } from './content-address-v1.mts';
+import { EVIDENCE } from './validator-oracle.mjs';
 
 const MAX_LEAF_BYTES = 4096;
 
@@ -103,6 +104,8 @@ function checkEffects(row, profile, basisBuffer, basisHeadId) {
       fail(`${row.id} effects are not in Echo canonical order`);
     }
   }
+  const basisSlot = row.basis.edges.find((edge) => edge.from === basisBuffer.id && edge.type === 'canonicalHead');
+  if (basisSlot === undefined || basisSlot.to !== basisHeadId) fail(`${row.id} the basis canonicalHead slot does not target the basis head`);
   const wanted = [
     ...createdNodes.map((node) => ({ kind: 'EnsureNode', node: node.id, nodeType: profile.nodeTypes[node.type].id,
       atomType: profile.atomTypes[node.type].id, atomHex: node.atomHex })),
@@ -110,7 +113,8 @@ function checkEffects(row, profile, basisBuffer, basisHeadId) {
       edgeType: profile.edgeTypes[edge.type].id, to: edge.to }))),
     { kind: 'ReplaceAtom', node: basisBuffer.id, atomType: profile.atomTypes.Buffer.id,
       expectedAtomDigest: hex(attachmentDigest(unhex(profile.atomTypes.Buffer.id), unhex(basisBuffer.atomHex))) },
-    { kind: 'ReplaceEdge', expectedTo: basisHeadId, to: headAfter.id },
+    { kind: 'ReplaceEdge', edge: hex(slotEdgeId(unhex(profile.warp.id), unhex(basisBuffer.id),
+      unhex(profile.edgeTypes.canonicalHead.id))), expectedTo: basisHeadId, to: headAfter.id },
   ];
   if (effects.length !== wanted.length) fail(`${row.id} proposes ${effects.length} effects, not ${wanted.length}`);
   for (const expected of wanted) {
@@ -175,7 +179,7 @@ export function checkCommitted(artifact, oracle) {
     const spliced = Uint8Array.from([...before.subarray(0, start), ...unhex(row.invocation.replacementHex),
       ...before.subarray(end)]);
     if (hex(spliced) !== row.text.afterHex) fail(`${row.id} after-text is not the splice of the before-text`);
-    if (row.expected.evidence.length === 0) fail(`${row.id} names no execution evidence`);
+    if (row.expected.evidence.join() !== EVIDENCE.committed.join()) fail(`${row.id} names the wrong execution evidence`);
     const state = new PostState(row);
     const basisBuffer = row.basis.nodes.find((node) => node.id === row.invocation.bufferId);
     const basisHead = row.basis.nodes.find((node) => node.id === row.invocation.basisHeadId);
@@ -185,6 +189,8 @@ export function checkCommitted(artifact, oracle) {
     const stored = basisRoot === undefined ? '' : hex(basisText.tree(basisRoot, row).text);
     if (stored !== row.text.beforeHex) fail(`${row.id} before-text is not the basis head's text`);
     checkHead(row, state, basisHead);
+    const fromHead = state.reachable(row.expected.headAfter.id);
+    if (row.expected.createdNodes.some((node) => !fromHead.has(node.id))) fail(`${row.id} creates a node the new head cannot reach`);
     checkEffects(row, artifact.profile, basisBuffer, basisHead.id);
     checkReach(row, state, basisHead.id);
   }

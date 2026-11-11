@@ -160,3 +160,11 @@ test('identity is computed over every outgoing edge; an unexpected edge type is 
   assert.equal(probe(branch(leafWithEdge, leaf('cd')), [3n, 4n], 'x',
     new ExpectObstructed('MalformedRope', 'closure-validation')).typedOutcome, 'MalformedRope');
 });
+
+test('the NoOp-masking additions declare no-op as a verified competing check', () => {
+  for (const id of ['malformed-closure-masks-no-op', 'empty-root-masks-no-op']) {
+    const masked = ADDITION_ROWS.find((entry) => entry.id === id);
+    assert.deepEqual(masked.expected.competing, ['no-op'], id);
+    assert.deepEqual(render(masked).precedence.competing, ['no-op'], id);
+  }
+});

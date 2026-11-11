@@ -10,6 +10,7 @@ import { atomTypeId, bytesField, decodeFact, EDGE_KINDS, edgeTypeId, FactDecodeE
 import type { EdgeKind, FactFields, FactKind } from './schema-2-facts.mts';
 import type { EdgeRecord, RecordingView } from './graph.mts';
 import { Obstruction } from './outcomes.mts';
+import type { Outcome } from './outcomes.mts';
 
 const VALIDATION = 'closure-validation';
 const BRANCH_EDGES: ReadonlyMap<EdgeKind, readonly [number, number]> = new Map([['left', [1, 1]], ['right', [1, 1]]]);
@@ -28,12 +29,6 @@ export class StoredNode {
     [this.byteLength, this.lineBreaks, this.height] = metrics;
     this.bytes = bytes;
   }
-}
-
-export function checkedAdd(left: bigint, right: bigint, what: string): bigint {
-  const sum = left + right;
-  if (sum > U64_MAX) throw new Obstruction('ArithmeticOverflow', VALIDATION, `${what} overflows U64`);
-  return sum;
 }
 
 export function countLineBreaks(bytes: Uint8Array): bigint {
@@ -56,9 +51,22 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
 export class RopeReader {
   readonly view: RecordingView;
   readonly expanded = new Map<string, readonly [StoredNode, StoredNode]>();
+  /** When set, closure-validation findings that leave usable data are recorded instead of thrown. */
+  lenient = false;
 
   constructor(view: RecordingView) {
     this.view = view;
+  }
+
+  /** Rejects at closure validation, unless the reader is lenient (used only to verify competing checks). */
+  reject(outcome: Outcome, detail: string): void {
+    if (!this.lenient) throw new Obstruction(outcome, VALIDATION, detail);
+  }
+
+  add(left: bigint, right: bigint, what: string): bigint {
+    const sum = left + right;
+    if (sum > U64_MAX) this.reject('ArithmeticOverflow', `${what} overflows U64`);
+    return sum;
   }
 
   kindOf(nodeType: Uint8Array): FactKind | undefined {
@@ -119,14 +127,14 @@ export class RopeReader {
     const bytes = bytesField(fields, 'bytes');
     this.edgeSet(id, new Map());
     if (!sameBytes(contentNodeId(WARP_ID, nodeTypeId('Leaf'), atomType, atom, []), id)) {
-      throw new Obstruction('ContentIdentityMismatch', VALIDATION, `leaf ${hex(id)} is not its content address`);
+      this.reject('ContentIdentityMismatch', `leaf ${hex(id)} is not its content address`);
     }
     if (bytes.length === 0 || bytes.length > MAX_LEAF_BYTES) {
-      throw new Obstruction('MalformedRope', VALIDATION, `leaf ${hex(id)} holds ${bytes.length} bytes`);
+      this.reject('MalformedRope', `leaf ${hex(id)} holds ${bytes.length} bytes`);
     }
-    if (!isUtf8(bytes)) throw new Obstruction('MalformedRope', VALIDATION, `leaf ${hex(id)} is not UTF-8`);
+    if (!isUtf8(bytes)) this.reject('MalformedRope', `leaf ${hex(id)} is not UTF-8`);
     if (countLineBreaks(bytes) !== uintField(fields, 'lineBreaks')) {
-      throw new Obstruction('MalformedRope', VALIDATION, `leaf ${hex(id)} line breaks do not match its bytes`);
+      this.reject('MalformedRope', `leaf ${hex(id)} line breaks do not match its bytes`);
     }
     return new StoredNode(id, true, [BigInt(bytes.length), countLineBreaks(bytes), 1n], bytes);
   }
@@ -140,7 +148,7 @@ export class RopeReader {
     const record = this.view.graph.node(branch.id)!;
     const outgoing = RopeReader.outgoing(edges);
     if (!sameBytes(contentNodeId(WARP_ID, nodeTypeId('Branch'), record.atomType, record.atom, outgoing), branch.id)) {
-      throw new Obstruction('ContentIdentityMismatch', VALIDATION, `branch ${hex(branch.id)} is not its address`);
+      this.reject('ContentIdentityMismatch', `branch ${hex(branch.id)} is not its address`);
     }
     const children = [this.describe(left), this.describe(right)] as const;
     this.checkBranch(branch, children);
@@ -150,13 +158,13 @@ export class RopeReader {
 
   checkBranch(branch: StoredNode, [left, right]: readonly [StoredNode, StoredNode]): void {
     const where = `branch ${hex(branch.id)}`;
-    const byteLength = checkedAdd(left.byteLength, right.byteLength, `${where} byte length`);
-    const lineBreaks = checkedAdd(left.lineBreaks, right.lineBreaks, `${where} line breaks`);
-    if (byteLength !== branch.byteLength) throw new Obstruction('MalformedRope', VALIDATION, `${where} extent`);
-    if (lineBreaks !== branch.lineBreaks) throw new Obstruction('MalformedRope', VALIDATION, `${where} line breaks`);
+    const byteLength = this.add(left.byteLength, right.byteLength, `${where} byte length`);
+    const lineBreaks = this.add(left.lineBreaks, right.lineBreaks, `${where} line breaks`);
+    if (byteLength !== branch.byteLength) this.reject('MalformedRope', `${where} extent`);
+    if (lineBreaks !== branch.lineBreaks) this.reject('MalformedRope', `${where} line breaks`);
     const tallest = left.height > right.height ? left.height : right.height;
-    if (branch.height !== tallest + 1n) throw new Obstruction('MalformedRope', VALIDATION, `${where} height`);
+    if (branch.height !== tallest + 1n) this.reject('MalformedRope', `${where} height`);
     const skew = left.height - right.height;
-    if (skew > 1n || skew < -1n) throw new Obstruction('MalformedRope', VALIDATION, `${where} is not AVL-balanced`);
+    if (skew > 1n || skew < -1n) this.reject('MalformedRope', `${where} is not AVL-balanced`);
   }
 }

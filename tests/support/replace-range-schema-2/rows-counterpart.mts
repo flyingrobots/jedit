@@ -132,7 +132,9 @@ export const COUNTERPART_ROWS: readonly RowSpec[] = [
     'Height is bounded U8, not U32; specify malformed height/codec and child consistency checks',
     'Height is U8. This row covers child consistency: a valid U8 height of 255 over two leaves is rejected '
     + 'when the branch is expanded. The codec half (a U32::MAX height) is the addition '
-    + 'branch-height-exceeds-u8.'),
+    + 'branch-height-exceeds-u8.',
+  [new MovedObligation('addition:branch-height-exceeds-u8', 'Reject a height that does not decode as U8',
+    'this artifact (schema-2 addition)')]),
   [buffer('branch-height-u32-max-at-zero', head(branch(leaf(repeat('a', 4096)), leaf('b'),
     { claims: claims({ height: 255n }) })))],
   invoke(0n, 0n, 'x'),

@@ -113,7 +113,7 @@
     "validation": "a leaf is validated when its atom is decoded: codec, edge set (none allowed), identity, then size, UTF-8 and line breaks. A branch is validated when expanded: edge set (one left, one right, nothing else), identity over that complete set, then its children's decoded claims: checked sums, equality, height and balance. A head checks its edge set, identity, then extent and line count against its root. A sibling the edit never descends into is trusted on its decoded claims",
     "readSet": "the program's witnessed reads: node records with their atoms, and (source, edge type) ranges, as the specification model resolved them. Echo's own validation and precondition reads are not listed",
     "writeSet": "Echo's write set: created node records and atoms, the Buffer atom, created and retargeted edges, and the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write",
-    "competing": "a later check the fixture also fails; verified by re-running the model with the deciding check passed",
+    "competing": "a later check the fixture also fails; verified by re-running the model with the deciding check passed (for closure validation, findings that leave usable data are recorded instead of thrown)",
     "validationTiming": "closure validation covers every node the operation resolves, including those the reconstruction and no-op comparison read; all of it completes before any endpoint is classified",
     "checkOrder": [
       "buffer-presence",
@@ -6673,8 +6673,15 @@
       "retainedCaseIndex": 23,
       "obligation": "Malformed materialization must not be hidden by NoOp",
       "retainedSemanticCode": "malformed-rope",
-      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.",
-      "movedObligations": [],
+      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first. The precedence over NoOp is pinned by the addition named in movedObligations.",
+      "movedObligations": [
+        {
+          "surface": "addition:malformed-closure-masks-no-op",
+          "obligation": "A malformed closure that would otherwise be NoOp is rejected first",
+          "owner": "this artifact (schema-2 addition)",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -7200,8 +7207,15 @@
       "retainedCaseIndex": 25,
       "obligation": "Missing root with nonzero head length cannot become NoOp",
       "retainedSemanticCode": "malformed-rope",
-      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.",
-      "movedObligations": [],
+      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first. The precedence over NoOp is pinned by the addition named in movedObligations.",
+      "movedObligations": [
+        {
+          "surface": "addition:empty-root-masks-no-op",
+          "obligation": "A malformed closure that would otherwise be NoOp is rejected first",
+          "owner": "this artifact (schema-2 addition)",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -10190,7 +10204,14 @@
       "obligation": "Height is bounded U8, not U32; specify malformed height/codec and child consistency checks",
       "retainedSemanticCode": "fact-malformed",
       "decision": "Height is U8. This row covers child consistency: a valid U8 height of 255 over two leaves is rejected when the branch is expanded. The codec half (a U32::MAX height) is the addition branch-height-exceeds-u8.",
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "addition:branch-height-exceeds-u8",
+          "obligation": "Reject a height that does not decode as U8",
+          "owner": "this artifact (schema-2 addition)",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -14377,7 +14398,9 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [
+            "no-op"
+          ]
         },
         "readSet": {
           "nodes": [
@@ -14609,7 +14632,9 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [
+            "no-op"
+          ]
         },
         "readSet": {
           "nodes": [

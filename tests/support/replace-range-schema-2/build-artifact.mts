@@ -54,7 +54,8 @@ function profile(): Json {
       + 'specification model resolved them. Echo\'s own validation and precondition reads are not listed',
     writeSet: 'Echo\'s write set: created node records and atoms, the Buffer atom, created and retargeted edges, and '
       + 'the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write',
-    competing: 'a later check the fixture also fails; verified by re-running the model with the deciding check passed',
+    competing: 'a later check the fixture also fails; verified by re-running the model with the deciding check passed '
+      + '(for closure validation, findings that leave usable data are recorded instead of thrown)',
     validationTiming: 'closure validation covers every node the operation resolves, including those the reconstruction '
       + 'and no-op comparison read; all of it completes before any endpoint is classified',
     checkOrder: CHECK_ORDER,

@@ -192,8 +192,9 @@ test('fixture tooling imports no planner, runtime or authored source, and the va
       assert.match(specifier, /^(?:\.\/[a-z0-9-]+\.m[jt]s|node:[a-z]+|cbor-x)$/, `${file} imports ${specifier}`);
     }
   }
-  const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'judge.mjs'];
-  const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './canonical-cbor.mts', './validate-committed.mjs']);
+  const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'judge.mjs', 'validator-oracle.mjs'];
+  const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './canonical-cbor.mts', './validate-committed.mjs',
+    './validator-oracle.mjs']);
   for (const file of independent) {
     for (const specifier of imports(file).filter((entry) => entry.startsWith('./'))) {
       assert.ok(allowed.has(specifier), `${file} must not import ${specifier}`);
@@ -269,4 +270,40 @@ test('invocation ids, additions, witnesses, atom form, write sets and texts are 
   for (const [check, mutate, pattern] of cases) {
     assert.throws(() => check(mutated(mutate), oracle), pattern, mutate.toString().slice(0, 80));
   }
+});
+
+test('deciding checks, vocabulary, slot retarget, reachability, escapes and required rows are pinned', () => {
+  const committed = (copy) => row(copy, 'middle-ascii-insert');
+  const cases = [
+    [checkOutcomeBindings, (copy) => { row(copy, 'reversed-range').expected.decidingCheck = 'head-decode'; }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'cyclic-right-endpoint').expected.typedOutcome = 'NoOp'; }],
+    [checkOutcomeBindings, (copy) => {
+      Object.assign(row(copy, 'invalid-utf8-replacement').expected, { typedOutcome: 'ResourceLimitExceeded' });
+    }],
+    [checkOutcomeBindings, (copy) => { copy.profile.outcomes.push('GenericRefusal'); }],
+    [checkOutcomeBindings, (copy) => { copy.profile.checkOrder.reverse(); }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'stale-basis').expected.evidence = []; }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'stale-basis').expected.precedence.deciding = 'no-op'; }],
+    [checkOutcomeBindings, (copy) => { copy.additions = copy.additions.filter((entry) => entry.id !== 'leaf-with-edge'); }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'branch-height-u32-max-at-zero').movedObligations = []; }],
+    [checkAtoms, (copy) => { row(copy, 'reversed-range').basis.nodes[0].fact = { undecodable: 'claimed' }; }],
+    [checkCommitted, (copy) => {
+      const entry = committed(copy);
+      const host = entry.basis.edges.find((edge) => edge.type === 'acceptedHostBasis');
+      entry.expected.effects.find((effect) => effect.kind === 'ReplaceEdge').edge = host.id;
+    }],
+    [checkCommitted, (copy) => {
+      const entry = committed(copy);
+      entry.expected.reachability.fromBufferAfter = entry.expected.reachability.fromBufferAfter.slice(1);
+    }],
+  ];
+  for (const [check, mutate] of cases) {
+    assert.throws(() => check(mutated(mutate), oracle), /outcome-binding|atoms|committed/, mutate.toString().slice(0, 90));
+  }
+});
+
+test('the canonical decoder orders keys by encoded bytes, so a shorter key sorts first', () => {
+  // Oracle: edict.canonical-cbor/v1 sorts map keys by their encoded bytes (length first for text).
+  assert.doesNotThrow(() => decodeCanonicalCbor(Uint8Array.of(0xa2, 0x61, 0x7a, 0x00, 0x62, 0x61, 0x61, 0x00)));
+  assert.throws(() => decodeCanonicalCbor(Uint8Array.of(0xa2, 0x62, 0x61, 0x61, 0x00, 0x61, 0x7a, 0x00)));
 });

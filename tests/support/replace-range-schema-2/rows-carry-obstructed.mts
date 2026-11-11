@@ -4,7 +4,7 @@
 // retained semanticCode, the schema-2 outcome, its deciding check and, where
 // the fixture is built to trip a later check too, that competing check.
 import { repeat, utf8 } from './fixture-basis.mts';
-import { branch, buffer, claims, ExpectObstructed, head, invoke, leaf, RowSpec } from './row-spec.mts';
+import { branch, buffer, claims, ExpectObstructed, head, invoke, leaf, MovedObligation, RowSpec } from './row-spec.mts';
 import { U64_MAX } from './schema-2-facts.mts';
 
 const ABC = (): ReturnType<typeof head> => head(leaf('abc'));
@@ -15,17 +15,24 @@ const EXTENT_MISMATCH = (): ReturnType<typeof head> =>
 const OVERSIZED = (): ReturnType<typeof head> => head(null, { claims: claims({ byteLength: 1n }) });
 const TWO_TO_31 = 2n ** 31n;
 
-function obstructed(id: string, semanticCode: string, obligation: string, decision?: string): { id: string;
-  mapping: 'carry'; semanticCode: string; obligation: string; decision?: string } {
-  return decision === undefined ? { id, mapping: 'carry', semanticCode, obligation }
-    : { id, mapping: 'carry', semanticCode, obligation, decision };
+function obstructed(id: string, semanticCode: string, obligation: string, decision?: string,
+  moved: readonly MovedObligation[] = []): { id: string; mapping: 'carry'; semanticCode: string; obligation: string;
+  decision?: string; moved: readonly MovedObligation[] } {
+  return decision === undefined ? { id, mapping: 'carry', semanticCode, obligation, moved }
+    : { id, mapping: 'carry', semanticCode, obligation, decision, moved };
+}
+
+function maskMove(addition: string): readonly MovedObligation[] {
+  return [new MovedObligation(`addition:${addition}`, 'A malformed closure that would otherwise be NoOp is rejected first',
+    'this artifact (schema-2 addition)')];
 }
 
 const EXTENT_DECISION = 'Schema 1 reported a branch whose children disagree with its claimed extent as a malformed fact. '
   + 'Schema 2 decodes that atom successfully; the disagreement is a rope invariant, so the typed outcome is '
   + 'MalformedRope at closure validation. The row stays carry: the obligation is unchanged.';
 const MASK_DECISION = 'Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so '
-  + 'this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.';
+  + 'this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first. '
+  + 'The precedence over NoOp is pinned by the addition named in movedObligations.';
 
 export const CARRY_OBSTRUCTED_ROWS: readonly RowSpec[] = [
   new RowSpec(obstructed('reversed-range', 'range-order-invalid', 'Range-order obstruction; no graph mutation'),
@@ -86,12 +93,12 @@ export const CARRY_OBSTRUCTED_ROWS: readonly RowSpec[] = [
   [buffer('branch-extent-mismatch-at-internal-boundary', EXTENT_MISMATCH())], invoke(4096n, 4096n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('branch-truncated-no-op-mask', 'malformed-rope',
-    'Malformed materialization must not be hidden by NoOp', MASK_DECISION),
+    'Malformed materialization must not be hidden by NoOp', MASK_DECISION, maskMove('malformed-closure-masks-no-op')),
   [buffer('branch-truncated-no-op-mask', EXTENT_MISMATCH())],
   invoke(0n, 4098n, utf8(`${'a'.repeat(4096)}b`)),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('empty-root-nonzero-length-no-op-mask', 'malformed-rope',
-    'Missing root with nonzero head length cannot become NoOp', MASK_DECISION),
+    'Missing root with nonzero head length cannot become NoOp', MASK_DECISION, maskMove('empty-root-masks-no-op')),
   [buffer('empty-root-nonzero-length-no-op-mask', OVERSIZED())], invoke(0n, 1n, ''),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('empty-root-nonzero-length-zero-insert', 'malformed-rope',

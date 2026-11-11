@@ -151,8 +151,13 @@ export function obstructedJson(row: RowSpec, expected: ExpectObstructed, model: 
   }
   for (const later of expected.competing) {
     if (checkRank(later) <= checkRank(expected.check)) throw new FixtureInconsistency(`${row.id}: ${later} is not later`);
-    const without = new ReplaceRangeModel(model.view.graph, model.invocation, expected.check).run();
-    if (without instanceof ModelCommit || without.obstruction.check !== later) {
+    let without: ReturnType<ReplaceRangeModel['run']> | null = null;
+    try {
+      without = new ReplaceRangeModel(model.view.graph, model.invocation, expected.check).run();
+    } catch {
+      without = null;
+    }
+    if (without === null || without instanceof ModelCommit || without.obstruction.check !== later) {
       throw new FixtureInconsistency(`${row.id}: without ${expected.check} the fixture does not reach ${later}`);
     }
   }

@@ -862,7 +862,10 @@ Moved and removed representations:
   coverage moves to ancestor extent claims and checked child sums, as above.
 - **Height.** The U32 height becomes a U8 codec bound. The child-consistency
   half is the row above; the codec half is the addition `branch-height-exceeds-u8`.
-
+- **NoOp masks.** The two retained no-op-mask rows cannot reach NoOp in schema 2
+  (their lengths differ). Their precedence obligation moves to the additions
+  `malformed-closure-masks-no-op` and `empty-root-masks-no-op`, which declare
+  `no-op` as a verified competing check.
 The artifact also carries schema-2 additions: the positive shared Head, equal
 leaves, constructor leaf counts, invalid replacement bytes, malformed edges, and two
 malformed closures that would otherwise be NoOp, which pin closure validation

@@ -10,7 +10,7 @@ import { Obstruction } from './outcomes.mts';
 import type { Check } from './outcomes.mts';
 import { byteLength, fromBytes, isCharBoundary, lineBreaks, NewBranch, NewLeaf, RopeBuilder } from './rope-build.mts';
 import type { Rope } from './rope-build.mts';
-import { checkedAdd, isUtf8, RopeReader } from './rope-reader.mts';
+import { isUtf8, RopeReader } from './rope-reader.mts';
 import type { StoredNode } from './rope-reader.mts';
 import { atomTypeId, decodeFact, edgeTypeId, FactDecodeError, MAX_LEAF_BYTES, nodeTypeId, textField, uintField,
   U64_MAX, WARP_ID } from './schema-2-facts.mts';
@@ -107,6 +107,7 @@ export class ReplaceRangeModel {
     this.skip = skip;
     this.view = new RecordingView(graph);
     this.reader = new RopeReader(this.view);
+    this.reader.lenient = skip === 'closure-validation';
     this.builder = new RopeBuilder(this.reader);
     this.invocation = invocation;
   }
@@ -165,20 +166,20 @@ export class ReplaceRangeModel {
     const [roots, anchors] = [edges.get('root')!, edges.get('anchor')!];
     const outgoing = RopeReader.outgoing(edges);
     if (!same(contentNodeId(WARP_ID, nodeTypeId('Head'), head.atomType, head.atom, outgoing), head.id)) {
-      throw new Obstruction('ContentIdentityMismatch', 'closure-validation', 'head is not its content address');
+      this.reader.reject('ContentIdentityMismatch', 'head is not its content address');
     }
     const claimed = uintField(fields, 'byteLength');
     const lineCount = uintField(fields, 'lineCount');
     if (roots.length === 0) {
       if (claimed !== 0n || lineCount !== 1n) {
-        throw new Obstruction('MalformedRope', 'closure-validation', 'empty head claims text');
+        this.reader.reject('MalformedRope', 'empty head claims text');
       }
       return [null, anchors[0]!.to];
     }
     const root = this.reader.describe(roots[0]!.to);
-    if (root.byteLength !== claimed) throw new Obstruction('MalformedRope', 'closure-validation', 'head extent');
-    if (checkedAdd(root.lineBreaks, 1n, 'head line count') !== lineCount) {
-      throw new Obstruction('MalformedRope', 'closure-validation', 'head line count');
+    if (root.byteLength !== claimed) this.reader.reject('MalformedRope', 'head extent');
+    if (this.reader.add(root.lineBreaks, 1n, 'head line count') !== lineCount) {
+      this.reader.reject('MalformedRope', 'head line count');
     }
     return [root, anchors[0]!.to];
   }

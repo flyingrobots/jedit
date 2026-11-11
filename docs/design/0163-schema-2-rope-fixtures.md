@@ -165,8 +165,11 @@ The artifact is canonical JSON with a SHA-256 sidecar.
   all schema edge types read, so identity is computed over its complete edge
   set and an unexpected edge type is MalformedRope. A sibling the edit never
   descends into is trusted on its decoded claims. The new head's extent and
-  line count are checked at the counters step.- **Competing checks.** A row may name later checks its fixture also fails;
-  each is verified by re-running the model with the deciding check passed.
+  line count are checked at the counters step.
+- **Competing checks.** A row may name later checks its fixture also fails;
+  each is verified by re-running the model with the deciding check passed. For
+  closure validation that means recording, not throwing, the findings that
+  still leave usable data; a fixture that cannot continue cannot claim one.
 - **Outcomes, boundaries and precedence.** Checks run in a fixed order: Buffer
   presence, Buffer decode, basis, range order, replacement validity, envelope,
   Head decode, range bounds against the Head, closure validation, character
@@ -245,10 +248,13 @@ Option C, with all profile choices recorded above and in the artifact.
 ## Validation Plan
 
 `node --test tests/replace-range-schema-2-fixtures.spec.mjs` validates the
-artifact independently of its builder: it imports the BLAKE3 and
-`ContentAddressV1` transcriptions and cbor-x, never the model or the rows.
-`node tests/support/replace-range-schema-2/generate.mts --check` (also run by
-that spec) proves the frozen bytes still follow from the rows; `--write`
+artifact independently of its builder: it imports the BLAKE3, CBOR and
+`ContentAddressV1` transcriptions, cbor-x and a hand-written list of expected
+outcomes, required additions and moves, never the model or the rows. Read sets
+are the exception: only their shape is checked independently, and their exact
+content is change-detected by the regeneration test.
+`node tests/support/replace-range-schema-2/generate.mts --check` (the same
+comparison runs in process in `tests/replace-range-schema-2-builder.spec.mjs`) proves the frozen bytes still follow from the rows; `--write`
 regenerates them for review. Repository typecheck and quality gate run locally;
 CI runs the shards.
 

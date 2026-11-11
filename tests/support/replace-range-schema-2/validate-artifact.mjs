@@ -4,10 +4,15 @@
 // artifact, the retained oracle and the ContentAddressV1 transcription; it never
 // imports the specification model, the row definitions or the builder, so a
 // builder bug cannot validate itself. cbor-x decodes atoms as a second codec.
+// Outcomes, deciding checks, required rows and moves come from validator-oracle.mjs,
+// written by hand. Read sets are the specification model's: this file checks only
+// their shape; their exact content is change-detected by the regeneration test.
 import { createHash } from 'node:crypto';
 import { decode as cborDecode } from 'cbor-x';
 import { blake3 } from './blake3.mts';
-import { decodeCanonicalCbor } from './canonical-cbor.mts';
+import { CborBytes, CborMap, CborUint, decodeCanonicalCbor } from './canonical-cbor.mts';
+import { CHECK_ORDER, EVIDENCE, EXPECTED_OBSTRUCTIONS, MOVED, OUTCOMES, RECORDS, REQUIRED_ADDITIONS }
+  from './validator-oracle.mjs';
 import { attachmentDigest, contentEdgeId, contentNodeId, OutgoingEdge, slotEdgeId, unhex, hex }
   from './content-address-v1.mts';
 
@@ -69,8 +74,6 @@ const RETAINED_OUTCOME = new Map([['range-order-invalid', 'RangeOrderInvalid'],
   ['basis-not-canonical', 'BasisNotCanonical'], ['arithmetic-overflow', 'ArithmeticOverflow'],
   ['fact-missing', 'FactMissing'], ['fact-malformed', 'FactMalformed'],
   ['content-identity-mismatch', 'ContentIdentityMismatch'], ['malformed-rope', 'MalformedRope']]);
-// Oracle: DL-0159 moves the stored UTF-16 metric to the derived reading; that row must record the move.
-const MOVED = ['rope-utf16-length-overflow'];
 
 /** A read set is non-empty and names only basis nodes or the invocation's own (possibly absent) ids. */
 export function checkReadSet(row, readSet) {
@@ -94,13 +97,30 @@ function checkInvocationIds(row, outcome) {
   }
 }
 
-export function checkOutcomeBindings(artifact, oracle) {
-  for (const id of MOVED) {
-    if (artifact.rows.find((row) => row.id === id).movedObligations.length === 0) {
-      fail('outcome-binding', `${id} drops its moved obligation`);
+/** Required additions exist, every pinned obstruction is a row, and moved obligations name their surfaces. */
+function checkRequiredRows(artifact) {
+  const all = new Map([...artifact.rows, ...artifact.additions].map((row) => [row.id, row]));
+  const additions = new Set(artifact.additions.map((row) => row.id));
+  for (const id of [...REQUIRED_ADDITIONS, ...EXPECTED_OBSTRUCTIONS.keys()]) {
+    if (!all.has(id)) fail('outcome-binding', `${id} is missing`);
+  }
+  for (const [id, surfaces] of MOVED) {
+    const named = all.get(id).movedObligations.map((moved) => moved.surface);
+    for (const surface of surfaces) {
+      const addition = surface.startsWith('addition:') ? surface.slice('addition:'.length) : null;
+      if (!named.includes(surface) || (addition !== null && !additions.has(addition))) {
+        fail('outcome-binding', `${id} does not move its obligation to ${surface}`);
+      }
     }
   }
+}
+
+export function checkOutcomeBindings(artifact, oracle) {
+  checkRequiredRows(artifact);
   const { checkOrder, outcomes } = artifact.profile;
+  if (checkOrder.join() !== CHECK_ORDER.join() || outcomes.join() !== OUTCOMES.join()) {
+    fail('outcome-binding', 'the profile changes the declared check order or outcome vocabulary');
+  }
   const retained = new Map(oracle.cases.map((entry) => [entry.id, entry.terminal]));
   for (const row of [...artifact.rows, ...artifact.additions]) {
     const terminal = retained.get(row.id);
@@ -128,6 +148,12 @@ export function checkOutcomeBindings(artifact, oracle) {
       && !(typeof row.decision === 'string' && row.decision.length > 0)) {
       fail('outcome-binding', `${row.id} departs from ${terminal.semanticCode} without a decision`);
     }
+    const pinned = EXPECTED_OBSTRUCTIONS.get(row.id);
+    if (pinned === undefined || pinned[0] !== expected.typedOutcome || pinned[1] !== expected.decidingCheck
+      || expected.precedence.deciding !== expected.decidingCheck) {
+      fail('outcome-binding', `${row.id} expects ${expected.typedOutcome} at ${expected.decidingCheck}`);
+    }
+    if (expected.evidence.join() !== EVIDENCE.obstructed.join()) fail('outcome-binding', `${row.id} evidence`);
     checkReadSet(row, expected.readSet);
     checkInvocationIds(row, expected.typedOutcome);
   }
@@ -213,12 +239,31 @@ function checkEdgeId(ids, row, nodes, edge) {
   if (hex(expected) !== edge.id) fail('identity', `${row.id} edge ${edge.id} is not its address`);
 }
 
+/** Whether an atom is a canonical closed record of its type within the U8 and leaf bounds. */
+function decodesAsRecord(type, atomHex) {
+  let value;
+  try {
+    value = decodeCanonicalCbor(unhex(atomHex));
+  } catch {
+    return false;
+  }
+  const fields = RECORDS.get(type);
+  if (!(value instanceof CborMap) || fields === undefined || [...value.entries.keys()].sort().join() !== fields.join()) return false;
+  const height = value.entries.get('height');
+  const bytes = value.entries.get('bytes');
+  if (height !== undefined && (!(height instanceof CborUint) || height.value > 255n)) return false;
+  return bytes === undefined || (bytes instanceof CborBytes && bytes.value.length <= 4096);
+}
+
 /** cbor-x decodes every decodable atom to exactly the declared fact. */
 export function checkAtoms(artifact) {
   for (const row of [...artifact.rows, ...artifact.additions]) {
     const created = row.expected.posture === 'committed' ? row.expected.createdNodes : [];
     for (const node of [...row.basis.nodes, ...created]) {
-      if ('undecodable' in node.fact) continue;
+      if ('undecodable' in node.fact) {
+        if (decodesAsRecord(node.type, node.atomHex)) fail('atoms', `${row.id} ${node.id} is marked undecodable but decodes`);
+        continue;
+      }
       try {
         decodeCanonicalCbor(unhex(node.atomHex));
       } catch {
