@@ -267,7 +267,7 @@ None: the artifact is not executed.
 
 ## Retrospective
 
-The artifact covers all 40 retained ids and 13 additions; every row stays
+The artifact covers all 40 retained ids and 15 additions; every row stays
 unexecuted and the passing count is still 0/40. The first green run caught a
 hand-copied semanticCode error, which is why the validator reads the oracle
 instead of trusting the rows. Keeping the validator free of builder imports

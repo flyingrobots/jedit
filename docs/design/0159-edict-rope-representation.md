@@ -864,7 +864,9 @@ Moved and removed representations:
   half is the row above; the codec half is the addition `branch-height-exceeds-u8`.
 
 The artifact also carries schema-2 additions: the positive shared Head, equal
-leaves, constructor leaf counts, invalid replacement bytes and malformed edges.
+leaves, constructor leaf counts, invalid replacement bytes, malformed edges, and two
+malformed closures that would otherwise be NoOp, which pin closure validation
+before the no-op check.
 
 The remaining operation gates are unchanged: exact public Core/Target/package,
 manifest and codecs with separate verification; generic Echo consumption with
