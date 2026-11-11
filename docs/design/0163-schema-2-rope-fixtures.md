@@ -3,7 +3,7 @@ title: "DL-0163 - Executable Schema-2 Rope Fixtures"
 legend: "DL"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/389"
-status: "active"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-11-10"
@@ -227,7 +227,7 @@ Option C, with all profile choices recorded above and in the artifact.
   checked against reference vectors.
 - [x] Slice 2: Fixture profile, specification model and the 40 retained rows.
 - [x] Slice 3: Schema-2 additions, the artifact, its sidecar and validation.
-- [ ] Slice 4: DL-0159 counterpart decisions; CI and independent review.
+- [x] Slice 4: DL-0159 counterpart decisions; CI and independent review.
 
 ## Tests To Write First
 
