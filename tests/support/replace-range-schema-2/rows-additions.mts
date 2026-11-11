@@ -15,6 +15,10 @@ function addition(id: string, obligation: string, decision?: string): { id: stri
   return decision === undefined ? { id, mapping: 'addition', obligation } : { id, mapping: 'addition', obligation, decision };
 }
 
+/** Leaf sizes fromBytes must produce, worked by hand: halve at the boundary at or before the middle. */
+const CONSTRUCTOR_LEAVES: ReadonlyMap<number, readonly number[]> = new Map([
+  [4097, [2048, 2049]], [8193, [4096, 2048, 2049]], [8194, [2048, 2049, 2048, 2049]]]);
+
 const SHARED_LEAF = leaf('a');
 
 export const ADDITION_ROWS: readonly RowSpec[] = [
@@ -25,22 +29,22 @@ export const ADDITION_ROWS: readonly RowSpec[] = [
   [buffer('shared-head-left', head(leaf('shared'))),
     buffer('shared-head-right', head(leaf('shared')), { importFrom: 'shared-head-left' })],
   invoke(0n, 0n, 'x', { buffer: 'shared-head-left' }),
-  new ExpectCommitted(utf8('shared'), utf8('xshared'))),
+  new ExpectCommitted([utf8('shared'), utf8('xshared')], [7])),
   new RowSpec(addition('equal-leaf-second-position',
     '"aa" stored as one shared leaf; editing the second "a" addresses the second position'),
   [buffer('equal-leaf-second-position', head(branch(SHARED_LEAF, SHARED_LEAF)))],
   invoke(1n, 2n, 'b'),
-  new ExpectCommitted(utf8('aa'), utf8('ab'), [utf8('a')])),
+  new ExpectCommitted([utf8('aa'), utf8('ab')], [1, 1], [utf8('a')])),
   new RowSpec(addition('equal-content-new-leaves',
     'Two equal new leaves: the proposal ensures one node, and both text positions remain'),
   [buffer('equal-content-new-leaves', head(null))],
   invoke(0n, 0n, repeat('z', 8192)),
-  new ExpectCommitted(utf8(''), repeat('z', 8192))),
+  new ExpectCommitted([utf8(''), repeat('z', 8192)], [4096, 4096])),
   ...[4097, 8193, 8194].map((length) => new RowSpec(addition(`constructor-${length}-bytes`,
     `fromBytes over ${length} bytes: leaf and branch counts follow the constructor, not ceil(n / 4096)`),
   [buffer(`constructor-${length}-bytes`, head(null))],
   invoke(0n, 0n, alphabet(length)),
-  new ExpectCommitted(utf8(''), alphabet(length)))),
+  new ExpectCommitted([utf8(''), alphabet(length)], CONSTRUCTOR_LEAVES.get(length)!))),
   new RowSpec(addition('invalid-utf8-replacement',
     'Invalid UTF-8 replacement bytes: typed outcome at the replacement check'),
   [buffer('invalid-utf8-replacement', head(leaf('abc')))],

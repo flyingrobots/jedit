@@ -14,7 +14,8 @@ function committedReasons(expected, observation) {
   const reasons = [];
   if (observation.textAfterHex === undefined) reasons.push('no text outcome');
   if (!same(observation.effects, expected.effects)) reasons.push('effects differ from the normalized proposal');
-  if (!same(observation.footprint, expected.footprint)) reasons.push('footprint differs');
+  if (!same(observation.readSet, expected.readSet)) reasons.push('read set differs');
+  if (!same(observation.writeSet, expected.writeSet)) reasons.push('write set differs');
   if (observation.headAfterId !== expected.headAfter.id) reasons.push('new head id differs');
   if (!same(observation.reachableFromBuffer, expected.reachability.fromBufferAfter)) reasons.push('reachability differs');
   return reasons;
@@ -28,6 +29,7 @@ function obstructedReasons(expected, observation) {
   if (observation.typedOutcome !== expected.typedOutcome) reasons.push('typed outcome differs');
   if (observation.decidingCheck !== expected.decidingCheck) reasons.push('rejecting boundary differs');
   if (!same(observation.effects ?? [], [])) reasons.push('an obstruction proposed effects');
+  if (!same(observation.readSet, expected.readSet)) reasons.push('read set differs');
   return reasons;
 }
 
@@ -56,8 +58,10 @@ export function exactObservation(row) {
   const expected = row.expected;
   const common = { target: PERSISTENT_ROPE, executed: true, evidence: [...expected.evidence], posture: expected.posture };
   if (expected.posture === 'obstructed') {
-    return { ...common, typedOutcome: expected.typedOutcome, decidingCheck: expected.decidingCheck, effects: [] };
+    return { ...common, typedOutcome: expected.typedOutcome, decidingCheck: expected.decidingCheck, effects: [],
+      readSet: expected.readSet };
   }
-  return { ...common, textAfterHex: row.text.afterHex, effects: expected.effects, footprint: expected.footprint,
+  return { ...common, textAfterHex: row.text.afterHex, effects: expected.effects, readSet: expected.readSet,
+    writeSet: expected.writeSet,
     headAfterId: expected.headAfter.id, reachableFromBuffer: expected.reachability.fromBufferAfter };
 }

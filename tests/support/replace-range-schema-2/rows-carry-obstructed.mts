@@ -15,10 +15,17 @@ const EXTENT_MISMATCH = (): ReturnType<typeof head> =>
 const OVERSIZED = (): ReturnType<typeof head> => head(null, { claims: claims({ byteLength: 1n }) });
 const TWO_TO_31 = 2n ** 31n;
 
-function obstructed(id: string, semanticCode: string, obligation: string): { id: string; mapping: 'carry';
-  semanticCode: string; obligation: string } {
-  return { id, mapping: 'carry', semanticCode, obligation };
+function obstructed(id: string, semanticCode: string, obligation: string, decision?: string): { id: string;
+  mapping: 'carry'; semanticCode: string; obligation: string; decision?: string } {
+  return decision === undefined ? { id, mapping: 'carry', semanticCode, obligation }
+    : { id, mapping: 'carry', semanticCode, obligation, decision };
 }
+
+const EXTENT_DECISION = 'Schema 1 reported a branch whose children disagree with its claimed extent as a malformed fact. '
+  + 'Schema 2 decodes that atom successfully; the disagreement is a rope invariant, so the typed outcome is '
+  + 'MalformedRope at closure validation. The row stays carry: the obligation is unchanged.';
+const MASK_DECISION = 'Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so '
+  + 'this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.';
 
 export const CARRY_OBSTRUCTED_ROWS: readonly RowSpec[] = [
   new RowSpec(obstructed('reversed-range', 'range-order-invalid', 'Range-order obstruction; no graph mutation'),
@@ -67,26 +74,26 @@ export const CARRY_OBSTRUCTED_ROWS: readonly RowSpec[] = [
     [], invoke(0n, 0n, 'x', { buffer: new Uint8Array(32).fill(0x11), basis: new Uint8Array(32).fill(0x22) }),
     new ExpectObstructed('FactMissing', 'buffer-presence')),
   new RowSpec(obstructed('branch-extent-mismatch-at-zero', 'fact-malformed',
-    'Validate branch/children extent before a zero-offset edit'),
+    'Validate branch/children extent before a zero-offset edit', EXTENT_DECISION),
   [buffer('branch-extent-mismatch-at-zero', EXTENT_MISMATCH())], invoke(0n, 0n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('branch-extent-mismatch-at-exact-end', 'fact-malformed',
-    'Validate branch/children extent at the end boundary'),
+    'Validate branch/children extent at the end boundary', EXTENT_DECISION),
   [buffer('branch-extent-mismatch-at-exact-end', EXTENT_MISMATCH())], invoke(4098n, 4098n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('branch-extent-mismatch-at-internal-boundary', 'fact-malformed',
-    'Validate branch/children extent at a child boundary'),
+    'Validate branch/children extent at a child boundary', EXTENT_DECISION),
   [buffer('branch-extent-mismatch-at-internal-boundary', EXTENT_MISMATCH())], invoke(4096n, 4096n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('branch-truncated-no-op-mask', 'malformed-rope',
-    'Malformed materialization must not be hidden by NoOp'),
+    'Malformed materialization must not be hidden by NoOp', MASK_DECISION),
   [buffer('branch-truncated-no-op-mask', EXTENT_MISMATCH())],
   invoke(0n, 4098n, utf8(`${'a'.repeat(4096)}b`)),
-  new ExpectObstructed('MalformedRope', 'closure-validation', ['no-op'])),
+  new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('empty-root-nonzero-length-no-op-mask', 'malformed-rope',
-    'Missing root with nonzero head length cannot become NoOp'),
+    'Missing root with nonzero head length cannot become NoOp', MASK_DECISION),
   [buffer('empty-root-nonzero-length-no-op-mask', OVERSIZED())], invoke(0n, 1n, ''),
-  new ExpectObstructed('MalformedRope', 'closure-validation', ['no-op'])),
+  new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(obstructed('empty-root-nonzero-length-zero-insert', 'malformed-rope',
     'Reject inconsistent empty-root metrics before insertion'),
   [buffer('empty-root-nonzero-length-zero-insert', OVERSIZED())], invoke(0n, 0n, 'x'),

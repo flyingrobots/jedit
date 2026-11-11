@@ -47,8 +47,13 @@ function profile(): Json {
     },
     validation: 'a leaf is validated when its atom is decoded; a branch when expanded: edge counts, identity, then '
       + 'its decoded children\'s checked sums, equality, height and balance, before any child is expanded',
-    footprint: 'reads are the node records/atoms and (source, edge type) ranges the specification model resolved; '
-      + 'writes follow Echo\'s slot model; an Ensure of an existing identical node is a read',
+    readSet: 'the program\'s witnessed reads: node records with their atoms, and (source, edge type) ranges, as the '
+      + 'specification model resolved them. Echo\'s own validation and precondition reads are not listed',
+    writeSet: 'Echo\'s write set: created node records and atoms, the Buffer atom, created and retargeted edges, and '
+      + 'the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write',
+    competing: 'a later check the fixture also fails; verified by re-running the model with the deciding check passed',
+    validationTiming: 'closure validation covers every node the operation resolves, including those the reconstruction '
+      + 'and no-op comparison read; all of it completes before any endpoint is classified',
     checkOrder: CHECK_ORDER,
     outcomes: OUTCOMES,
     echoAdmission: { boundary: ECHO_ADMISSION, identityViolation: IDENTITY_LAW_VIOLATION },
@@ -88,7 +93,7 @@ function rowJson(row: RowSpec, retainedIndex: number | null): Json {
       replacementHex: hex(invocation.replacement) },
     ...(isCommitted(row.expected)
       ? { text: { beforeHex: hex(row.expected.textBefore), afterHex: hex(row.expected.textAfter),
-        mustShareHex: row.expected.mustShare.map(hex) } } : {}),
+        mustShareHex: row.expected.mustShare.map(hex), leafSizes: row.expected.leafSizes } } : {}),
     expected,
   };
 }

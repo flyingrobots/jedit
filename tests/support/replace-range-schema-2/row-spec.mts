@@ -25,14 +25,18 @@ export class InvocationSpec {
   }
 }
 
-/** A committed row's specified result: texts written by hand and basis leaves that must survive by identity. */
+/**
+ * A committed row's specified result, all written by hand: the texts, the post-state leaf sizes in text
+ * order, and basis leaves that must survive by identity.
+ */
 export class ExpectCommitted {
   readonly textBefore: Bytes;
   readonly textAfter: Bytes;
+  readonly leafSizes: readonly number[];
   readonly mustShare: readonly Bytes[];
-  constructor(textBefore: Bytes, textAfter: Bytes, mustShare: readonly Bytes[] = []) {
-    this.textBefore = textBefore;
-    this.textAfter = textAfter;
+  constructor(texts: readonly [Bytes, Bytes], leafSizes: readonly number[], mustShare: readonly Bytes[] = []) {
+    [this.textBefore, this.textAfter] = texts;
+    this.leafSizes = leafSizes;
     this.mustShare = mustShare;
   }
 }

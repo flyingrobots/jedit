@@ -50,12 +50,12 @@ function factJson(kind: FactKind | null, atom: Uint8Array): Json {
 
 export function graphJson(graph: GraphState, injected: ReadonlySet<string>): { nodes: Json; edges: Json } {
   return {
-    nodes: [...graph.nodes.values()].sort((a, b) => hex(a.id).localeCompare(hex(b.id))).map((node) => ({
+    nodes: [...graph.nodes.values()].sort((a, b) => byCodeUnit(hex(a.id), hex(b.id))).map((node) => ({
       id: hex(node.id), type: kindName(node.nodeType) ?? hex(node.nodeType), atomHex: hex(node.atom),
       fact: factJson(kindName(node.nodeType), node.atom),
       admission: injected.has(hex(node.id)) ? 'requires-non-bridge-writer' : 'bridge-admissible',
     })),
-    edges: [...graph.edges.values()].sort((a, b) => hex(a.id).localeCompare(hex(b.id))).map((edge) => ({
+    edges: [...graph.edges.values()].sort((a, b) => byCodeUnit(hex(a.id), hex(b.id))).map((edge) => ({
       id: hex(edge.id), from: hex(edge.from), type: edgeName(edge.edgeType), to: hex(edge.to),
     })),
   };
@@ -76,6 +76,21 @@ function reachable(graph: GraphState, from: Uint8Array, extra: Proposal | null):
     }
   }
   return seen;
+}
+
+/** Code-unit order: the same on every machine, unlike localeCompare. */
+export function byCodeUnit(left: string, right: string): number {
+  return left < right ? -1 : (left > right ? 1 : 0);
+}
+
+/** Leaf byte lengths under a head, in text order. */
+function leafSizes(proposal: Proposal, graph: GraphState, id: Uint8Array): number[] {
+  const key = hex(id);
+  const node = proposal.created.get(key) ?? graph.nodes.get(key)!;
+  if (kindName(node.nodeType) === 'Leaf') return [bytesField(decodeFact('Leaf', node.atom), 'bytes').length];
+  const edges = [...new Map([...graph.edges, ...proposal.createdEdges]).values()].filter((edge) => hex(edge.from) === key);
+  return ['root', 'left', 'right'].flatMap((name) => edges.filter((edge) => edgeName(edge.edgeType) === name)
+    .flatMap((edge) => leafSizes(proposal, graph, edge.to)));
 }
 
 /** Concatenated leaf bytes under a head, following created edges first and basis edges otherwise. */
@@ -108,7 +123,7 @@ function readsJson(model: ModelCommit | { view: ModelCommit['view'] }): Json {
     nodes: [...model.view.nodeReads].sort(),
     edgeRanges: [...model.view.rangeReads.values()].map((range) => ({ from: range.from, type: edgeName(
       Uint8Array.from(range.edgeType.match(/../g)!, (pair) => Number.parseInt(pair, 16))) }))
-      .sort((a, b) => `${a.from}/${a.type}`.localeCompare(`${b.from}/${b.type}`)),
+      .sort((a, b) => byCodeUnit(`${a.from}/${a.type}`, `${b.from}/${b.type}`)),
   };
 }
 
@@ -136,12 +151,16 @@ export function obstructedJson(row: RowSpec, expected: ExpectObstructed, model: 
   }
   for (const later of expected.competing) {
     if (checkRank(later) <= checkRank(expected.check)) throw new FixtureInconsistency(`${row.id}: ${later} is not later`);
+    const without = new ReplaceRangeModel(model.view.graph, model.invocation, expected.check).run();
+    if (without instanceof ModelCommit || without.obstruction.check !== later) {
+      throw new FixtureInconsistency(`${row.id}: without ${expected.check} the fixture does not reach ${later}`);
+    }
   }
   return {
     posture: 'obstructed', typedOutcome: expected.outcome, decidingCheck: expected.check,
     precedence: { passed: CHECK_ORDER.slice(0, checkRank(expected.check)), deciding: expected.check,
       competing: expected.competing },
-    observedReads: readsJson(result), effects: [], patch: 'none', parentGraphUnchanged: true,
+    readSet: readsJson(result), effects: [], patch: 'none', parentGraphUnchanged: true,
     evidence: OBSTRUCTED_EVIDENCE,
   };
 }
@@ -154,7 +173,7 @@ function writtenRanges(proposal: Proposal, writtenEdges: readonly string[], buff
     const edge = proposal.createdEdges.get(id)!;
     keys.set(`${hex(edge.from)}/${edgeName(edge.edgeType)}`, { from: hex(edge.from), type: edgeName(edge.edgeType) });
   }
-  return [...keys].sort(([a], [b]) => a.localeCompare(b)).map(([, key]) => key);
+  return [...keys].sort(([a], [b]) => byCodeUnit(a, b)).map(([, key]) => key);
 }
 
 export function committedJson(row: RowSpec, expected: ExpectCommitted, basis: Basis, model: ReplaceRangeModel): Json {
@@ -170,6 +189,10 @@ export function committedJson(row: RowSpec, expected: ExpectCommitted, basis: Ba
   const textAfter = proposalText(proposal, basis.graph, proposal.headId);
   if (hex(textBefore) !== hex(expected.textBefore) || hex(textAfter) !== hex(expected.textAfter)) {
     throw new FixtureInconsistency(`${row.id}: model text differs from the hand-written texts`);
+  }
+  const sizes = leafSizes(proposal, basis.graph, proposal.headId);
+  if (sizes.join() !== expected.leafSizes.join()) {
+    throw new FixtureInconsistency(`${row.id}: model leaves ${sizes.join()} differ from ${expected.leafSizes.join()}`);
   }
   const shared = [...before].filter((id) => after.has(id)).sort();
   for (const text of expected.mustShare) {
@@ -187,19 +210,17 @@ export function committedJson(row: RowSpec, expected: ExpectCommitted, basis: Ba
     posture: 'committed',
     headAfter: { id: hex(proposal.headId), fact: factJson('Head', proposal.created.get(hex(proposal.headId))!.atom) },
     bufferAfter: factJson('Buffer', proposal.bufferAtom),
-    createdNodes: [...proposal.created.values()].sort((a, b) => hex(a.id).localeCompare(hex(b.id))).map((node) => ({
+    createdNodes: [...proposal.created.values()].sort((a, b) => byCodeUnit(hex(a.id), hex(b.id))).map((node) => ({
       id: hex(node.id), type: kindName(node.nodeType), atomHex: hex(node.atom), fact: factJson(kindName(node.nodeType), node.atom),
       edges: [...proposal.createdEdges.values()].filter((edge) => hex(edge.from) === hex(node.id))
         .map((edge) => ({ id: hex(edge.id), type: edgeName(edge.edgeType), to: hex(edge.to) })),
       alreadyInBasis: basis.graph.nodes.has(hex(node.id)),
     })),
     effects: effects.map((effect) => ({ kind: effect.kind, ...Object.fromEntries(effect.fields) })),
-    footprint: {
-      reads: readsJson(result),
-      writes: { nodes: writtenNodes, atoms: [...writtenNodes, hex(invocation.bufferId)].sort(),
-        edges: [...writtenEdges, hex(proposal.slotEdge)].sort(),
-        edgeRanges: writtenRanges(proposal, writtenEdges, invocation.bufferId) },
-    },
+    readSet: readsJson(result),
+    writeSet: { nodes: writtenNodes, atoms: [...writtenNodes, hex(invocation.bufferId)].sort(byCodeUnit),
+      edges: [...writtenEdges, hex(proposal.slotEdge)].sort(byCodeUnit),
+      edgeRanges: writtenRanges(proposal, writtenEdges, invocation.bufferId) },
     reachability: {
       root: 'worldline root to Buffer layout pending echo#927; sets below start at the Buffer',
       fromBufferAfter: [...after].sort(), sharedWithBasisHead: shared,

@@ -153,11 +153,17 @@ The artifact is canonical JSON with a SHA-256 sidecar.
   boundary at or before the midpoint. An edit inside one leaf whose result is
   1–4096 bytes rewrites that leaf and path-copies its ancestors; any other edit
   is prefix, `fromBytes(replacement)`, suffix, joined by AVL concatenation.
-- **Reads.** The specification model reads through a recording view; the
-  expected read set is what it observed: node records and atoms, and outgoing
-  edge ranges by `(source, type)`. Its validation is top-down: a branch's sum,
-  height and identity are checked from its children's claimed atoms before
-  descending.
+- **Read and write sets.** The specification model reads through a recording
+  view; the expected read set is the program's witnessed reads: node records
+  and atoms, and outgoing edge ranges by `(source, type)`. Echo's own
+  validation and precondition reads are not listed. The write set follows
+  Echo's slot model, including the range key of each written edge. Validation
+  is top-down: a branch's sum, height and identity are checked from its
+  children's claimed atoms before descending, and every node the operation
+  resolves, including those the reconstruction and no-op comparison read, is
+  validated before any endpoint is classified.
+- **Competing checks.** A row may name later checks its fixture also fails;
+  each is verified by re-running the model with the deciding check passed.
 - **Outcomes, boundaries and precedence.** Checks run in a fixed order: Buffer
   presence, Buffer decode, basis, range order, replacement validity, envelope,
   Head decode, range bounds against the Head, closure validation, character
@@ -227,11 +233,11 @@ Option C, with all profile choices recorded above and in the artifact.
 
 ## Acceptance Criteria
 
-- [ ] All 40 ids covered once; additions supplement them.
-- [ ] Persistent rows cannot pass on text, refusal class, resource exclusion
+- [x] All 40 ids covered once; additions supplement them.
+- [x] Persistent rows cannot pass on text, refusal class, resource exclusion
   or Reference evidence.
-- [ ] No expectation depends on the native planner or authored source.
-- [ ] Every moved obligation is recorded; nothing is dropped.
+- [x] No expectation depends on the native planner or authored source.
+- [x] Every moved obligation is recorded; nothing is dropped.
 
 ## Validation Plan
 

@@ -171,12 +171,6 @@ test('text equality, generic refusal, resource refusal or a Reference pass never
   }
 });
 
-test('the artifact regenerates byte for byte from its hand-written rows', () => {
-  // Oracle class 5 (change detection): any diff here is reviewed, never re-blessed in bulk.
-  const result = spawnSync(process.execPath, [path.join(TOOLING, 'generate.mts'), '--check'], { cwd: ROOT, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-});
-
 test('the fixture tooling type-checks under the repository compiler options', () => {
   const result = spawnSync(process.execPath, [path.join(ROOT, 'node_modules/typescript/bin/tsc'), '-p',
     path.join(TOOLING, 'tsconfig.json')], { cwd: ROOT, encoding: 'utf8' });
@@ -185,8 +179,12 @@ test('the fixture tooling type-checks under the repository compiler options', ()
 
 test('fixture tooling imports no planner, runtime or authored source, and the validator no builder', () => {
   // Oracle: #389 requires expectations independent of the native planner and of the code they will judge.
-  const imports = (file) => [...readFileSync(path.join(TOOLING, file), 'utf8').matchAll(/from '([^']+)'/g)]
-    .map((match) => match[1]);
+  // Every static, side-effect and dynamic import, in either quote style.
+  const imports = (file) => [...readFileSync(path.join(TOOLING, file), 'utf8')
+    .matchAll(/^\s*(?:import|export)\b[^;]*?\bfrom\s*(['"])([^'"]+)\1|^\s*import\s*(['"])([^'"]+)\3|\bimport\s*\(\s*(['"])([^'"]+)\5/gm)]
+    .map((match) => match[2] ?? match[4] ?? match[6]);
+  assert.deepEqual(imports('judge.mjs'), []);
+  assert.ok(imports('validate-committed.mjs').includes('cbor-x'));
   const files = readdirSync(TOOLING).filter((file) => /\.m[jt]s$/.test(file));
   assert.ok(files.length > 10);
   for (const file of files) {
@@ -201,4 +199,35 @@ test('fixture tooling imports no planner, runtime or authored source, and the va
       assert.ok(allowed.has(specifier), `${file} must not import ${specifier}`);
     }
   }
+});
+
+test('effects, write set and Buffer update are checked field by field against the created nodes', () => {
+  const committed = (copy) => row(copy, 'middle-ascii-insert').expected;
+  const mutations = [
+    (copy) => { committed(copy).effects.find((effect) => effect.kind === 'EnsureEdge').to = '00'.repeat(32); },
+    (copy) => { committed(copy).effects.find((effect) => effect.kind === 'EnsureNode').atomHex = 'a0'; },
+    (copy) => { committed(copy).effects.find((effect) => effect.kind === 'ReplaceAtom').atomHex = 'a0'; },
+    (copy) => { committed(copy).writeSet.nodes = []; },
+    (copy) => { committed(copy).readSet.nodes.push('ff'.repeat(32)); },
+    (copy) => { row(copy, 'constructor-8193-bytes').text.leafSizes = [4097, 4096]; },
+  ];
+  for (const mutate of mutations) assert.throws(() => checkCommitted(mutated(mutate), oracle), /committed/);
+});
+
+test('an obstructed row\'s read set and its departures from the retained outcome are checked', () => {
+  assert.throws(() => checkOutcomeBindings(mutated((copy) => { row(copy, 'stale-basis').expected.readSet.nodes = []; }),
+    oracle), /outcome-binding/);
+  assert.throws(() => checkOutcomeBindings(mutated((copy) => {
+    Object.assign(row(copy, 'reversed-range').expected, { typedOutcome: 'NoOp' });
+  }), oracle), /outcome-binding/);
+  assert.throws(() => checkOutcomeBindings(mutated((copy) => { row(copy, 'branch-extent-mismatch-at-zero').decision = null; }),
+    oracle), /outcome-binding/);
+  assert.throws(() => checkOutcomeBindings(mutated((copy) => {
+    row(copy, 'rope-utf16-length-overflow').movedObligations = [];
+  }), oracle), /outcome-binding/);
+});
+
+test('an obstruction observed with a different read set does not satisfy its row', () => {
+  const entry = row(artifact, 'stale-basis');
+  assert.notDeepEqual(unmetReasons(entry, { ...exactObservation(entry), readSet: { nodes: [], edgeRanges: [] } }), []);
 });

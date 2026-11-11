@@ -4,6 +4,7 @@
 // the artifact's own facts and edges and must satisfy the rope law, carry the
 // retained text outcome, share what the row says it shares, and propose exactly
 // the effects Echo's canonical order requires.
+import { decode as cborDecode } from 'cbor-x';
 import { attachmentDigest, compareBytes, hex, unhex } from './content-address-v1.mts';
 
 const MAX_LEAF_BYTES = 4096;
@@ -57,7 +58,7 @@ class PostState {
       if (bytes.length < 1 || bytes.length > MAX_LEAF_BYTES || String(breaks) !== node.fact.lineBreaks) {
         fail(`${row.id} leaf ${id} breaks the leaf law`);
       }
-      return { length: BigInt(bytes.length), breaks: BigInt(breaks), height: 1n, text: bytes };
+      return { length: BigInt(bytes.length), breaks: BigInt(breaks), height: 1n, text: bytes, leaves: [bytes.length] };
     }
     const [left] = this.child(id, 'left');
     const [right] = this.child(id, 'right');
@@ -68,25 +69,31 @@ class PostState {
       || String(height) !== node.fact.height || skew > 1n || skew < -1n) {
       fail(`${row.id} branch ${id} breaks the rope law`);
     }
-    return { length: l.length + r.length, breaks: l.breaks + r.breaks, height, text: Uint8Array.from([...l.text, ...r.text]) };
+    return { length: l.length + r.length, breaks: l.breaks + r.breaks, height, text: Uint8Array.from([...l.text, ...r.text]),
+      leaves: [...l.leaves, ...r.leaves] };
   }
 }
 
 function checkHead(row, state, basisHead) {
   const head = state.nodes.get(row.expected.headAfter.id);
   const [root] = state.child(head.id, 'root');
-  const metrics = root === undefined ? { length: 0n, breaks: 0n, text: new Uint8Array() } : state.tree(root, row);
+  const metrics = root === undefined ? { length: 0n, breaks: 0n, text: new Uint8Array(), leaves: [] } : state.tree(root, row);
   if (String(metrics.length) !== head.fact.byteLength || String(metrics.breaks + 1n) !== head.fact.lineCount) {
     fail(`${row.id} head metrics`);
   }
   if (hex(metrics.text) !== row.text.afterHex) fail(`${row.id} post-state text is not the expected text`);
+  if (metrics.leaves.join() !== row.text.leafSizes.join()) fail(`${row.id} leaf sizes ${metrics.leaves.join()}`);
   if (BigInt(head.fact.sequence) !== BigInt(basisHead.fact.sequence) + 1n) fail(`${row.id} head sequence`);
   if (state.child(head.id, 'anchor').join() !== state.child(basisHead.id, 'anchor').join()) {
     fail(`${row.id} the anchor is not carried forward`);
   }
 }
 
-function checkEffects(row, basisBuffer, basisHeadId) {
+function sameFields(effect, expected) {
+  return Object.entries(expected).every(([name, value]) => effect[name] === value);
+}
+
+function checkEffects(row, profile, basisBuffer, basisHeadId) {
   const { effects, createdNodes, headAfter } = row.expected;
   const classOf = { EnsureNode: 0, ReplaceAtom: 1, EnsureEdge: 2, ReplaceEdge: 2 };
   const slot = (effect) => unhex(effect.node ?? effect.edge);
@@ -96,18 +103,30 @@ function checkEffects(row, basisBuffer, basisHeadId) {
       fail(`${row.id} effects are not in Echo canonical order`);
     }
   }
-  const ensured = effects.filter((effect) => effect.kind === 'EnsureNode').map((effect) => effect.node).sort();
-  if (ensured.join() !== createdNodes.map((node) => node.id).sort().join()) fail(`${row.id} EnsureNode set`);
-  const edgeCount = createdNodes.reduce((sum, node) => sum + node.edges.length, 0);
-  if (effects.filter((effect) => effect.kind === 'EnsureEdge').length !== edgeCount) fail(`${row.id} EnsureEdge set`);
-  const [atom] = effects.filter((effect) => effect.kind === 'ReplaceAtom');
-  const atomType = unhex(row.basisProfile.atomTypes.Buffer.id);
-  if (atom.node !== basisBuffer.id || atom.expectedAtomDigest !== hex(attachmentDigest(atomType, unhex(basisBuffer.atomHex)))) {
-    fail(`${row.id} ReplaceAtom does not compare against the basis Buffer`);
+  const wanted = [
+    ...createdNodes.map((node) => ({ kind: 'EnsureNode', node: node.id, nodeType: profile.nodeTypes[node.type].id,
+      atomType: profile.atomTypes[node.type].id, atomHex: node.atomHex })),
+    ...createdNodes.flatMap((node) => node.edges.map((edge) => ({ kind: 'EnsureEdge', edge: edge.id, from: node.id,
+      edgeType: profile.edgeTypes[edge.type].id, to: edge.to }))),
+    { kind: 'ReplaceAtom', node: basisBuffer.id, atomType: profile.atomTypes.Buffer.id,
+      expectedAtomDigest: hex(attachmentDigest(unhex(profile.atomTypes.Buffer.id), unhex(basisBuffer.atomHex))) },
+    { kind: 'ReplaceEdge', expectedTo: basisHeadId, to: headAfter.id },
+  ];
+  if (effects.length !== wanted.length) fail(`${row.id} proposes ${effects.length} effects, not ${wanted.length}`);
+  for (const expected of wanted) {
+    if (!effects.some((effect) => sameFields(effect, expected))) fail(`${row.id} has no effect matching ${expected.kind}`);
   }
-  const [edge] = effects.filter((effect) => effect.kind === 'ReplaceEdge');
-  if (edge.expectedTo !== basisHeadId || edge.to !== headAfter.id) fail(`${row.id} ReplaceEdge retarget`);
-  if (BigInt(row.expected.bufferAfter.version) !== BigInt(basisBuffer.fact.version) + 1n) fail(`${row.id} version`);
+  const atom = effects.find((effect) => effect.kind === 'ReplaceAtom');
+  const decoded = cborDecode(Buffer.from(atom.atomHex, 'hex'));
+  const after = row.expected.bufferAfter;
+  if (Object.keys(decoded).sort().join() !== 'bufferKey,version' || decoded.bufferKey !== after.bufferKey
+    || String(decoded.version) !== after.version) fail(`${row.id} ReplaceAtom does not write bufferAfter`);
+  if (BigInt(after.version) !== BigInt(basisBuffer.fact.version) + 1n || after.bufferKey !== basisBuffer.fact.bufferKey) {
+    fail(`${row.id} version`);
+  }
+  const basisIds = new Set(row.basis.nodes.map((node) => node.id));
+  const written = createdNodes.map((node) => node.id).filter((id) => !basisIds.has(id)).sort();
+  if (row.expected.writeSet.nodes.join() !== written.join()) fail(`${row.id} write set nodes`);
 }
 
 function checkReach(row, state, basisHeadId) {
@@ -125,7 +144,9 @@ function checkReach(row, state, basisHeadId) {
       fail(`${row.id} editing one buffer changed ${other.key}`);
     }
   }
-  const reads = new Set(row.expected.footprint.reads.nodes);
+  const known = new Set([...row.basis.nodes.map((node) => node.id), row.invocation.bufferId]);
+  if (row.expected.readSet.nodes.some((id) => !known.has(id))) fail(`${row.id} reads a node outside the basis`);
+  const reads = new Set(row.expected.readSet.nodes);
   if (!reads.has(row.invocation.bufferId) || !reads.has(basisHeadId)) fail(`${row.id} reads omit the Buffer or Head`);
   for (const other of row.basis.buffers.filter((buffer) => buffer.bufferId !== row.invocation.bufferId)) {
     if (reads.has(other.bufferId)) fail(`${row.id} reads another buffer`);
@@ -144,7 +165,7 @@ export function checkCommitted(artifact, oracle) {
     const basisBuffer = row.basis.nodes.find((node) => node.id === row.invocation.bufferId);
     const basisHead = row.basis.nodes.find((node) => node.id === row.invocation.basisHeadId);
     checkHead(row, state, basisHead);
-    checkEffects({ ...row, basisProfile: artifact.profile }, basisBuffer, basisHead.id);
+    checkEffects(row, artifact.profile, basisBuffer, basisHead.id);
     checkReach(row, state, basisHead.id);
   }
 }

@@ -59,7 +59,29 @@ export function checkRegister(artifact, oracle, mappingTable) {
   }
 }
 
+// Oracle: the schema-1 semanticCode each schema-2 outcome continues; a row that departs must say why.
+const RETAINED_OUTCOME = new Map([['range-order-invalid', 'RangeOrderInvalid'],
+  ['range-out-of-bounds', 'RangeOutOfBounds'], ['utf8-boundary-invalid', 'Utf8BoundaryInvalid'], ['no-op', 'NoOp'],
+  ['basis-not-canonical', 'BasisNotCanonical'], ['arithmetic-overflow', 'ArithmeticOverflow'],
+  ['fact-missing', 'FactMissing'], ['fact-malformed', 'FactMalformed'],
+  ['content-identity-mismatch', 'ContentIdentityMismatch'], ['malformed-rope', 'MalformedRope']]);
+// Oracle: DL-0159 moves the stored UTF-16 metric to the derived reading; that row must record the move.
+const MOVED = ['rope-utf16-length-overflow'];
+
+/** A read set is non-empty and names only basis nodes or the invocation's own (possibly absent) ids. */
+export function checkReadSet(row, readSet) {
+  const known = new Set([...row.basis.nodes.map((node) => node.id), row.invocation.bufferId, row.invocation.basisHeadId]);
+  if (readSet.nodes.length === 0 || readSet.nodes.some((id) => !known.has(id))) {
+    fail('outcome-binding', `${row.id} read set names no read or an unknown node`);
+  }
+}
+
 export function checkOutcomeBindings(artifact, oracle) {
+  for (const id of MOVED) {
+    if (artifact.rows.find((row) => row.id === id).movedObligations.length === 0) {
+      fail('outcome-binding', `${id} drops its moved obligation`);
+    }
+  }
   const { checkOrder, outcomes } = artifact.profile;
   const retained = new Map(oracle.cases.map((entry) => [entry.id, entry.terminal]));
   for (const row of [...artifact.rows, ...artifact.additions]) {
@@ -84,6 +106,11 @@ export function checkOutcomeBindings(artifact, oracle) {
     if (expected.effects.length !== 0 || expected.patch !== 'none' || expected.parentGraphUnchanged !== true) {
       fail('outcome-binding', `${row.id} obstruction mutates`);
     }
+    if (terminal !== undefined && RETAINED_OUTCOME.get(terminal.semanticCode) !== expected.typedOutcome
+      && !(typeof row.decision === 'string' && row.decision.length > 0)) {
+      fail('outcome-binding', `${row.id} departs from ${terminal.semanticCode} without a decision`);
+    }
+    checkReadSet(row, expected.readSet);
   }
 }
 

@@ -52,7 +52,7 @@ export class GraphState {
     const type = hex(edgeType);
     return [...this.edges.values()]
       .filter((edge) => hex(edge.from) === source && hex(edge.edgeType) === type)
-      .sort((left, right) => hex(left.id).localeCompare(hex(right.id)));
+      .sort((left, right) => (hex(left.id) < hex(right.id) ? -1 : 1));
   }
 
   allOutgoing(from: Uint8Array): EdgeRecord[] {

@@ -111,7 +111,10 @@
       "descent": "a range descends left while end <= left length, right while start >= left length"
     },
     "validation": "a leaf is validated when its atom is decoded; a branch when expanded: edge counts, identity, then its decoded children's checked sums, equality, height and balance, before any child is expanded",
-    "footprint": "reads are the node records/atoms and (source, edge type) ranges the specification model resolved; writes follow Echo's slot model; an Ensure of an existing identical node is a read",
+    "readSet": "the program's witnessed reads: node records with their atoms, and (source, edge type) ranges, as the specification model resolved them. Echo's own validation and precondition reads are not listed",
+    "writeSet": "Echo's write set: created node records and atoms, the Buffer atom, created and retargeted edges, and the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write",
+    "competing": "a later check the fixture also fails; verified by re-running the model with the deciding check passed",
+    "validationTiming": "closure validation covers every node the operation resolves, including those the reconstruction and no-op comparison read; all of it completes before any endpoint is classified",
     "checkOrder": [
       "buffer-presence",
       "buffer-decode",
@@ -249,7 +252,10 @@
       "text": {
         "beforeHex": "",
         "afterHex": "e78cab0a",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          4
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -344,57 +350,55 @@
             "to": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
-              "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7"
-            ],
-            "edgeRanges": [
-              {
-                "from": "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
-                "type": "anchor"
-              },
-              {
-                "from": "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
-                "type": "root"
-              },
-              {
-                "from": "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
-                "type": "canonicalHead"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
-              "4fd5d608879a28c4df453cab76df6533f717acb9c02a1c8700bc29cf8dd931c0"
-            ],
-            "atoms": [
-              "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
-              "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
-              "4fd5d608879a28c4df453cab76df6533f717acb9c02a1c8700bc29cf8dd931c0"
-            ],
-            "edges": [
-              "437610e0c0f7045afbb864640f00d8abc35c0bce5e88b264823efa10215e9c2e",
-              "47188dacac3223ef8452538a723a382137e683951399128c28ce832a8d1a2a24",
-              "9e1c5a1935af9b0e27e2556887dad76be2b4eb4096d0bbd429d11a9dc2931a2e"
-            ],
-            "edgeRanges": [
-              {
-                "from": "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
-                "type": "anchor"
-              },
-              {
-                "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
-                "type": "root"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
+            "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7"
+          ],
+          "edgeRanges": [
+            {
+              "from": "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
+              "type": "anchor"
+            },
+            {
+              "from": "315bb5db4ff8d60ecb18d7bbb9784575bfb651e5ce679a94bcf7e35013c7c6ba",
+              "type": "root"
+            },
+            {
+              "from": "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
+              "type": "canonicalHead"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+            "4fd5d608879a28c4df453cab76df6533f717acb9c02a1c8700bc29cf8dd931c0"
+          ],
+          "atoms": [
+            "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
+            "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+            "4fd5d608879a28c4df453cab76df6533f717acb9c02a1c8700bc29cf8dd931c0"
+          ],
+          "edges": [
+            "437610e0c0f7045afbb864640f00d8abc35c0bce5e88b264823efa10215e9c2e",
+            "47188dacac3223ef8452538a723a382137e683951399128c28ce832a8d1a2a24",
+            "9e1c5a1935af9b0e27e2556887dad76be2b4eb4096d0bbd429d11a9dc2931a2e"
+          ],
+          "edgeRanges": [
+            {
+              "from": "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+              "type": "anchor"
+            },
+            {
+              "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+              "type": "root"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -576,6 +580,10 @@
         "afterHex": "616258596364",
         "mustShareHex": [
           "6364"
+        ],
+        "leafSizes": [
+          4,
+          2
         ]
       },
       "expected": {
@@ -715,80 +723,78 @@
             "to": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
-              "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
-              "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
-              "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
-              "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
-            ],
-            "edgeRanges": [
-              {
-                "from": "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
-                "type": "left"
-              },
-              {
-                "from": "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
-                "type": "right"
-              },
-              {
-                "from": "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
-                "type": "anchor"
-              },
-              {
-                "from": "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
-              "6c9c62e41d4ea6d0d87f2d40a0d7c6a38736e2a4df5cd677d51427bd7afa9319",
-              "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88"
-            ],
-            "atoms": [
-              "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
-              "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
-              "6c9c62e41d4ea6d0d87f2d40a0d7c6a38736e2a4df5cd677d51427bd7afa9319",
-              "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88"
-            ],
-            "edges": [
-              "300a8ee5d8ed0c4cc68700f3777162eb898f056dbde51a7357fd1090eb94dfd4",
-              "523e0aacc94ffd4adafbd5409c30bba19968f6e2f65de0843a1d434d2cd5b04e",
-              "8690158d2b6f64737a6c1632ee24fe6ef4cc1b0e0710c743cb773c083ac6ff73",
-              "885cf291a9844cb5b514802b38fe3027f988397b1fbdd5cfaf0991cc1b823a99",
-              "bc4d37ba97d5e6cfdaefe07443273569edc40e4b7ac09af16e8768c11954c428"
-            ],
-            "edgeRanges": [
-              {
-                "from": "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
-                "type": "anchor"
-              },
-              {
-                "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
-                "type": "root"
-              },
-              {
-                "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
-                "type": "left"
-              },
-              {
-                "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
-                "type": "right"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
+            "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
+            "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
+            "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
+            "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
+          ],
+          "edgeRanges": [
+            {
+              "from": "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
+              "type": "left"
+            },
+            {
+              "from": "07b991546bedb5afde7fdefee67baf93ae0766a65d442375dab9f0dddfbba3f9",
+              "type": "right"
+            },
+            {
+              "from": "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
+              "type": "anchor"
+            },
+            {
+              "from": "3f41d88c5ccf8d8ab9ac25509c2d7a2530bd1876a1d5a7b87c46a7c2d27de97d",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+            "6c9c62e41d4ea6d0d87f2d40a0d7c6a38736e2a4df5cd677d51427bd7afa9319",
+            "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88"
+          ],
+          "atoms": [
+            "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
+            "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+            "6c9c62e41d4ea6d0d87f2d40a0d7c6a38736e2a4df5cd677d51427bd7afa9319",
+            "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88"
+          ],
+          "edges": [
+            "300a8ee5d8ed0c4cc68700f3777162eb898f056dbde51a7357fd1090eb94dfd4",
+            "523e0aacc94ffd4adafbd5409c30bba19968f6e2f65de0843a1d434d2cd5b04e",
+            "8690158d2b6f64737a6c1632ee24fe6ef4cc1b0e0710c743cb773c083ac6ff73",
+            "885cf291a9844cb5b514802b38fe3027f988397b1fbdd5cfaf0991cc1b823a99",
+            "bc4d37ba97d5e6cfdaefe07443273569edc40e4b7ac09af16e8768c11954c428"
+          ],
+          "edgeRanges": [
+            {
+              "from": "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+              "type": "anchor"
+            },
+            {
+              "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+              "type": "root"
+            },
+            {
+              "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
+              "type": "left"
+            },
+            {
+              "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
+              "type": "right"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -940,7 +946,8 @@
       "text": {
         "beforeHex": "616263",
         "afterHex": "",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": []
       },
       "expected": {
         "posture": "committed",
@@ -1005,51 +1012,49 @@
             "to": "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
-              "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
-              "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56"
-            ],
-            "edgeRanges": [
-              {
-                "from": "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
-                "type": "anchor"
-              },
-              {
-                "from": "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
-                "type": "root"
-              },
-              {
-                "from": "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
-                "type": "canonicalHead"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1"
-            ],
-            "atoms": [
-              "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
-              "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1"
-            ],
-            "edges": [
-              "6a853f4c1dfa015a5e14006341b3299a9a68d3635e178cd97f753596e87d6ac1",
-              "b0f57650c92701611f08ba3f56ec02dc4c1007c7905c90b8d5efa3448b67e7bc"
-            ],
-            "edgeRanges": [
-              {
-                "from": "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1",
-                "type": "anchor"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
+            "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
+            "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56"
+          ],
+          "edgeRanges": [
+            {
+              "from": "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
+              "type": "anchor"
+            },
+            {
+              "from": "234043c118c25af9305f4b6759143794735b10a338bcdc17d2bbe35b91210c60",
+              "type": "root"
+            },
+            {
+              "from": "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
+              "type": "canonicalHead"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1"
+          ],
+          "atoms": [
+            "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
+            "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1"
+          ],
+          "edges": [
+            "6a853f4c1dfa015a5e14006341b3299a9a68d3635e178cd97f753596e87d6ac1",
+            "b0f57650c92701611f08ba3f56ec02dc4c1007c7905c90b8d5efa3448b67e7bc"
+          ],
+          "edgeRanges": [
+            {
+              "from": "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1",
+              "type": "anchor"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -1231,6 +1236,10 @@
         "afterHex": "41cebb0ac3a90a42",
         "mustShareHex": [
           "c3a90a42"
+        ],
+        "leafSizes": [
+          4,
+          4
         ]
       },
       "expected": {
@@ -1370,80 +1379,78 @@
             "to": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
-              "1c87f0d96c7cab5c16a4a90d19aec2dc717e992948ede459d4edde89299002e7",
-              "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
-              "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
-              "c386b12539ab19de54f8c9c856a8e39828c498c592c334f0a944514e7d051b05"
-            ],
-            "edgeRanges": [
-              {
-                "from": "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
-                "type": "left"
-              },
-              {
-                "from": "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
-                "type": "right"
-              },
-              {
-                "from": "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
-                "type": "anchor"
-              },
-              {
-                "from": "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "88830f0febb2e6b0fc530b5c83cdf1ea91eff865e7e1f5e5b050b0614e213c60",
-              "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
-              "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5"
-            ],
-            "atoms": [
-              "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
-              "88830f0febb2e6b0fc530b5c83cdf1ea91eff865e7e1f5e5b050b0614e213c60",
-              "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
-              "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5"
-            ],
-            "edges": [
-              "7b50de1437a101946261a6292be99233af69f5de75b978f6b0c581544273baa6",
-              "b47e8d48b0fc96167a9b6a89ef67d06288ccc37e8b52058e171ded196d517938",
-              "cac48ea401ab178029a81afa4a650caf3c840613c107219a939082a7e99441c1",
-              "ce95c5ea521ca7b7420fa07aed4eec151a504d8bb985638a901ab4a219063ede",
-              "fb0cb69667bea4346cb418bf7d4ef1ea912a66650465b65a2d5e4b183fd0d606"
-            ],
-            "edgeRanges": [
-              {
-                "from": "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
-                "type": "left"
-              },
-              {
-                "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
-                "type": "right"
-              },
-              {
-                "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
-                "type": "anchor"
-              },
-              {
-                "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
-                "type": "root"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
+            "1c87f0d96c7cab5c16a4a90d19aec2dc717e992948ede459d4edde89299002e7",
+            "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
+            "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
+            "c386b12539ab19de54f8c9c856a8e39828c498c592c334f0a944514e7d051b05"
+          ],
+          "edgeRanges": [
+            {
+              "from": "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
+              "type": "left"
+            },
+            {
+              "from": "15b1676202a2738bbcdffa9d946dd2c33286dc22abc8d32160f07b1d4e91915c",
+              "type": "right"
+            },
+            {
+              "from": "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
+              "type": "anchor"
+            },
+            {
+              "from": "69ea6a8b21ef0ad0f119c75d531d311b9eaa32c10b907934cff02d56dbb84d14",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "88830f0febb2e6b0fc530b5c83cdf1ea91eff865e7e1f5e5b050b0614e213c60",
+            "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+            "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5"
+          ],
+          "atoms": [
+            "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
+            "88830f0febb2e6b0fc530b5c83cdf1ea91eff865e7e1f5e5b050b0614e213c60",
+            "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+            "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5"
+          ],
+          "edges": [
+            "7b50de1437a101946261a6292be99233af69f5de75b978f6b0c581544273baa6",
+            "b47e8d48b0fc96167a9b6a89ef67d06288ccc37e8b52058e171ded196d517938",
+            "cac48ea401ab178029a81afa4a650caf3c840613c107219a939082a7e99441c1",
+            "ce95c5ea521ca7b7420fa07aed4eec151a504d8bb985638a901ab4a219063ede",
+            "fb0cb69667bea4346cb418bf7d4ef1ea912a66650465b65a2d5e4b183fd0d606"
+          ],
+          "edgeRanges": [
+            {
+              "from": "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+              "type": "left"
+            },
+            {
+              "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+              "type": "right"
+            },
+            {
+              "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
+              "type": "anchor"
+            },
+            {
+              "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
+              "type": "root"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -1831,6 +1838,14 @@
           "6363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363",
           "636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363",
           "6363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363"
+        ],
+        "leafSizes": [
+          4094,
+          4,
+          1000,
+          1001,
+          1002,
+          1091
         ]
       },
       "expected": {
@@ -2164,180 +2179,178 @@
             "to": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
-              "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
-              "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
-              "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
-              "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
-              "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
-              "7ce8dad233196a737acbb6e966dad73b09c1d1fe3a1263b50f238816ff2f0c1c",
-              "9474742baf44e5dd93265ea4562580540724830abb23192050c422908c0ef7ed",
-              "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
-              "b0a4ee55100ff15d1708da1e2cc7761fa1eb01024e451d94865c30ca64c7e427",
-              "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
-              "c8bbdfbdefaa20567eb430db16c7b0fbf23650c652ef53f746824503ab076a0e",
-              "ce11e708c4ec677c95bc95b282a6ce725ce738885b176707d835ac2fb774fe3c",
-              "d6a7ddc094ceec0227257a230d8b9b0924d18901c23a1124065142300c6ae552",
-              "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc"
-            ],
-            "edgeRanges": [
-              {
-                "from": "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
-                "type": "left"
-              },
-              {
-                "from": "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
-                "type": "right"
-              },
-              {
-                "from": "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
-                "type": "left"
-              },
-              {
-                "from": "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
-                "type": "right"
-              },
-              {
-                "from": "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
-                "type": "left"
-              },
-              {
-                "from": "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
-                "type": "right"
-              },
-              {
-                "from": "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
-                "type": "left"
-              },
-              {
-                "from": "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
-                "type": "right"
-              },
-              {
-                "from": "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
-                "type": "anchor"
-              },
-              {
-                "from": "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
-                "type": "root"
-              },
-              {
-                "from": "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
-                "type": "left"
-              },
-              {
-                "from": "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
-                "type": "right"
-              },
-              {
-                "from": "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc",
-                "type": "left"
-              },
-              {
-                "from": "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc",
-                "type": "right"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
-              "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
-              "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
-              "4484d99073615ec893ac7bd0866497f74f40484cec8f130ca7186f1472722d6b",
-              "4928f0577e84cb527b7af8cc1da673eff4e3fb9968f78ebb774a196a24faa1f6",
-              "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
-              "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
-              "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d"
-            ],
-            "atoms": [
-              "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
-              "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
-              "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
-              "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
-              "4484d99073615ec893ac7bd0866497f74f40484cec8f130ca7186f1472722d6b",
-              "4928f0577e84cb527b7af8cc1da673eff4e3fb9968f78ebb774a196a24faa1f6",
-              "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
-              "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
-              "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d"
-            ],
-            "edges": [
-              "03ff5bef180ae9d4ac536caf162dd15516061274a34c50418ede87597161b6dc",
-              "096f895333b36823ec98f5147897661511f675273eb3b9843ef449b2f1e777b7",
-              "3ec006af4ab8bc1b45e519b27ad470cb7e2886806fb4e7c1e8f557d2a0f5b03f",
-              "5137857982d1bc7904a31ccbb1fb25c13d9ddf338adb798de417de1c5ce8b20a",
-              "5e537c93c239ee88438ed952dc0ad344873210f34417c8d3b3e7cd4e28f2f0d6",
-              "7265d9861e025e5ed176e78d2665c71fb673e47e330501d6ff8d5da36440943e",
-              "82f26b07d74e2ea6d505242ab78afdd2c2a829e37fb36cdd7bac5440e01961d9",
-              "8b7ee1ecea0c86927f6a33a2e61bf2bc7a18d0f383104df9dd1c642915167843",
-              "cbfdcbfebaf82e6dec59ffdcb7458005583203dddd9e5e830b8a2e1bf52ed2e8",
-              "d48a2c9b32583643a2723400d8e149f8d6be12cbf7ed78f1478caac65cf6993b",
-              "e4b10c7a2306fc7e736d64e3d03afd708e83b3ca75ecbc86eb5fd17e0a0379a8",
-              "f5638067e5c5b6d8b9323df1c24aac63eeff100c8a194f21bc030c58c9e55c13",
-              "f5c48d265a7a883022e89c421c7ad2053fd0adee6a23f616abc6071a118bbabb"
-            ],
-            "edgeRanges": [
-              {
-                "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
-                "type": "left"
-              },
-              {
-                "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
-                "type": "right"
-              },
-              {
-                "from": "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
-                "type": "left"
-              },
-              {
-                "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
-                "type": "right"
-              },
-              {
-                "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
-                "type": "anchor"
-              },
-              {
-                "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
-                "type": "root"
-              },
-              {
-                "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
-                "type": "left"
-              },
-              {
-                "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
-                "type": "right"
-              },
-              {
-                "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
-                "type": "left"
-              },
-              {
-                "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
-                "type": "right"
-              },
-              {
-                "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
-                "type": "left"
-              },
-              {
-                "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
-                "type": "right"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
+            "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
+            "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
+            "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
+            "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
+            "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
+            "7ce8dad233196a737acbb6e966dad73b09c1d1fe3a1263b50f238816ff2f0c1c",
+            "9474742baf44e5dd93265ea4562580540724830abb23192050c422908c0ef7ed",
+            "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
+            "b0a4ee55100ff15d1708da1e2cc7761fa1eb01024e451d94865c30ca64c7e427",
+            "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
+            "c8bbdfbdefaa20567eb430db16c7b0fbf23650c652ef53f746824503ab076a0e",
+            "ce11e708c4ec677c95bc95b282a6ce725ce738885b176707d835ac2fb774fe3c",
+            "d6a7ddc094ceec0227257a230d8b9b0924d18901c23a1124065142300c6ae552",
+            "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc"
+          ],
+          "edgeRanges": [
+            {
+              "from": "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
+              "type": "left"
+            },
+            {
+              "from": "1560e88649ebd805a6c4a71355ffb9431f04830bf9b89083feef12e2ec145ce1",
+              "type": "right"
+            },
+            {
+              "from": "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
+              "type": "left"
+            },
+            {
+              "from": "1713429c779ea096e89297c58fd38610507d24cb6e2123148bb85cabeaeaa505",
+              "type": "right"
+            },
+            {
+              "from": "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
+              "type": "left"
+            },
+            {
+              "from": "34830d4aaa58b407f3fe94573d4fd82caa320bb0a3c581977db804fd657bbefb",
+              "type": "right"
+            },
+            {
+              "from": "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
+              "type": "left"
+            },
+            {
+              "from": "383c5b3be10ac5ec8c860507f87ff8ae9b82d6ef437ceff99b9205e1b3df07ee",
+              "type": "right"
+            },
+            {
+              "from": "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
+              "type": "anchor"
+            },
+            {
+              "from": "9ed459f4d608dc9dc84e0cbc797fd3292b26cfbf2cb12ce20c71e665c7022e5f",
+              "type": "root"
+            },
+            {
+              "from": "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
+              "type": "left"
+            },
+            {
+              "from": "b1321a92931f7e3ee295f11f5cc1fe047b464b99aca1273ea1d8c0c22f3efd4d",
+              "type": "right"
+            },
+            {
+              "from": "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc",
+              "type": "left"
+            },
+            {
+              "from": "dd6835b56418423409cd639f9fdda3f0afc7e5e13a0592caad009373bc4440dc",
+              "type": "right"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+            "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+            "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+            "4484d99073615ec893ac7bd0866497f74f40484cec8f130ca7186f1472722d6b",
+            "4928f0577e84cb527b7af8cc1da673eff4e3fb9968f78ebb774a196a24faa1f6",
+            "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+            "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+            "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d"
+          ],
+          "atoms": [
+            "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+            "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
+            "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+            "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+            "4484d99073615ec893ac7bd0866497f74f40484cec8f130ca7186f1472722d6b",
+            "4928f0577e84cb527b7af8cc1da673eff4e3fb9968f78ebb774a196a24faa1f6",
+            "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+            "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+            "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d"
+          ],
+          "edges": [
+            "03ff5bef180ae9d4ac536caf162dd15516061274a34c50418ede87597161b6dc",
+            "096f895333b36823ec98f5147897661511f675273eb3b9843ef449b2f1e777b7",
+            "3ec006af4ab8bc1b45e519b27ad470cb7e2886806fb4e7c1e8f557d2a0f5b03f",
+            "5137857982d1bc7904a31ccbb1fb25c13d9ddf338adb798de417de1c5ce8b20a",
+            "5e537c93c239ee88438ed952dc0ad344873210f34417c8d3b3e7cd4e28f2f0d6",
+            "7265d9861e025e5ed176e78d2665c71fb673e47e330501d6ff8d5da36440943e",
+            "82f26b07d74e2ea6d505242ab78afdd2c2a829e37fb36cdd7bac5440e01961d9",
+            "8b7ee1ecea0c86927f6a33a2e61bf2bc7a18d0f383104df9dd1c642915167843",
+            "cbfdcbfebaf82e6dec59ffdcb7458005583203dddd9e5e830b8a2e1bf52ed2e8",
+            "d48a2c9b32583643a2723400d8e149f8d6be12cbf7ed78f1478caac65cf6993b",
+            "e4b10c7a2306fc7e736d64e3d03afd708e83b3ca75ecbc86eb5fd17e0a0379a8",
+            "f5638067e5c5b6d8b9323df1c24aac63eeff100c8a194f21bc030c58c9e55c13",
+            "f5c48d265a7a883022e89c421c7ad2053fd0adee6a23f616abc6071a118bbabb"
+          ],
+          "edgeRanges": [
+            {
+              "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+              "type": "left"
+            },
+            {
+              "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+              "type": "right"
+            },
+            {
+              "from": "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+              "type": "left"
+            },
+            {
+              "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+              "type": "right"
+            },
+            {
+              "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+              "type": "anchor"
+            },
+            {
+              "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+              "type": "root"
+            },
+            {
+              "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+              "type": "left"
+            },
+            {
+              "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+              "type": "right"
+            },
+            {
+              "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+              "type": "left"
+            },
+            {
+              "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+              "type": "right"
+            },
+            {
+              "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
+              "type": "left"
+            },
+            {
+              "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
+              "type": "right"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -2509,7 +2522,11 @@
       "text": {
         "beforeHex": "6564676573",
         "afterHex": "e78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cabe78cab0a",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          2100,
+          2101
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -2666,72 +2683,70 @@
             "to": "db4bd41dc9609f617f33e1efbc92232ee122b267bd6a5e93ad3ee86ce07eed93"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
-              "859789d4b1532f3c8d2c92f0b423a16990b18577d38918ec058744ece5297da1",
-              "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27"
-            ],
-            "edgeRanges": [
-              {
-                "from": "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27",
-                "type": "anchor"
-              },
-              {
-                "from": "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
-              "db4bd41dc9609f617f33e1efbc92232ee122b267bd6a5e93ad3ee86ce07eed93",
-              "fec93fd76fe880f712a299a63b282fb08dd6e9cbd10f30d4617f860dac084435",
-              "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3"
-            ],
-            "atoms": [
-              "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
-              "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
-              "db4bd41dc9609f617f33e1efbc92232ee122b267bd6a5e93ad3ee86ce07eed93",
-              "fec93fd76fe880f712a299a63b282fb08dd6e9cbd10f30d4617f860dac084435",
-              "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3"
-            ],
-            "edges": [
-              "38a0a0c80a84058e2eb9a2c1a8f5321cb7080b7a2bb7ffe6ccf29b44fa4a9335",
-              "43aac611e6eab3bca2fd278103260b8efdd55f50d8eda0787541f9f6dfd39eb3",
-              "6c37eaa998fea0d56f7b210a8d545116df989895c3d2b46ec163fa553c90822b",
-              "ec8b897ab91a2c2c1a2fd7cc2900939c88bf1a908a633ca9adeb3e14942d3e74",
-              "f35600ea3911f9863334101c11322fef29fe7f25fdfc3723de36234be60aee3f"
-            ],
-            "edgeRanges": [
-              {
-                "from": "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
-                "type": "anchor"
-              },
-              {
-                "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
-                "type": "root"
-              },
-              {
-                "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
-                "type": "left"
-              },
-              {
-                "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
-                "type": "right"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
+            "859789d4b1532f3c8d2c92f0b423a16990b18577d38918ec058744ece5297da1",
+            "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27"
+          ],
+          "edgeRanges": [
+            {
+              "from": "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27",
+              "type": "anchor"
+            },
+            {
+              "from": "954fa9739e9d6064476c4bb408f662427b693f99fff2b82d853166cc667b0d27",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+            "db4bd41dc9609f617f33e1efbc92232ee122b267bd6a5e93ad3ee86ce07eed93",
+            "fec93fd76fe880f712a299a63b282fb08dd6e9cbd10f30d4617f860dac084435",
+            "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3"
+          ],
+          "atoms": [
+            "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
+            "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+            "db4bd41dc9609f617f33e1efbc92232ee122b267bd6a5e93ad3ee86ce07eed93",
+            "fec93fd76fe880f712a299a63b282fb08dd6e9cbd10f30d4617f860dac084435",
+            "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3"
+          ],
+          "edges": [
+            "38a0a0c80a84058e2eb9a2c1a8f5321cb7080b7a2bb7ffe6ccf29b44fa4a9335",
+            "43aac611e6eab3bca2fd278103260b8efdd55f50d8eda0787541f9f6dfd39eb3",
+            "6c37eaa998fea0d56f7b210a8d545116df989895c3d2b46ec163fa553c90822b",
+            "ec8b897ab91a2c2c1a2fd7cc2900939c88bf1a908a633ca9adeb3e14942d3e74",
+            "f35600ea3911f9863334101c11322fef29fe7f25fdfc3723de36234be60aee3f"
+          ],
+          "edgeRanges": [
+            {
+              "from": "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+              "type": "anchor"
+            },
+            {
+              "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+              "type": "root"
+            },
+            {
+              "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
+              "type": "left"
+            },
+            {
+              "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
+              "type": "right"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -2891,7 +2906,7 @@
           "deciding": "range-order",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "d9fabf7983b4bb104deadadedd7b14c5518764c3011e01cc8340b8adc290d370"
           ],
@@ -3039,7 +3054,7 @@
           "deciding": "range-bounds",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "0559f097cfa0973009a2d0e5f6134c9a04a354f72d0b925241af08dc5515eefe",
             "c90e173dd3c1a25d04e05ee9f05e4016c5d25669b50dd000c3caeca81ab1bdf2"
@@ -3190,7 +3205,7 @@
           "deciding": "character-boundary",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "57e026594900ca048332424bb0d4dd05e1703fd24edae9e22b0d0a01beb6a888",
             "a32f894d274a75dd2d210d75309493e09f931ec4bd979b9ba531a47bda2adad4",
@@ -3350,7 +3365,7 @@
           "deciding": "character-boundary",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "57e026594900ca048332424bb0d4dd05e1703fd24edae9e22b0d0a01beb6a888",
             "bee0ba0fb570c8ce18b2bef90a0853f3f3f715d0481cc0e7f021c53897a1c375",
@@ -3512,7 +3527,7 @@
             "no-op"
           ]
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "57e026594900ca048332424bb0d4dd05e1703fd24edae9e22b0d0a01beb6a888",
             "bbd18d617364950755dfc67ac3c02e531dd16dd201322271eaac5c754f4578b5",
@@ -3673,7 +3688,7 @@
           "deciding": "no-op",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "8173b0830b8fb373ae1a0919cda0f1680ed6c8e3b2d0beaf06093ee284f4bc75",
             "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56",
@@ -3834,7 +3849,7 @@
           "deciding": "no-op",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "5a6ca0153cfb639f17633b406ec5a101c9805320579ba1de2741af35680b9109",
             "5f5c9bfd52a7acbeb4d922081eb05116dd1b1061924b59ce9ae3e69c11f715c8",
@@ -4045,7 +4060,7 @@
           "deciding": "basis",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "91d59a8dad2a8805c5690236193fa34c0b5f3eb5f4ab33b52c721caf891a1cbd"
           ],
@@ -4272,7 +4287,7 @@
           "deciding": "basis",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "8ef57e1fc7e8ada4a5acb3942fc5a250a986dc9ea0483bcbd7bd6e74cccfbf45"
           ],
@@ -4424,7 +4439,7 @@
           "deciding": "counters",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "9bad6ac0129b850ca0fb15be371a80ebab0d7f2f9aa14f91020cf486c17be8e6",
             "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56",
@@ -4586,7 +4601,7 @@
           "deciding": "counters",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "8e69fd52a1d95909b0fc062b049ff3ff2073ec1d83bcdf21af230a3c2c6f3e28",
             "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56",
@@ -4649,7 +4664,7 @@
           "deciding": "buffer-presence",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "1111111111111111111111111111111111111111111111111111111111111111"
           ],
@@ -4785,7 +4800,7 @@
           "deciding": "buffer-decode",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "ad78095355c44f1c70cdc990c3325cd82e8602a165e821ffe767ec80fa94b7c3"
           ],
@@ -4943,7 +4958,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "79b9da01424d7c101c0396d77e6291f9be04aaebaa87a191d732b1efce866aa2",
             "8b663ecbd64921d57b083f5402ebf18ef5aee599fc40ada494c30bf2c2a0bf2a",
@@ -4980,7 +4995,7 @@
       "retainedCaseIndex": 20,
       "obligation": "Validate branch/children extent before a zero-offset edit",
       "retainedSemanticCode": "fact-malformed",
-      "decision": null,
+      "decision": "Schema 1 reported a branch whose children disagree with its claimed extent as a malformed fact. Schema 2 decodes that atom successfully; the disagreement is a rope invariant, so the typed outcome is MalformedRope at closure validation. The row stays carry: the obligation is unchanged.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -5135,7 +5150,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
             "43b57e129524f7b9eaa2671b04817a185d0ea0df273b8b25bc5cdabc378e4064",
@@ -5182,7 +5197,7 @@
       "retainedCaseIndex": 21,
       "obligation": "Validate branch/children extent at the end boundary",
       "retainedSemanticCode": "fact-malformed",
-      "decision": null,
+      "decision": "Schema 1 reported a branch whose children disagree with its claimed extent as a malformed fact. Schema 2 decodes that atom successfully; the disagreement is a rope invariant, so the typed outcome is MalformedRope at closure validation. The row stays carry: the obligation is unchanged.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -5337,7 +5352,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "25b742b463e74ca3f3a16366d4ef106d0e23f32a1c1bf2037a190a1d860e2e3a",
             "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
@@ -5384,7 +5399,7 @@
       "retainedCaseIndex": 22,
       "obligation": "Validate branch/children extent at a child boundary",
       "retainedSemanticCode": "fact-malformed",
-      "decision": null,
+      "decision": "Schema 1 reported a branch whose children disagree with its claimed extent as a malformed fact. Schema 2 decodes that atom successfully; the disagreement is a rope invariant, so the typed outcome is MalformedRope at closure validation. The row stays carry: the obligation is unchanged.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -5539,7 +5554,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
             "43b57e129524f7b9eaa2671b04817a185d0ea0df273b8b25bc5cdabc378e4064",
@@ -5586,7 +5601,7 @@
       "retainedCaseIndex": 23,
       "obligation": "Malformed materialization must not be hidden by NoOp",
       "retainedSemanticCode": "malformed-rope",
-      "decision": null,
+      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -5739,11 +5754,9 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": [
-            "no-op"
-          ]
+          "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
             "43b57e129524f7b9eaa2671b04817a185d0ea0df273b8b25bc5cdabc378e4064",
@@ -5958,7 +5971,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "ac4bdd7b5cca7a77631330d3e262548c12d8ae7db9ff3c6866cd22cff1ed95c5",
             "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
@@ -6003,7 +6016,7 @@
       "retainedCaseIndex": 25,
       "obligation": "Missing root with nonzero head length cannot become NoOp",
       "retainedSemanticCode": "malformed-rope",
-      "decision": null,
+      "decision": "Schema 2 compares a replacement with the replaced bytes only when their lengths are equal, so this fixture cannot reach NoOp; the obligation holds because closure validation rejects the rope first.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -6107,11 +6120,9 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": [
-            "no-op"
-          ]
+          "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3a1861f8ec66763cd588e0c21cb173695a34d28e23d0d6a3ac1d0e19459e41ae",
             "69bd8c1af1781a7679ebf5a3fbed4ca5aaeb3184da2bc2dea38238379d466285"
@@ -6253,7 +6264,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "b5fc80f57bf5d0c0858c4ccb0e130c19bdf38d47d6128916390feecf1392389d",
             "d90108b938d77ceb5425286b456a70334380930b71ce7c07e3ab132b7198a9f7"
@@ -6289,7 +6300,7 @@
       "retainedCaseIndex": 27,
       "obligation": "Invalid UTF-8 leaf bytes replacing a partial Blob slice; specify fault precedence",
       "retainedSemanticCode": "utf8-boundary-invalid",
-      "decision": "A schema-2 leaf stores its own bytes; a lone 0xC3 is an invalid leaf. Closure validation precedes the character-boundary check, so the outcome is MalformedRope, not the retained boundary code.",
+      "decision": "A schema-2 leaf stores its own bytes; a lone 0xC3 is an invalid leaf, rejected by closure validation as MalformedRope. The retained boundary code does not survive: offset 1 is the end of the leaf, which is a character boundary under the DL-0159 predicate.",
       "movedObligations": [],
       "status": "unexecuted",
       "target": "persistent-rope",
@@ -6409,11 +6420,9 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": [
-            "character-boundary"
-          ]
+          "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "036ef8204f38588bb864168144cb3a7d6429f7e97d4edb57b9f94401c8793fd2",
             "147a4c48421ec2b48ac1e5f48c03846128477e4075a94ce5b64cc39df4111f95",
@@ -6572,7 +6581,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "1274dc55bfc77e674284a04943bddb6c734a61117ccaff0d13ec334fe6308a8a",
             "1bebf55af8615dd17e5e13c4510f5a3061ab4bda71aab2f2b5916dc50f8b9e71",
@@ -6731,7 +6740,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "7b241218894d2a326201e822ea2d5016987ed740b72ed543f0f3d3b38fa184b7",
             "7cc1e6d90f0a02bc12ffa8fcc93942a3432ff9a03e30b7d41d0edef3ef585b6d",
@@ -6923,7 +6932,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "109980b4aa1b1fd40b2ba704b87233370de00eea4e99dd09134c247af82043bd",
             "1c45ad9f71e5587d31d88c5cf07725e69074d33f7f1e76b77c7c015a1e65f4ad",
@@ -7076,7 +7085,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "2bfa7b999dda82a281a280deb9f9dbf777ae23c37450abad919896713a2e0d2d",
             "4bede3ea82f1ca4b1e3f155847ea244416afd533da97a79135a518cc9b772758"
@@ -7366,7 +7375,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "19df6fe5d4fba54efc30d04f7ac672300f93a7ff9b414bc62be97b61a752e8a5",
             "492866472d20538916b0094ded240bd7dce373a5707bb7f1c47b8b103ec1c4d4",
@@ -7611,7 +7620,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "19df6fe5d4fba54efc30d04f7ac672300f93a7ff9b414bc62be97b61a752e8a5",
             "6d60019dcfc74c3e3621175c170e03352ee2e5afea3ecfe1269b52fef5dac63f",
@@ -7846,7 +7855,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "2f36980989e1b2d35efbd44e06fa8031fb33f713235ae29658cd37b3afe3268e",
             "8f31f32dc1b44a84fa0780c48314277a48ca8db31cfe1850d43844e5d9796741",
@@ -8015,7 +8024,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "19df6fe5d4fba54efc30d04f7ac672300f93a7ff9b414bc62be97b61a752e8a5",
             "6da806e32ab20aa6e54a7dc2cf859dda577e19fc4810b4c21b93b1dad68d86bb",
@@ -8057,7 +8066,7 @@
         {
           "surface": "utf16-derived-reading",
           "obligation": "Checked UTF-16 length of a derived reading cached by subtree identity and conversion version",
-          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading)",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
           "status": "gap until discharged on that surface"
         }
       ],
@@ -8180,7 +8189,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "1fa7899c6fd0aeadde2b2f64001401ea68167fab38312e55b8438ca9c3d0fd43",
             "4e7be6211ee6316c8db12c6ab3b0f911c8385d3b6964f6786fbac4d80db620ef",
@@ -8405,7 +8414,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "4b18b2f3bbd5f64d0ae5388ed818defdf5e7125fec1ab13fe2c4595354184381",
             "5a5670e3a32170d6b97955aa353e51bbe58f1343e37fe8193cc76968f2594b8a",
@@ -8607,7 +8616,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3f54faa9674d95b429d1d8441eb64fa8c41388bb90bb786af1e5d71ecfddde19",
             "5c74ee09f1db01c6cc6e2fdeb26923d18a40d822fcf0014edbebc71ed527ae10",
@@ -8809,7 +8818,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "5a5670e3a32170d6b97955aa353e51bbe58f1343e37fe8193cc76968f2594b8a",
             "975d15d30a6c95d95e7a4617c203a2d8e647bdd2bb173a71a4400df85343cb6b",
@@ -8982,7 +8991,10 @@
       "text": {
         "beforeHex": "736861726564",
         "afterHex": "78736861726564",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          7
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -9077,58 +9089,56 @@
             "to": "832f3ac21bc4c490f5d3c46b150d5fe8e8b60aec8a8e7c0df4ea7b2276f95426"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "9048087d85bef439675abf23b22744cb819caa7f470cc42e890a755c0a8964ca",
-              "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
-              "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05"
-            ],
-            "edgeRanges": [
-              {
-                "from": "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05",
-                "type": "anchor"
-              },
-              {
-                "from": "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "832f3ac21bc4c490f5d3c46b150d5fe8e8b60aec8a8e7c0df4ea7b2276f95426",
-              "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75"
-            ],
-            "atoms": [
-              "832f3ac21bc4c490f5d3c46b150d5fe8e8b60aec8a8e7c0df4ea7b2276f95426",
-              "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
-              "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75"
-            ],
-            "edges": [
-              "64432b37a6c5dc1d90a7e0863e04f83c16d73e39b5c5ea8c5450cce7065c2c00",
-              "64b50598dac02801a2eda4bb2a99accc9cee941476570d6d2c9e68f2b26d79ab",
-              "bf5d3d917a8e1135dac15ad0a113517778fce832382180980d7b9078511e43d5"
-            ],
-            "edgeRanges": [
-              {
-                "from": "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
-                "type": "anchor"
-              },
-              {
-                "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
-                "type": "root"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "9048087d85bef439675abf23b22744cb819caa7f470cc42e890a755c0a8964ca",
+            "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
+            "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05"
+          ],
+          "edgeRanges": [
+            {
+              "from": "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05",
+              "type": "anchor"
+            },
+            {
+              "from": "a1714adc2c5dee39a4b37e563871f4b3b06be8f666f1ffdc72197ddcba45db05",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "832f3ac21bc4c490f5d3c46b150d5fe8e8b60aec8a8e7c0df4ea7b2276f95426",
+            "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75"
+          ],
+          "atoms": [
+            "832f3ac21bc4c490f5d3c46b150d5fe8e8b60aec8a8e7c0df4ea7b2276f95426",
+            "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
+            "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75"
+          ],
+          "edges": [
+            "64432b37a6c5dc1d90a7e0863e04f83c16d73e39b5c5ea8c5450cce7065c2c00",
+            "64b50598dac02801a2eda4bb2a99accc9cee941476570d6d2c9e68f2b26d79ab",
+            "bf5d3d917a8e1135dac15ad0a113517778fce832382180980d7b9078511e43d5"
+          ],
+          "edgeRanges": [
+            {
+              "from": "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
+              "type": "anchor"
+            },
+            {
+              "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
+              "type": "root"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -9302,6 +9312,10 @@
         "afterHex": "6162",
         "mustShareHex": [
           "61"
+        ],
+        "leafSizes": [
+          1,
+          1
         ]
       },
       "expected": {
@@ -9441,79 +9455,77 @@
             "to": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "19df6fe5d4fba54efc30d04f7ac672300f93a7ff9b414bc62be97b61a752e8a5",
-              "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
-              "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
-              "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e"
-            ],
-            "edgeRanges": [
-              {
-                "from": "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
-                "type": "anchor"
-              },
-              {
-                "from": "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
-                "type": "root"
-              },
-              {
-                "from": "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e",
-                "type": "left"
-              },
-              {
-                "from": "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e",
-                "type": "right"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
-              "927ba3e91f97bdf330f8508751a2ed1876fc811e3ef974fe71bcc0fd7d985fc8",
-              "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538"
-            ],
-            "atoms": [
-              "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
-              "927ba3e91f97bdf330f8508751a2ed1876fc811e3ef974fe71bcc0fd7d985fc8",
-              "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
-              "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538"
-            ],
-            "edges": [
-              "6c8c64cbbc9d5cf095da513dff62e438bc7bef68588caa24183f8a1069f8ad16",
-              "8fbc199b832a4e409f2eecf3ce3e64e02048678ba0e959e176f38d1a7254452b",
-              "9f8496ea7cc179ed749313d2b2c7c1b7993919a948b3a5a7b0a1cc958933f1da",
-              "e75c4bd0d0e2b4a6d5b1a63696ec7fddb4703a5da26897e710bb5e9d82a81cb6",
-              "f0aab2140bec7d8df4e4244289d0d4f7947c4c01896926972a4fd2176f0bfc31"
-            ],
-            "edgeRanges": [
-              {
-                "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
-                "type": "anchor"
-              },
-              {
-                "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
-                "type": "root"
-              },
-              {
-                "from": "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
-                "type": "left"
-              },
-              {
-                "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
-                "type": "right"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "19df6fe5d4fba54efc30d04f7ac672300f93a7ff9b414bc62be97b61a752e8a5",
+            "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
+            "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
+            "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e"
+          ],
+          "edgeRanges": [
+            {
+              "from": "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
+              "type": "anchor"
+            },
+            {
+              "from": "7efd57ea0939fdf6c34947edee1961d9589aee0906c0908f9896dd0958c4a64a",
+              "type": "root"
+            },
+            {
+              "from": "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e",
+              "type": "left"
+            },
+            {
+              "from": "ba6921e9e04cfcf0848358616330479c5a536c552fe2f3b8cf94b23ccd57130e",
+              "type": "right"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+            "927ba3e91f97bdf330f8508751a2ed1876fc811e3ef974fe71bcc0fd7d985fc8",
+            "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538"
+          ],
+          "atoms": [
+            "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+            "927ba3e91f97bdf330f8508751a2ed1876fc811e3ef974fe71bcc0fd7d985fc8",
+            "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
+            "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538"
+          ],
+          "edges": [
+            "6c8c64cbbc9d5cf095da513dff62e438bc7bef68588caa24183f8a1069f8ad16",
+            "8fbc199b832a4e409f2eecf3ce3e64e02048678ba0e959e176f38d1a7254452b",
+            "9f8496ea7cc179ed749313d2b2c7c1b7993919a948b3a5a7b0a1cc958933f1da",
+            "e75c4bd0d0e2b4a6d5b1a63696ec7fddb4703a5da26897e710bb5e9d82a81cb6",
+            "f0aab2140bec7d8df4e4244289d0d4f7947c4c01896926972a4fd2176f0bfc31"
+          ],
+          "edgeRanges": [
+            {
+              "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+              "type": "anchor"
+            },
+            {
+              "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+              "type": "root"
+            },
+            {
+              "from": "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
+              "type": "left"
+            },
+            {
+              "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
+              "type": "right"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -9647,7 +9659,11 @@
       "text": {
         "beforeHex": "",
         "afterHex": "7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          4096,
+          4096
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -9786,69 +9802,67 @@
             "to": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
-              "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69"
-            ],
-            "edgeRanges": [
-              {
-                "from": "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69",
-                "type": "anchor"
-              },
-              {
-                "from": "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "13dc8d703dec95a1539cbf56381558c04c3b587e65ded98410c0ab4839e75f08",
-              "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
-              "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb"
-            ],
-            "atoms": [
-              "13dc8d703dec95a1539cbf56381558c04c3b587e65ded98410c0ab4839e75f08",
-              "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
-              "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
-              "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb"
-            ],
-            "edges": [
-              "4a2e6a1fe82c92cde54f2bd5aa0ca198d1f558aeafe352d93150454cd54ed023",
-              "6f20445f5e6558c92343e264eb3172c9449e77d175aa2b2d2909f51455426fca",
-              "a2cd4782a7d54ff5ae9a7d1bf7e6c436870e988150346788de8c4982514e3759",
-              "ad08edb46c24a52d713ddaba5f2a26792dcaa79861552dd437f23dec12d5854a",
-              "b04b8e07f696f926f396d1183d4f098dbf1ea46a8733bc6b187a38db4c999b73"
-            ],
-            "edgeRanges": [
-              {
-                "from": "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
-                "type": "left"
-              },
-              {
-                "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
-                "type": "right"
-              },
-              {
-                "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
-                "type": "anchor"
-              },
-              {
-                "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
-                "type": "root"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
+            "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69"
+          ],
+          "edgeRanges": [
+            {
+              "from": "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69",
+              "type": "anchor"
+            },
+            {
+              "from": "c7ba4ff8f6b21b28e7a5deb0e15685f14ff86455254f88d3c5014b7f92941f69",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "13dc8d703dec95a1539cbf56381558c04c3b587e65ded98410c0ab4839e75f08",
+            "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+            "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb"
+          ],
+          "atoms": [
+            "13dc8d703dec95a1539cbf56381558c04c3b587e65ded98410c0ab4839e75f08",
+            "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
+            "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+            "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb"
+          ],
+          "edges": [
+            "4a2e6a1fe82c92cde54f2bd5aa0ca198d1f558aeafe352d93150454cd54ed023",
+            "6f20445f5e6558c92343e264eb3172c9449e77d175aa2b2d2909f51455426fca",
+            "a2cd4782a7d54ff5ae9a7d1bf7e6c436870e988150346788de8c4982514e3759",
+            "ad08edb46c24a52d713ddaba5f2a26792dcaa79861552dd437f23dec12d5854a",
+            "b04b8e07f696f926f396d1183d4f098dbf1ea46a8733bc6b187a38db4c999b73"
+          ],
+          "edgeRanges": [
+            {
+              "from": "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+              "type": "left"
+            },
+            {
+              "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+              "type": "right"
+            },
+            {
+              "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
+              "type": "anchor"
+            },
+            {
+              "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
+              "type": "root"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -9979,7 +9993,11 @@
       "text": {
         "beforeHex": "",
         "afterHex": "6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          2048,
+          2049
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -10136,71 +10154,69 @@
             "to": "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
-              "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700"
-            ],
-            "edgeRanges": [
-              {
-                "from": "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700",
-                "type": "anchor"
-              },
-              {
-                "from": "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
-              "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-              "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
-              "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012"
-            ],
-            "atoms": [
-              "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
-              "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-              "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
-              "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
-              "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051"
-            ],
-            "edges": [
-              "18bd76787f11faa99b4716c2e1b99782bbea138f5f42f8d6d9f63a2aaa090dd3",
-              "1dc7f929d47d963cb56cb680570d44478ef32eb02590d0fa57566f73b0e4542b",
-              "59e1e80c565a8388edd2de792dfc7a4b06415dec63466a82e5171516364043ac",
-              "b0fa7f513ad61166f418a5bc63c72224e1bc522ac71e297e4a1d753fe336afce",
-              "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51"
-            ],
-            "edgeRanges": [
-              {
-                "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
-                "type": "anchor"
-              },
-              {
-                "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
-                "type": "root"
-              },
-              {
-                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-                "type": "left"
-              },
-              {
-                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-                "type": "right"
-              },
-              {
-                "from": "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
-                "type": "canonicalHead"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
+            "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700"
+          ],
+          "edgeRanges": [
+            {
+              "from": "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700",
+              "type": "anchor"
+            },
+            {
+              "from": "bfa12dda512b7f399385f3b13ab4bfcaded6fa6311326e7b8eb2ec193b563700",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+            "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+            "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
+            "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012"
+          ],
+          "atoms": [
+            "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+            "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+            "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
+            "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
+            "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051"
+          ],
+          "edges": [
+            "18bd76787f11faa99b4716c2e1b99782bbea138f5f42f8d6d9f63a2aaa090dd3",
+            "1dc7f929d47d963cb56cb680570d44478ef32eb02590d0fa57566f73b0e4542b",
+            "59e1e80c565a8388edd2de792dfc7a4b06415dec63466a82e5171516364043ac",
+            "b0fa7f513ad61166f418a5bc63c72224e1bc522ac71e297e4a1d753fe336afce",
+            "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51"
+          ],
+          "edgeRanges": [
+            {
+              "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+              "type": "anchor"
+            },
+            {
+              "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+              "type": "root"
+            },
+            {
+              "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+              "type": "left"
+            },
+            {
+              "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+              "type": "right"
+            },
+            {
+              "from": "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
+              "type": "canonicalHead"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -10332,7 +10348,12 @@
       "text": {
         "beforeHex": "",
         "afterHex": "6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a616263",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          4096,
+          2048,
+          2049
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -10551,85 +10572,83 @@
             "to": "60e5cd3e7a01d93fabc8fff11d9822c806552fdb7ae5d22cf98c02a0a81be3b4"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
-              "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7"
-            ],
-            "edgeRanges": [
-              {
-                "from": "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7",
-                "type": "anchor"
-              },
-              {
-                "from": "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7",
-                "type": "root"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "2868672891bd744fa9344b62115d10ff219da6e7c7f3743b15c83c525e970f81",
-              "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
-              "60e5cd3e7a01d93fabc8fff11d9822c806552fdb7ae5d22cf98c02a0a81be3b4",
-              "62da5d3b079b14d303d11bcdef031281b66198c28a16a4e21ce3e1b73033e3d5",
-              "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
-              "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607"
-            ],
-            "atoms": [
-              "2868672891bd744fa9344b62115d10ff219da6e7c7f3743b15c83c525e970f81",
-              "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
-              "60e5cd3e7a01d93fabc8fff11d9822c806552fdb7ae5d22cf98c02a0a81be3b4",
-              "62da5d3b079b14d303d11bcdef031281b66198c28a16a4e21ce3e1b73033e3d5",
-              "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
-              "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
-              "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607"
-            ],
-            "edges": [
-              "3aab21dd1cb7ee94cd63cfdd42d70cb5eff06e7437fc54694ffa28f26fdaead8",
-              "56f93459622ef675a96c5dd4a4a667b69a8461b1e496b29b976ed4002281ad85",
-              "5ad4255f3c7538e42c06679627d338c9ea77f33a0ce927ae849f8cdbe8ccd6e1",
-              "bb060c8419bd55e564ef6a89cf7243050293988654a291f1f27ea7b681334f78",
-              "bd573ca71c0bce3898c61eb92f845cb41d0b6adf108321031ed485cc3e5d67ee",
-              "ca3a220f50db1a06e5cd8ef0bf31a6c4dafe984b963ced052e91a77c6f006ec3",
-              "fc035dd23f8f715fed9870acdfa32521194e53864b1cd3650465e25d99aec539"
-            ],
-            "edgeRanges": [
-              {
-                "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
-                "type": "left"
-              },
-              {
-                "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
-                "type": "right"
-              },
-              {
-                "from": "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
-                "type": "canonicalHead"
-              },
-              {
-                "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
-                "type": "anchor"
-              },
-              {
-                "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
-                "type": "root"
-              },
-              {
-                "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
-                "type": "left"
-              },
-              {
-                "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
-                "type": "right"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
+            "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7"
+          ],
+          "edgeRanges": [
+            {
+              "from": "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7",
+              "type": "anchor"
+            },
+            {
+              "from": "ff18c8402e93dbb94b0d35784e0da83aa9512db60566689e0a5e0165ec1d62e7",
+              "type": "root"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "2868672891bd744fa9344b62115d10ff219da6e7c7f3743b15c83c525e970f81",
+            "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+            "60e5cd3e7a01d93fabc8fff11d9822c806552fdb7ae5d22cf98c02a0a81be3b4",
+            "62da5d3b079b14d303d11bcdef031281b66198c28a16a4e21ce3e1b73033e3d5",
+            "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+            "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607"
+          ],
+          "atoms": [
+            "2868672891bd744fa9344b62115d10ff219da6e7c7f3743b15c83c525e970f81",
+            "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+            "60e5cd3e7a01d93fabc8fff11d9822c806552fdb7ae5d22cf98c02a0a81be3b4",
+            "62da5d3b079b14d303d11bcdef031281b66198c28a16a4e21ce3e1b73033e3d5",
+            "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
+            "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+            "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607"
+          ],
+          "edges": [
+            "3aab21dd1cb7ee94cd63cfdd42d70cb5eff06e7437fc54694ffa28f26fdaead8",
+            "56f93459622ef675a96c5dd4a4a667b69a8461b1e496b29b976ed4002281ad85",
+            "5ad4255f3c7538e42c06679627d338c9ea77f33a0ce927ae849f8cdbe8ccd6e1",
+            "bb060c8419bd55e564ef6a89cf7243050293988654a291f1f27ea7b681334f78",
+            "bd573ca71c0bce3898c61eb92f845cb41d0b6adf108321031ed485cc3e5d67ee",
+            "ca3a220f50db1a06e5cd8ef0bf31a6c4dafe984b963ced052e91a77c6f006ec3",
+            "fc035dd23f8f715fed9870acdfa32521194e53864b1cd3650465e25d99aec539"
+          ],
+          "edgeRanges": [
+            {
+              "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+              "type": "left"
+            },
+            {
+              "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+              "type": "right"
+            },
+            {
+              "from": "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
+              "type": "canonicalHead"
+            },
+            {
+              "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+              "type": "anchor"
+            },
+            {
+              "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+              "type": "root"
+            },
+            {
+              "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
+              "type": "left"
+            },
+            {
+              "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
+              "type": "right"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -10763,7 +10782,13 @@
       "text": {
         "beforeHex": "",
         "afterHex": "6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a6162636465666768696a6b6c6d6e6f707172737475767778797a61626364",
-        "mustShareHex": []
+        "mustShareHex": [],
+        "leafSizes": [
+          2048,
+          2049,
+          2048,
+          2049
+        ]
       },
       "expected": {
         "posture": "committed",
@@ -11044,99 +11069,97 @@
             "to": "b90f0b40fecc31a47385e6909feb179030ed13833b0c85baa596df96c8efb3c7"
           }
         ],
-        "footprint": {
-          "reads": {
-            "nodes": [
-              "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
-              "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe"
-            ],
-            "edgeRanges": [
-              {
-                "from": "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
-                "type": "anchor"
-              },
-              {
-                "from": "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
-                "type": "root"
-              },
-              {
-                "from": "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe",
-                "type": "canonicalHead"
-              }
-            ]
-          },
-          "writes": {
-            "nodes": [
-              "0feee723c7a475af17f7642ad15e696367e511c827cf0cb9f07ac736347b6adb",
-              "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-              "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
-              "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
-              "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
-              "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
-              "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
-              "cc8e91c0ad5ba3e935a5148207e6bd3192c409776b40886ef1efdc04c6d3a5da"
-            ],
-            "atoms": [
-              "0feee723c7a475af17f7642ad15e696367e511c827cf0cb9f07ac736347b6adb",
-              "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-              "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
-              "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
-              "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
-              "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
-              "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
-              "cc8e91c0ad5ba3e935a5148207e6bd3192c409776b40886ef1efdc04c6d3a5da",
-              "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe"
-            ],
-            "edges": [
-              "1dc7f929d47d963cb56cb680570d44478ef32eb02590d0fa57566f73b0e4542b",
-              "1e1420c0618cc3a1265733e48bf7654e3485d1495fe1ec30f92d2268e433b493",
-              "5b65c51412966a8c9660873ddde37242558451af0926b97aa41c6c6ad0cfa08f",
-              "a15744a47e1e1eb5041252709439dd43e403fbcb65b4bbfe719af2c21dab8720",
-              "a6c1791d8ab8b586ee7e7f7b9f6afdd4ec6836b5823215846f91a40a7a1ce0df",
-              "a99776b77773828c9aa7a5144d74646e5c4f6c852943875861336ba6d6f7b164",
-              "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51",
-              "d114f6f6c57ff694be7cb45889be9c1c52951b12b50ae7afc4b8f64b53a54cbd",
-              "fc7361b26d3960ba1e4b4dcf899261a922aad570ed41bf32175187dbe89aa936"
-            ],
-            "edgeRanges": [
-              {
-                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-                "type": "left"
-              },
-              {
-                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
-                "type": "right"
-              },
-              {
-                "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
-                "type": "anchor"
-              },
-              {
-                "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
-                "type": "root"
-              },
-              {
-                "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
-                "type": "left"
-              },
-              {
-                "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
-                "type": "right"
-              },
-              {
-                "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
-                "type": "left"
-              },
-              {
-                "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
-                "type": "right"
-              },
-              {
-                "from": "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe",
-                "type": "canonicalHead"
-              }
-            ]
-          }
+        "readSet": {
+          "nodes": [
+            "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
+            "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe"
+          ],
+          "edgeRanges": [
+            {
+              "from": "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
+              "type": "anchor"
+            },
+            {
+              "from": "ad22ec717876d9aa08f8b405c071780d6564a5ef3da63cbb3f3cc271817d4e72",
+              "type": "root"
+            },
+            {
+              "from": "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe",
+              "type": "canonicalHead"
+            }
+          ]
+        },
+        "writeSet": {
+          "nodes": [
+            "0feee723c7a475af17f7642ad15e696367e511c827cf0cb9f07ac736347b6adb",
+            "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+            "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+            "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
+            "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
+            "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+            "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+            "cc8e91c0ad5ba3e935a5148207e6bd3192c409776b40886ef1efdc04c6d3a5da"
+          ],
+          "atoms": [
+            "0feee723c7a475af17f7642ad15e696367e511c827cf0cb9f07ac736347b6adb",
+            "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+            "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+            "52b77546638af1d44bdb527d12abc0eb63e8ced88bf2a66632446185a7ab24ac",
+            "5b4301cf8ac22921921f172a019df9fbd674575453c708196c62e28da87ea012",
+            "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+            "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+            "cc8e91c0ad5ba3e935a5148207e6bd3192c409776b40886ef1efdc04c6d3a5da",
+            "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe"
+          ],
+          "edges": [
+            "1dc7f929d47d963cb56cb680570d44478ef32eb02590d0fa57566f73b0e4542b",
+            "1e1420c0618cc3a1265733e48bf7654e3485d1495fe1ec30f92d2268e433b493",
+            "5b65c51412966a8c9660873ddde37242558451af0926b97aa41c6c6ad0cfa08f",
+            "a15744a47e1e1eb5041252709439dd43e403fbcb65b4bbfe719af2c21dab8720",
+            "a6c1791d8ab8b586ee7e7f7b9f6afdd4ec6836b5823215846f91a40a7a1ce0df",
+            "a99776b77773828c9aa7a5144d74646e5c4f6c852943875861336ba6d6f7b164",
+            "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51",
+            "d114f6f6c57ff694be7cb45889be9c1c52951b12b50ae7afc4b8f64b53a54cbd",
+            "fc7361b26d3960ba1e4b4dcf899261a922aad570ed41bf32175187dbe89aa936"
+          ],
+          "edgeRanges": [
+            {
+              "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+              "type": "left"
+            },
+            {
+              "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+              "type": "right"
+            },
+            {
+              "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+              "type": "anchor"
+            },
+            {
+              "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+              "type": "root"
+            },
+            {
+              "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+              "type": "left"
+            },
+            {
+              "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+              "type": "right"
+            },
+            {
+              "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+              "type": "left"
+            },
+            {
+              "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+              "type": "right"
+            },
+            {
+              "from": "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe",
+              "type": "canonicalHead"
+            }
+          ]
         },
         "reachability": {
           "root": "worldline root to Buffer layout pending echo#927; sets below start at the Buffer",
@@ -11299,7 +11322,7 @@
           "deciding": "replacement",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "6d318dabf4805798294b140e52451dc2359c0d571be503d0e894ee61160ac45e"
           ],
@@ -11474,7 +11497,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "43d6fb41ce14d3724c574a16d6f651529ae28adb32c2fc3a21e87ca58a17b2a9",
             "b61b9679e99fa00c28bac77031b6a7f5a11c3d588d145c2ca5eed900ab76c015",
@@ -11689,7 +11712,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "3a998f7e856f2e0126c1431a6a61dbf1db73dd5b16db0a837b9ff1e4d733e9ac",
             "9df0d77475a3c8f4701f124121038be192f61b5acfa665771598c25cd0faedb4",
@@ -11884,7 +11907,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
             "724f571b0f55b7ade0bc62104b0c691d70ebe5d9f45699e8d8a4cc5d13ee81f9",
@@ -12081,7 +12104,7 @@
           "deciding": "closure-validation",
           "competing": []
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "5d48866ac5c4c10ea6f528ddcf73c5f91c75c38dddc86e5272c490f3cac546b3",
             "c715dfe1e1fc62f0e7a9fe00cdf63b719e447b53220d65c4de68ab3070173fcc",
@@ -12243,7 +12266,7 @@
             "counters"
           ]
         },
-        "observedReads": {
+        "readSet": {
           "nodes": [
             "05a7fa29b0827aefc8fa17b365458153be7cca2dbf949820a2486870127014fa",
             "5f81063cca838b9c14ab10efa720babbefb8edc00a894805fed73e43ea5edf4c",

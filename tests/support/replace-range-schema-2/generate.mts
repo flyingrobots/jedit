@@ -3,8 +3,9 @@
 // Writes (--write) or checks (--check) the schema-2 fixture artifact and its
 // sidecar. Regeneration is a reviewed change: read the diff before committing.
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { buildArtifact, RETAINED_ORACLE_PATH } from './build-artifact.mts';
 
 export const ARTIFACT_PATH = 'contracts/jedit/acceptance/replace-range-schema-2/replace-range-schema-2.fixtures.json';
@@ -39,6 +40,7 @@ function main(): void {
   if (readFileSync(artifactPath, 'utf8') !== rendered || readFileSync(sidecarPath, 'utf8') !== digest) {
     throw new Error(`${ARTIFACT_PATH} differs from its rows; regenerate with --write and review the diff`);
   }
+  process.stdout.write(`${ARTIFACT_PATH} matches its rows\n`);
 }
 
-if (process.argv[1] !== undefined && import.meta.url === `file://${path.resolve(process.argv[1])}`) main();
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) main();

@@ -64,11 +64,12 @@ export const COUNTERPART_ROWS: readonly RowSpec[] = [
   new ExpectObstructed('ContentIdentityMismatch', 'closure-validation')),
   new RowSpec(counterpart('leaf-ends-inside-codepoint-at-exact-end', 'utf8-boundary-invalid',
     'Invalid UTF-8 leaf bytes replacing a partial Blob slice; specify fault precedence',
-    'A schema-2 leaf stores its own bytes; a lone 0xC3 is an invalid leaf. Closure validation precedes the '
-    + 'character-boundary check, so the outcome is MalformedRope, not the retained boundary code.'),
+    'A schema-2 leaf stores its own bytes; a lone 0xC3 is an invalid leaf, rejected by closure validation as '
+    + 'MalformedRope. The retained boundary code does not survive: offset 1 is the end of the leaf, which is a '
+    + 'character boundary under the DL-0159 predicate.'),
   [buffer('leaf-ends-inside-codepoint-at-exact-end', head(leaf(Uint8Array.of(0xc3))))],
   invoke(1n, 1n, 'x'),
-  new ExpectObstructed('MalformedRope', 'closure-validation', ['character-boundary'])),
+  new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(counterpart('leaf-exceeds-blob-at-zero', 'fact-malformed',
     'Define equivalent malformed-leaf extent coverage without Blob ranges',
     'Without Blob ranges, an extent can only be overstated by an ancestor. The head claims 4 bytes over a '
@@ -122,7 +123,7 @@ export const COUNTERPART_ROWS: readonly RowSpec[] = [
     + 'checked UTF-16 arithmetic moves to the derived reading and stays a gap there.',
   [new MovedObligation('utf16-derived-reading',
     'Checked UTF-16 length of a derived reading cached by subtree identity and conversion version',
-    'DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading)')]),
+    'DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet')]),
   [buffer('rope-utf16-length-overflow', head(leaf('a', { atom: leafAtomWithUtf16() })))],
   invoke(0n, 0n, 'x'),
   new ExpectObstructed('FactMalformed', 'closure-validation')),

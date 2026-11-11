@@ -819,16 +819,23 @@ compile or some graph edits succeed.
 data: [`replace-range-schema-2.fixtures.json`](../../contracts/jedit/acceptance/replace-range-schema-2/replace-range-schema-2.fixtures.json),
 designed in [DL-0163](0163-schema-2-rope-fixtures.md). Every row is
 `unexecuted`; the count of passing rows stays 0/40. All 40 retained
-invocations are kept byte for byte. No `carry` row is reclassified. Three carry
-rows (`middle-ascii-insert`, `unicode-replacement`, `cross-leaf-rebalance`)
-store the same text as a different leaf shape, so that an untouched subtree
-exists whose identity the edit must keep.
+invocations keep their exact start, end and replacement bytes; Buffer and head
+ids are schema-2 ids. No `carry` row is reclassified. Three carry rows
+(`middle-ascii-insert`, `unicode-replacement`, `cross-leaf-rebalance`) store
+the same text as a different leaf shape, so that an untouched subtree exists
+whose identity the edit must keep. Three carry rows
+(`branch-extent-mismatch-*`) keep their obligation but change outcome category:
+schema 1 called the inconsistent branch a malformed fact, while schema 2 decodes
+it and rejects the broken rope invariant as MalformedRope. Each such departure
+carries a written decision in the artifact.
 
 Obstructed rows are decided by the first failing check in this order: Buffer
 presence, Buffer decode, basis, range order, replacement validity, envelope,
 Head decode, range bounds against the Head's claimed length, closure
-validation, character boundaries, no-op, counters. Echo admission is a separate
-boundary.
+validation, character boundaries, no-op, counters. Closure validation covers
+every node the operation resolves, including nodes read by the reconstruction
+or the no-op comparison, and completes before any endpoint is classified. Echo
+admission is a separate boundary.
 
 | Counterpart | Schema-2 fixture | Outcome at check |
 | --- | --- | --- |
@@ -849,7 +856,8 @@ Moved and removed representations:
 
 - **UTF-16.** The checked UTF-16 arithmetic of `rope-utf16-length-overflow`
   moves to the UTF-16 derived reading (Coordinates, Follow-On Debt). That
-  obligation stays a gap until the derived reading discharges it.
+  obligation stays a gap until the derived reading discharges it. No issue
+  tracks it yet; #389 reports the missing owner instead of filing one.
 - **Blob.** Blob slices and offsets no longer exist. Their extent and arithmetic
   coverage moves to ancestor extent claims and checked child sums, as above.
 - **Height.** The U32 height becomes a U8 codec bound. The child-consistency

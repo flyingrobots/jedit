@@ -7,6 +7,7 @@ import { contentNodeId, hex, OutgoingEdge } from './content-address-v1.mts';
 import { RecordingView } from './graph.mts';
 import type { GraphState, NodeRecord } from './graph.mts';
 import { Obstruction } from './outcomes.mts';
+import type { Check } from './outcomes.mts';
 import { byteLength, fromBytes, isCharBoundary, lineBreaks, NewBranch, NewLeaf, RopeBuilder } from './rope-build.mts';
 import type { Rope } from './rope-build.mts';
 import { checkedAdd, isUtf8, RopeReader } from './rope-reader.mts';
@@ -94,8 +95,14 @@ export class ReplaceRangeModel {
   readonly reader: RopeReader;
   readonly builder: RopeBuilder;
   readonly invocation: Invocation;
+  /** Node and range read counts when the first endpoint is classified; null if never reached. */
+  readsAtClassification: readonly [number, number] | null = null;
 
-  constructor(graph: GraphState, invocation: Invocation) {
+  /** A later check to evaluate as if this one passed; used only to verify a row's competing checks. */
+  readonly skip: Check | null;
+
+  constructor(graph: GraphState, invocation: Invocation, skip: Check | null = null) {
+    this.skip = skip;
     this.view = new RecordingView(graph);
     this.reader = new RopeReader(this.view);
     this.builder = new RopeBuilder(this.reader);
@@ -130,11 +137,15 @@ export class ReplaceRangeModel {
     }
     const [root, anchor] = this.validateHead(head, headFields);
     const located = root === null ? new Located([], null, []) : this.locate(root);
-    this.checkBoundaries(located);
-    if (this.isNoOp(root)) throw new Obstruction('NoOp', 'no-op', 'replacement equals the replaced bytes');
+    // Every node the operation will resolve is read, and so validated, here: the
+    // reconstruction and the no-op comparison run before any endpoint is classified.
+    const tree = this.construct(root, located);
+    const noOp = this.isNoOp(root);
+    this.readsAtClassification = [this.view.nodeReads.size, this.view.rangeReads.size];
+    if (this.skip !== 'character-boundary') this.checkBoundaries(located);
+    if (noOp && this.skip !== 'no-op') throw new Obstruction('NoOp', 'no-op', 'replacement equals the replaced bytes');
     const sequence = checkedIncrement(uintField(headFields, 'sequence'), 'head sequence');
     const version = checkedIncrement(uintField(bufferFields, 'version'), 'buffer version');
-    const tree = this.construct(root, located);
     const lineCount = checkedAdd(tree === null ? 0n : lineBreaks(tree), 1n, 'new head line count');
     const newHead = new Map<string, bigint>([['byteLength', tree === null ? 0n : byteLength(tree)],
       ['lineCount', lineCount], ['sequence', sequence]]);
