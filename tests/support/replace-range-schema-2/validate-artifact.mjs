@@ -6,6 +6,7 @@
 // builder bug cannot validate itself. cbor-x decodes atoms as a second codec.
 import { createHash } from 'node:crypto';
 import { decode as cborDecode } from 'cbor-x';
+import { blake3 } from './blake3.mts';
 import { attachmentDigest, contentEdgeId, contentNodeId, OutgoingEdge, slotEdgeId, unhex, hex }
   from './content-address-v1.mts';
 
@@ -96,9 +97,27 @@ function typeIds(profile) {
     warp: unhex(profile.warp.id) };
 }
 
+/** Warp, type and Buffer ids follow from their declared labels and keys. */
+function checkDeclaredIds(artifact) {
+  const { profile } = artifact;
+  const derive = (prefix, text) => hex(blake3(new TextEncoder().encode(prefix + text)));
+  if (derive('warp:', profile.warp.label) !== profile.warp.id) fail('identity', 'warp id');
+  for (const table of [profile.nodeTypes, profile.atomTypes, profile.edgeTypes]) {
+    for (const [name, entry] of Object.entries(table)) {
+      if (derive('type:', entry.label) !== entry.id) fail('identity', `type id of ${name}`);
+    }
+  }
+  for (const row of [...artifact.rows, ...artifact.additions]) {
+    for (const buffer of row.basis.buffers) {
+      if (derive(profile.bufferKeyDomain, buffer.key) !== buffer.bufferId) fail('identity', `${row.id} BufferId`);
+    }
+  }
+}
+
 /** Every content node id is its ContentAddressV1 address, unless the row marks it injected and witnesses it. */
 export function checkIdentities(artifact) {
   const ids = typeIds(artifact.profile);
+  checkDeclaredIds(artifact);
   for (const row of [...artifact.rows, ...artifact.additions]) {
     const { nodes, edges } = row.basis;
     const witnessed = new Set(row.admissionWitnesses.map((witness) => witness.effect.node));

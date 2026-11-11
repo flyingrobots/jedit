@@ -130,6 +130,10 @@ test('every content id is its ContentAddressV1 address or a witnessed non-bridge
   }
   assert.throws(() => checkIdentities(mutated((copy) => { row(copy, 'cyclic-right-endpoint').admissionWitnesses = []; })),
     /identity/);
+  assert.throws(() => checkIdentities(mutated((copy) => { row(copy, 'empty-no-op').basis.buffers[0].key = 'other'; })),
+    /identity/);
+  assert.throws(() => checkIdentities(mutated((copy) => { copy.profile.edgeTypes.left.label = 'jedit.text.lft'; })),
+    /identity/);
   assert.throws(() => checkIdentities(mutated((copy) => {
     const node = row(copy, 'middle-ascii-insert').expected.createdNodes[0];
     node.atomHex = `${node.atomHex.slice(0, -2)}00`;

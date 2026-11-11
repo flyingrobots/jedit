@@ -379,6 +379,20 @@
               "437610e0c0f7045afbb864640f00d8abc35c0bce5e88b264823efa10215e9c2e",
               "47188dacac3223ef8452538a723a382137e683951399128c28ce832a8d1a2a24",
               "9e1c5a1935af9b0e27e2556887dad76be2b4eb4096d0bbd429d11a9dc2931a2e"
+            ],
+            "edgeRanges": [
+              {
+                "from": "3803e5732d1a0c6149d48ffec0d9863ed74f935106ad3e331c920398d2c9b9b7",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+                "type": "anchor"
+              },
+              {
+                "from": "3ff05c3e8dba41dc23dc4b85619f8f03428406a2059c0b0e69fee7158019a5f8",
+                "type": "root"
+              }
             ]
           }
         },
@@ -751,6 +765,28 @@
               "8690158d2b6f64737a6c1632ee24fe6ef4cc1b0e0710c743cb773c083ac6ff73",
               "885cf291a9844cb5b514802b38fe3027f988397b1fbdd5cfaf0991cc1b823a99",
               "bc4d37ba97d5e6cfdaefe07443273569edc40e4b7ac09af16e8768c11954c428"
+            ],
+            "edgeRanges": [
+              {
+                "from": "01f01a9892eb5697db5665c28f9d5ec50c7cb620e7dcc68514fde4755ff80461",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+                "type": "anchor"
+              },
+              {
+                "from": "40aa7b4dc9aec0d4991431d43bf4a7e8cc69c7bba06209d1ee01193e573639cf",
+                "type": "root"
+              },
+              {
+                "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
+                "type": "left"
+              },
+              {
+                "from": "da07b9511680d99da8040364ec7da55d878a3f1f1ace6b18af52ffd49f62ae88",
+                "type": "right"
+              }
             ]
           }
         },
@@ -1002,6 +1038,16 @@
             "edges": [
               "6a853f4c1dfa015a5e14006341b3299a9a68d3635e178cd97f753596e87d6ac1",
               "b0f57650c92701611f08ba3f56ec02dc4c1007c7905c90b8d5efa3448b67e7bc"
+            ],
+            "edgeRanges": [
+              {
+                "from": "6c1391ea99ecc3190ef4acc27118d0a087ed5b1abdef38286e8ec05226cb0e2d",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "e7783a6258f7e71f4ba4caf7afed375738b40216fc81b0c43c8c56a8043c18c1",
+                "type": "anchor"
+              }
             ]
           }
         },
@@ -1374,6 +1420,28 @@
               "cac48ea401ab178029a81afa4a650caf3c840613c107219a939082a7e99441c1",
               "ce95c5ea521ca7b7420fa07aed4eec151a504d8bb985638a901ab4a219063ede",
               "fb0cb69667bea4346cb418bf7d4ef1ea912a66650465b65a2d5e4b183fd0d606"
+            ],
+            "edgeRanges": [
+              {
+                "from": "440daf2795b947bb85f485cc22cb2ac5311d9ef1957dde1d53633d0cc4ae0eb4",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+                "type": "left"
+              },
+              {
+                "from": "eb0e74cdf31e61141f939387a8ee43d2dea0fedbb5f51011836f13e38c10ca23",
+                "type": "right"
+              },
+              {
+                "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
+                "type": "anchor"
+              },
+              {
+                "from": "fdd8b10c6d102309394c2c34392f2d608241679424b85d891894f41fcfd305b5",
+                "type": "root"
+              }
             ]
           }
         },
@@ -2214,6 +2282,60 @@
               "e4b10c7a2306fc7e736d64e3d03afd708e83b3ca75ecbc86eb5fd17e0a0379a8",
               "f5638067e5c5b6d8b9323df1c24aac63eeff100c8a194f21bc030c58c9e55c13",
               "f5c48d265a7a883022e89c421c7ad2053fd0adee6a23f616abc6071a118bbabb"
+            ],
+            "edgeRanges": [
+              {
+                "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+                "type": "left"
+              },
+              {
+                "from": "041df9e0b8657b81729cc5a42d8ee8d36c62a898340fcfa10de8132f1fe1256c",
+                "type": "right"
+              },
+              {
+                "from": "0ea723ded9b47796f480f0dde096ce2466f4e4c04bd250f7c10232335d0b1caa",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+                "type": "left"
+              },
+              {
+                "from": "1d755379d1ddfdcd5b20a1d18a7e1ad59d02d2aa9f6f9aadaeb38e80e6f87bd4",
+                "type": "right"
+              },
+              {
+                "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+                "type": "anchor"
+              },
+              {
+                "from": "381f28f625a291605113bc29478521e910b1c7028fc91d53a589b1bc53669ba7",
+                "type": "root"
+              },
+              {
+                "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+                "type": "left"
+              },
+              {
+                "from": "94e1b4d0189b252b7a15ccacce1797f39a9bc5e4106baa20113b1245f1a8dc26",
+                "type": "right"
+              },
+              {
+                "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+                "type": "left"
+              },
+              {
+                "from": "c28721670130c6de5f0d38e4ff491a24fecc69be8c6cd1e3c47fe81f8add638f",
+                "type": "right"
+              },
+              {
+                "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
+                "type": "left"
+              },
+              {
+                "from": "c87180c6602f50bb0953fcba69120cfe342935d034ba2c4138baf2a44fd3d48d",
+                "type": "right"
+              }
             ]
           }
         },
@@ -2586,6 +2708,28 @@
               "6c37eaa998fea0d56f7b210a8d545116df989895c3d2b46ec163fa553c90822b",
               "ec8b897ab91a2c2c1a2fd7cc2900939c88bf1a908a633ca9adeb3e14942d3e74",
               "f35600ea3911f9863334101c11322fef29fe7f25fdfc3723de36234be60aee3f"
+            ],
+            "edgeRanges": [
+              {
+                "from": "2905788ecbb976ac8c22f94ad1e31b56d540533d17a24eb50577e4d021543162",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+                "type": "anchor"
+              },
+              {
+                "from": "80aa38e29f0fd806aad54b657db32f5474b2afb278d5630f04f0bb518dea0921",
+                "type": "root"
+              },
+              {
+                "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
+                "type": "left"
+              },
+              {
+                "from": "ff3358177105fdcf31135db919a793cf8c78642dc40998e7a7ab2a60fd6379b3",
+                "type": "right"
+              }
             ]
           }
         },
@@ -8969,6 +9113,20 @@
               "64432b37a6c5dc1d90a7e0863e04f83c16d73e39b5c5ea8c5450cce7065c2c00",
               "64b50598dac02801a2eda4bb2a99accc9cee941476570d6d2c9e68f2b26d79ab",
               "bf5d3d917a8e1135dac15ad0a113517778fce832382180980d7b9078511e43d5"
+            ],
+            "edgeRanges": [
+              {
+                "from": "a0feee34055fb45c0f530918c4fa99ae7eea66e1668a40dd964315d65a673be8",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
+                "type": "anchor"
+              },
+              {
+                "from": "bff7c12e2d7fa66a78b60838b17619110b124496472d9ea48bfbc7800aad8a75",
+                "type": "root"
+              }
             ]
           }
         },
@@ -9332,6 +9490,28 @@
               "9f8496ea7cc179ed749313d2b2c7c1b7993919a948b3a5a7b0a1cc958933f1da",
               "e75c4bd0d0e2b4a6d5b1a63696ec7fddb4703a5da26897e710bb5e9d82a81cb6",
               "f0aab2140bec7d8df4e4244289d0d4f7947c4c01896926972a4fd2176f0bfc31"
+            ],
+            "edgeRanges": [
+              {
+                "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+                "type": "anchor"
+              },
+              {
+                "from": "8d3b6d4807d9dd9a8c8c77506446d9572fbadc7eb8aedb8bb5951845686a7960",
+                "type": "root"
+              },
+              {
+                "from": "9c80d9afe9a6cc98b4202e7effbaa67c0b9ef7e7b67f6cbb40c8a8b1a6222a95",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
+                "type": "left"
+              },
+              {
+                "from": "f2b088a3b34ef3f8d7557066157960f1fcd73293c2e845a57a532ac611502538",
+                "type": "right"
+              }
             ]
           }
         },
@@ -9645,6 +9825,28 @@
               "a2cd4782a7d54ff5ae9a7d1bf7e6c436870e988150346788de8c4982514e3759",
               "ad08edb46c24a52d713ddaba5f2a26792dcaa79861552dd437f23dec12d5854a",
               "b04b8e07f696f926f396d1183d4f098dbf1ea46a8733bc6b187a38db4c999b73"
+            ],
+            "edgeRanges": [
+              {
+                "from": "3f81c5641aadf4b91a904240bd171547980f728ce8118da1711c89fee8159e30",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+                "type": "left"
+              },
+              {
+                "from": "569cc7e700b817949d1c4ac8c227b2a4fba5660c1f48daee7e3c311f44792391",
+                "type": "right"
+              },
+              {
+                "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
+                "type": "anchor"
+              },
+              {
+                "from": "86dcece759f4cd1b74f0637545fe8051d7d9ff17ae2dcf1fb90a4e14f0be69bb",
+                "type": "root"
+              }
             ]
           }
         },
@@ -9975,6 +10177,28 @@
               "59e1e80c565a8388edd2de792dfc7a4b06415dec63466a82e5171516364043ac",
               "b0fa7f513ad61166f418a5bc63c72224e1bc522ac71e297e4a1d753fe336afce",
               "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51"
+            ],
+            "edgeRanges": [
+              {
+                "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+                "type": "anchor"
+              },
+              {
+                "from": "0f809c1b48b8d8caae4f68ba6a79bf1ab80ecf3fcd70beb3f2b1b4edfe084d59",
+                "type": "root"
+              },
+              {
+                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+                "type": "left"
+              },
+              {
+                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+                "type": "right"
+              },
+              {
+                "from": "88686299fe67d3a163eba1cc09c86c2c2545864dc6ef9f2a2a9161ec410fc051",
+                "type": "canonicalHead"
+              }
             ]
           }
         },
@@ -10374,6 +10598,36 @@
               "bd573ca71c0bce3898c61eb92f845cb41d0b6adf108321031ed485cc3e5d67ee",
               "ca3a220f50db1a06e5cd8ef0bf31a6c4dafe984b963ced052e91a77c6f006ec3",
               "fc035dd23f8f715fed9870acdfa32521194e53864b1cd3650465e25d99aec539"
+            ],
+            "edgeRanges": [
+              {
+                "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+                "type": "left"
+              },
+              {
+                "from": "43687dfaa240d1a4dbe1e0c97b690c0793d64ba55f4694aed2466092460f85d3",
+                "type": "right"
+              },
+              {
+                "from": "670ead73ee2d2ffb3c0967657776a9b0c2552f50c24e71100a4bc5d932a7d6d7",
+                "type": "canonicalHead"
+              },
+              {
+                "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+                "type": "anchor"
+              },
+              {
+                "from": "b36102d74c177b938f021bf0040cabd06524d978c5d0da52dde902f83438d04c",
+                "type": "root"
+              },
+              {
+                "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
+                "type": "left"
+              },
+              {
+                "from": "baa3c3a4721d5fa6bfef67465c177bbf4ec8b6982a1153d44bfecd9790aab607",
+                "type": "right"
+              }
             ]
           }
         },
@@ -10843,6 +11097,44 @@
               "ba98c2401f03fa2854bbd5e4c0a60008808684d0182774acb5ea9d951fc07e51",
               "d114f6f6c57ff694be7cb45889be9c1c52951b12b50ae7afc4b8f64b53a54cbd",
               "fc7361b26d3960ba1e4b4dcf899261a922aad570ed41bf32175187dbe89aa936"
+            ],
+            "edgeRanges": [
+              {
+                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+                "type": "left"
+              },
+              {
+                "from": "2bcb9af7a7903246b09455b943e9d0daf558c5a2510fdcb4cff60c3fdc6bc087",
+                "type": "right"
+              },
+              {
+                "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+                "type": "anchor"
+              },
+              {
+                "from": "375455c616d0fbfebcc175a1e6911306e28d6df118f6a5980aa985d52cd8b0ea",
+                "type": "root"
+              },
+              {
+                "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+                "type": "left"
+              },
+              {
+                "from": "6918a33c71567ba56fa351e3426b1bb41b7534f8891078b53252eb5531c0f1ab",
+                "type": "right"
+              },
+              {
+                "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+                "type": "left"
+              },
+              {
+                "from": "a5ee5163eee7cc0ae6ef366228276de3cfb0b68ed0bf1ac24d7d80280fdc937e",
+                "type": "right"
+              },
+              {
+                "from": "f7bdd55e0823e4dd03438271bafaeec68ec8ea47f63350b768465ec635d9ecbe",
+                "type": "canonicalHead"
+              }
             ]
           }
         },

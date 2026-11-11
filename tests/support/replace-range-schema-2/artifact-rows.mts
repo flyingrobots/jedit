@@ -146,6 +146,17 @@ export function obstructedJson(row: RowSpec, expected: ExpectObstructed, model: 
   };
 }
 
+/** Range keys (source, edge type) each written edge touches, as Echo's write set records them. */
+function writtenRanges(proposal: Proposal, writtenEdges: readonly string[], bufferId: Uint8Array): Json {
+  const keys = new Map<string, { from: string; type: string }>([[`${hex(bufferId)}/canonicalHead`,
+    { from: hex(bufferId), type: 'canonicalHead' }]]);
+  for (const id of writtenEdges) {
+    const edge = proposal.createdEdges.get(id)!;
+    keys.set(`${hex(edge.from)}/${edgeName(edge.edgeType)}`, { from: hex(edge.from), type: edgeName(edge.edgeType) });
+  }
+  return [...keys].sort(([a], [b]) => a.localeCompare(b)).map(([, key]) => key);
+}
+
 export function committedJson(row: RowSpec, expected: ExpectCommitted, basis: Basis, model: ReplaceRangeModel): Json {
   const result = model.run();
   if (!(result instanceof ModelCommit)) {
@@ -186,7 +197,8 @@ export function committedJson(row: RowSpec, expected: ExpectCommitted, basis: Ba
     footprint: {
       reads: readsJson(result),
       writes: { nodes: writtenNodes, atoms: [...writtenNodes, hex(invocation.bufferId)].sort(),
-        edges: [...writtenEdges, hex(proposal.slotEdge)].sort() },
+        edges: [...writtenEdges, hex(proposal.slotEdge)].sort(),
+        edgeRanges: writtenRanges(proposal, writtenEdges, invocation.bufferId) },
     },
     reachability: {
       root: 'worldline root to Buffer layout pending echo#927; sets below start at the Buffer',
