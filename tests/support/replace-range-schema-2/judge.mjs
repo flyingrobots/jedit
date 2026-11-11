@@ -4,10 +4,13 @@
 // execution observation. Nothing produces such an observation yet (#296); the
 // spec feeds it synthetic ones to show what can and cannot satisfy a row.
 
+import { isDeepStrictEqual } from 'node:util';
+
 const PERSISTENT_ROPE = 'persistent-rope';
 
+// Structural equality: property order never matters, array order always does.
 function same(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return isDeepStrictEqual(left, right);
 }
 
 function committedReasons(expected, observation) {

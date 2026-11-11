@@ -9,9 +9,10 @@ import path from 'node:path';
 import test from 'node:test';
 import { committedJson, FixtureInconsistency, obstructedJson, resolveInvocation }
   from './support/replace-range-schema-2/artifact-rows.mts';
-import { Basis, utf8 } from './support/replace-range-schema-2/fixture-basis.mts';
+import { Basis, repeat, utf8 } from './support/replace-range-schema-2/fixture-basis.mts';
 import { ReplaceRangeModel } from './support/replace-range-schema-2/replace-range-model.mts';
 import { ARTIFACT_PATH, renderArtifact } from './support/replace-range-schema-2/generate.mts';
+import { ADDITION_ROWS } from './support/replace-range-schema-2/rows-additions.mts';
 import { branch, buffer, claims, ExpectCommitted, ExpectObstructed, head, invoke, leaf, RowSpec }
   from './support/replace-range-schema-2/row-spec.mts';
 
@@ -115,4 +116,20 @@ test('the committed artifact is exactly what the rows render', () => {
   assert.equal(readFileSync(path.join(root, ARTIFACT_PATH), 'utf8'), rendered);
   assert.equal(readFileSync(path.join(root, ARTIFACT_PATH.replace(/\.json$/, '.sha256')), 'utf8'),
     `${createHash('sha256').update(rendered).digest('hex')}\n`);
+});
+
+test('malformed closures that would otherwise be NoOp are rejected by closure validation', () => {
+  // Oracle: the declared order puts closure validation before no-op; each honest twin of the basis is NoOp.
+  const honest = new Map([
+    ['malformed-closure-masks-no-op', head(branch(leaf(repeat('a', 4096)), leaf('b')))],
+    ['empty-root-masks-no-op', head(null)],
+  ]);
+  for (const [id, honestHead] of honest) {
+    const masked = ADDITION_ROWS.find((entry) => entry.id === id);
+    assert.ok(masked !== undefined, `${id} is an addition`);
+    assert.equal(render(masked).typedOutcome, 'MalformedRope', id);
+    const twin = new RowSpec({ id: `${id}-twin`, mapping: 'addition', obligation: 'twin' }, [buffer(id, honestHead)],
+      masked.invocation, new ExpectObstructed('NoOp', 'no-op'));
+    assert.equal(render(twin).typedOutcome, 'NoOp', `${id} twin`);
+  }
 });

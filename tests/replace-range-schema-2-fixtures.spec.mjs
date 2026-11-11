@@ -183,7 +183,7 @@ test('fixture tooling imports no planner, runtime or authored source, and the va
   const imports = (file) => [...readFileSync(path.join(TOOLING, file), 'utf8')
     .matchAll(/^\s*(?:import|export)\b[^;]*?\bfrom\s*(['"])([^'"]+)\1|^\s*import\s*(['"])([^'"]+)\3|\bimport\s*\(\s*(['"])([^'"]+)\5/gm)]
     .map((match) => match[2] ?? match[4] ?? match[6]);
-  assert.deepEqual(imports('judge.mjs'), []);
+  assert.deepEqual(imports('judge.mjs'), ['node:util']);
   assert.ok(imports('validate-committed.mjs').includes('cbor-x'));
   const files = readdirSync(TOOLING).filter((file) => /\.m[jt]s$/.test(file));
   assert.ok(files.length > 10);
@@ -230,4 +230,13 @@ test('an obstructed row\'s read set and its departures from the retained outcome
 test('an obstruction observed with a different read set does not satisfy its row', () => {
   const entry = row(artifact, 'stale-basis');
   assert.notDeepEqual(unmetReasons(entry, { ...exactObservation(entry), readSet: { nodes: [], edgeRanges: [] } }), []);
+});
+
+test('the judge compares observations structurally, not by property order', () => {
+  // Oracle: JSON objects are unordered; an execution may emit fields in any order.
+  const entry = row(artifact, 'empty-unicode-insert');
+  const exact = exactObservation(entry);
+  const reordered = { ...exact, effects: exact.effects.map((effect) => Object.fromEntries(Object.entries(effect).reverse())),
+    readSet: Object.fromEntries(Object.entries(exact.readSet).reverse()) };
+  assert.deepEqual(unmetReasons(entry, reordered), []);
 });
