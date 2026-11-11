@@ -106,14 +106,16 @@ export const ADDITION_ROWS: readonly RowSpec[] = [
   new ExpectObstructed('ArithmeticOverflow', 'counters')),
   new RowSpec(addition('branch-extra-edge-type',
     'A branch whose id is its true address over left, right and an extra anchor edge',
-    'Identity covers the complete edge set, so the id is lawful; the extra edge type breaks the rope shape.'),
+    'Identity covers the complete edge set, so the id is lawful; the extra edge type breaks the rope shape. '
+    + 'Echo\'s graph schema may refuse the anchor edge from a Branch earlier, with SchemaViolation.'),
   [buffer('branch-extra-edge-type', head(branch(leaf('ab'), leaf('cd'),
     { edges: [['left', leaf('ab')], ['right', leaf('cd')], ['anchor', leaf('zz')]] })))],
   invoke(0n, 1n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),
   new RowSpec(addition('leaf-with-edge',
     'A leaf whose id is its true address over one outgoing edge; leaves have none',
-    'Identity covers the complete edge set, so the id is lawful; any leaf edge breaks the rope shape.'),
+    'Identity covers the complete edge set, so the id is lawful; any leaf edge breaks the rope shape. '
+    + 'Echo\'s graph schema may refuse a Leaf edge earlier, with SchemaViolation.'),
   [buffer('leaf-with-edge', head(branch(leaf('ab', { edges: [['left', leaf('zz')]] }), leaf('cd'))))],
   invoke(3n, 4n, 'x'),
   new ExpectObstructed('MalformedRope', 'closure-validation')),

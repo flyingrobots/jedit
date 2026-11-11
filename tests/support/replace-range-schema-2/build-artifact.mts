@@ -58,8 +58,9 @@ function profile(): Json {
       + 'sibling the edit never descends into is trusted on its decoded claims',
     readSet: 'the program\'s witnessed reads: node records with their atoms, and (source, edge type) ranges, as the '
       + 'specification model resolved them. Every validated node has all six edge types read before any count is '
-      + 'checked, and expanding a branch also reads every edge target\'s record before any check. Validation then '
-      + 'runs left to right and stops at the first failure. Echo\'s own validation and precondition reads are not listed',
+      + 'checked, and expanding a branch also reads every edge target\'s record before any check. Faults are '
+      + 'reported in resolution order: the locate path, then reconstruction, then the no-op comparison; within a '
+      + 'branch, left before right. The first failure stops. Echo\'s own validation and precondition reads are not listed',
     writeSet: 'Echo\'s write set: created node records and atoms, the Buffer atom, created and retargeted edges, and '
       + 'the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write',
     competing: 'a later check the fixture also fails; verified by re-running the model with the deciding check passed '

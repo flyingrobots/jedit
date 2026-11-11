@@ -253,9 +253,13 @@ Option C, with all profile choices recorded above and in the artifact.
 `node --test tests/replace-range-schema-2-fixtures.spec.mjs` validates the
 artifact independently of its builder: it imports the BLAKE3, CBOR and
 `ContentAddressV1` transcriptions, cbor-x and a hand-written list of expected
-outcomes, required additions and moves, never the model or the rows. Read sets
-are the exception: only their shape is checked independently, and their exact
-content is change-detected by the regeneration test.
+outcomes, required additions and moves, never the model or the rows. Three things
+are only change-detected by the regeneration test and the builder's consistency
+check, not derived independently: read sets (only their shape is checked),
+multi-leaf tree topology (`rope-build.mts` is the normative reference; the
+validator checks lawfulness, text, leaf sizes and sharing), and whether a basis
+triggers exactly its deciding check (the validator checks only lawful versus
+unlawful).
 `node tests/support/replace-range-schema-2/generate.mts --check` (the same
 comparison runs in process in `tests/replace-range-schema-2-builder.spec.mjs`) proves the frozen bytes still follow from the rows; `--write`
 regenerates them for review. Repository typecheck and quality gate run locally;

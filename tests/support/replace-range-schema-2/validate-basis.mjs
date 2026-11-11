@@ -2,8 +2,12 @@
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // Independent rope-law and record checks over artifact JSON: whether a stored
 // head is a lawful schema-2 rope, written from DL-0159's rope law rather than
-// from the specification model. Used to show each obstructed basis carries the
-// fault its row claims, and that created nodes have lawful edge shapes.
+// from the specification model. It classifies a basis only as lawful or unlawful:
+// rows decided at closure validation must store an unlawful rope and other rows
+// (counters excepted) a lawful one. It does not show which fault, or that the
+// deciding check is the first to fail; the builder's consistency check and the
+// hand-written outcome list in validator-oracle.mjs carry that. It also checks
+// that created nodes have lawful edge shapes.
 import { CborBytes, CborMap, CborText, CborUint, decodeCanonicalCbor } from './canonical-cbor.mts';
 import { unhex } from './content-address-v1.mts';
 import { RECORDS } from './validator-oracle.mjs';

@@ -5,8 +5,12 @@
 // imports the specification model, the row definitions or the builder, so a
 // builder bug cannot validate itself. cbor-x decodes atoms as a second codec.
 // Outcomes, deciding checks, required rows and moves come from validator-oracle.mjs,
-// written by hand. Read sets are the specification model's: this file checks only
-// their shape; their exact content is change-detected by the regeneration test.
+// written by hand. Two things are only change-detected by the regeneration test,
+// not derived here: read sets (the specification model's reads; only their shape is
+// checked) and multi-leaf tree topology (rope-build.mts is the normative reference;
+// this file checks that a result is a lawful rope with the right text, leaf sizes and
+// sharing, not that it is the profile's shape). Whether a basis triggers exactly its
+// deciding check is also left to the builder's consistency check.
 import { createHash } from 'node:crypto';
 import { decode as cborDecode } from 'cbor-x';
 import { blake3 } from './blake3.mts';
