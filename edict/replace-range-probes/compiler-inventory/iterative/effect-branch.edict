@@ -1,0 +1,11 @@
+package jedit.iterative.effect_branch@1;
+use lawpack jedit.inventory.effects@1 digest "sha256:0000000000000000000000000000000000000000000000000000000000000000" as cell;
+type Input = { item: cell.CreateInput, enabled: Bool }; type Output = { value: Bool };
+intent create(input: Input) returns Output
+  profile cell.createValue basis input.item.basis budget <= cell.createBudget
+{
+  if input.enabled {
+    let receipt: cell.CreateReceipt = cell.createValue(input.item) else { alreadyExists(existing) => cell.AlreadyCreated };
+  } else { require !input.enabled else cell.NoOp; }
+  let value = input.enabled; return { value };
+}

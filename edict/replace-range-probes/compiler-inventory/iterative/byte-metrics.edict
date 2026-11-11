@@ -1,0 +1,13 @@
+package jedit.iterative.byte_metrics@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+type Input = { bytes: Bytes<max=8>, index: U64 }; type Output = { byte: U8, lines: U64, valid: Bool };
+fn selected(bytes: Bytes<max=8>, index: U64) -> U8 {
+  return if index < len(bytes) then at(bytes, index) else 0u8;
+}
+fn lines(bytes: Bytes<max=8>) -> U64 { return count(bytes, b"\n"); }
+fn valid(bytes: Bytes<max=8>) -> Bool { return isUtf8(bytes); }
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let byte = selected(input.bytes, input.index);
+  let lineCount = lines(input.bytes); let validity = valid(input.bytes);
+  return { byte, lines: lineCount, valid: validity };
+}
