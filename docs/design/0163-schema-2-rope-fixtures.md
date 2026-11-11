@@ -3,7 +3,7 @@ title: "DL-0163 - Executable Schema-2 Rope Fixtures"
 legend: "DL"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/389"
-status: "landed"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-11-10"
