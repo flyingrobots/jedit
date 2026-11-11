@@ -208,22 +208,22 @@ Option C, with all profile choices recorded above and in the artifact.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Independent BLAKE3, canonical CBOR and `ContentAddressV1`,
+- [x] Slice 1: Independent BLAKE3, canonical CBOR and `ContentAddressV1`,
   checked against reference vectors.
-- [ ] Slice 2: Fixture profile, specification model and the 40 retained rows.
-- [ ] Slice 3: Schema-2 additions, the artifact, its sidecar and validation.
+- [x] Slice 2: Fixture profile, specification model and the 40 retained rows.
+- [x] Slice 3: Schema-2 additions, the artifact, its sidecar and validation.
 - [ ] Slice 4: DL-0159 counterpart decisions; CI and independent review.
 
 ## Tests To Write First
 
-- [ ] The artifact covers every retained id exactly once with DL-0159's mapping.
-- [ ] Each obstructed row binds the oracle's semanticCode, a typed outcome, a
+- [x] The artifact covers every retained id exactly once with DL-0159's mapping.
+- [x] Each obstructed row binds the oracle's semanticCode, a typed outcome, a
   boundary and a precedence list that ends at its deciding check.
-- [ ] Text-only, generic-refusal, resource-refusal and Reference-only
+- [x] Text-only, generic-refusal, resource-refusal and Reference-only
   observations never satisfy a persistent row.
-- [ ] Ids and atoms recompute from their preimages; hashing matches Echo's
+- [x] Ids and atoms recompute from their preimages; hashing matches Echo's
   frozen vectors and the BLAKE3 reference crate.
-- [ ] The schema-1 oracle bytes are unchanged.
+- [x] The schema-1 oracle bytes are unchanged.
 
 ## Acceptance Criteria
 
@@ -235,8 +235,13 @@ Option C, with all profile choices recorded above and in the artifact.
 
 ## Validation Plan
 
-`node --test tests/replace-range-schema-2-fixtures.spec.mjs`, plus repository
-typecheck and quality gate locally; CI runs the shard.
+`node --test tests/replace-range-schema-2-fixtures.spec.mjs` validates the
+artifact independently of its builder: it imports the BLAKE3 and
+`ContentAddressV1` transcriptions and cbor-x, never the model or the rows.
+`node tests/support/replace-range-schema-2/generate.mts --check` (also run by
+that spec) proves the frozen bytes still follow from the rows; `--write`
+regenerates them for review. Repository typecheck and quality gate run locally;
+CI runs the shards.
 
 ## Playback / Witness
 

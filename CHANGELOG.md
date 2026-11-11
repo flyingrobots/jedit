@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Published executable schema-2 ReplaceRange fixtures
+  (`contracts/jedit/acceptance/replace-range-schema-2/`) for all 40 retained
+  oracle ids plus schema-2 additions: exact facts, edges, ContentAddressV1 ids,
+  footprints, effects and counters for committed rows; typed outcome, deciding
+  check and precedence for obstructed rows. DL-0159 records the 12 counterpart
+  decisions. A test validates the artifact without executing any row; the
+  passing count stays 0/40 and the schema-1 oracle is unchanged.
+
 - Defined the schema-1 to schema-2 ReplaceRange acceptance obligations in
   DL-0159 for all 40 retained oracle cases. Representation-specific fault
   counterparts remain explicit gaps; text agreement or resource refusals do
