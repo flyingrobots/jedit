@@ -5,7 +5,7 @@
 // and an independent codec. No row is executed; nothing here claims the rope runs.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { blake3 } from './support/replace-range-schema-2/blake3.mts';
@@ -181,4 +181,24 @@ test('the fixture tooling type-checks under the repository compiler options', ()
   const result = spawnSync(process.execPath, [path.join(ROOT, 'node_modules/typescript/bin/tsc'), '-p',
     path.join(TOOLING, 'tsconfig.json')], { cwd: ROOT, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test('fixture tooling imports no planner, runtime or authored source, and the validator no builder', () => {
+  // Oracle: #389 requires expectations independent of the native planner and of the code they will judge.
+  const imports = (file) => [...readFileSync(path.join(TOOLING, file), 'utf8').matchAll(/from '([^']+)'/g)]
+    .map((match) => match[1]);
+  const files = readdirSync(TOOLING).filter((file) => /\.m[jt]s$/.test(file));
+  assert.ok(files.length > 10);
+  for (const file of files) {
+    for (const specifier of imports(file)) {
+      assert.match(specifier, /^(?:\.\/[a-z0-9-]+\.m[jt]s|node:[a-z]+|cbor-x)$/, `${file} imports ${specifier}`);
+    }
+  }
+  const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'judge.mjs'];
+  const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './validate-committed.mjs']);
+  for (const file of independent) {
+    for (const specifier of imports(file).filter((entry) => entry.startsWith('./'))) {
+      assert.ok(allowed.has(specifier), `${file} must not import ${specifier}`);
+    }
+  }
 });
