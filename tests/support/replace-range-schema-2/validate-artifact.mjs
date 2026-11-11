@@ -103,7 +103,7 @@ function countersOverflow(row, head) {
 }
 
 /** Rows decided at closure validation store an unlawful rope; rows decided elsewhere (except counters, whose
- * fault may sit in a sibling the edit never validates) store a lawful one. rows decided elsewhere store a lawful one. */
+ * fault may sit in a sibling the edit never validates) store a lawful one. */
 function checkBasisFault(row, check) {
   const head = row.basis.nodes.find((node) => node.id === row.invocation.basisHeadId);
   if (head === undefined) return;
@@ -247,7 +247,8 @@ export function checkIdentities(artifact) {
     for (const witness of row.admissionWitnesses) {
       const node = nodes.find((entry) => entry.id === witness.effect.node);
       if (witness.expectedOutcome !== 'IdentityLawViolation' || witness.boundary !== 'echo-admission'
-        || node === undefined || node.admission !== 'requires-non-bridge-writer' || witness.contentAddress === node.id || witness.contentAddress !== addressOf(ids, node, edgesFrom(edges, node.id))) {
+        || node === undefined || node.admission !== 'requires-non-bridge-writer' || witness.contentAddress === node.id
+        || witness.contentAddress !== addressOf(ids, node, edgesFrom(edges, node.id))) {
         fail('identity', `${row.id} witness for ${witness.effect.node} is not an IdentityLawViolation at admission`);
       }
     }

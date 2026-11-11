@@ -42,7 +42,13 @@ function profile(): Json {
       lineBreaks: 'count of 0x0A; Head.lineCount = root lineBreaks + 1',
       fromBytes: 'one leaf up to 4096 bytes; otherwise split at the last character boundary at or before half',
       leafRewrite: 'an edit inside one leaf whose result is 1-4096 bytes rewrites that leaf and path-copies ancestors',
-      general: 'otherwise prefix(start), fromBytes(replacement), suffix(end), joined by AVL concatenation',
+      general: 'otherwise join(join(prefix(start), fromBytes(replacement)), suffix(end)); prefix and suffix descend '
+        + 'the original root, reuse a whole child at an exact boundary and join the rest',
+      join: 'key-less AVL concatenation: children within one height become a branch; otherwise descend the taller '
+        + 'side\'s inner spine, branch with the shorter tree, and apply single or double rotations exactly as '
+        + 'tests/support/replace-range-schema-2/rope-build.mts joinRight/joinLeft do',
+      normativeReference: 'tests/support/replace-range-schema-2/rope-build.mts defines the graded shapes; a '
+        + 'different shape is a reviewed fixture change',
       descent: 'a range descends left while end <= left length, right while start >= left length',
     },
     validation: 'a leaf is validated when its atom is decoded: codec, edge set (none allowed), identity, then '
@@ -51,7 +57,9 @@ function profile(): Json {
       + 'and balance. A head checks its edge set, identity, then extent and line count against its root. A '
       + 'sibling the edit never descends into is trusted on its decoded claims',
     readSet: 'the program\'s witnessed reads: node records with their atoms, and (source, edge type) ranges, as the '
-      + 'specification model resolved them. Echo\'s own validation and precondition reads are not listed',
+      + 'specification model resolved them. Every validated node has all six edge types read before any count is '
+      + 'checked, and expanding a branch also reads every edge target\'s record before any check. Validation then '
+      + 'runs left to right and stops at the first failure. Echo\'s own validation and precondition reads are not listed',
     writeSet: 'Echo\'s write set: created node records and atoms, the Buffer atom, created and retargeted edges, and '
       + 'the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write',
     competing: 'a later check the fixture also fails; verified by re-running the model with the deciding check passed '

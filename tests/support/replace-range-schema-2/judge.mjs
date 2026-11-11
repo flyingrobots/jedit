@@ -10,6 +10,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 const PERSISTENT_ROPE = 'persistent-rope';
+const EMPTY_WRITE_SET = Object.freeze({ nodes: [], atoms: [], edges: [], edgeRanges: [] });
 
 // Structural equality: property order never matters, array order always does.
 function same(left, right) {
@@ -36,9 +37,10 @@ function obstructedReasons(expected, observation) {
   if (observation.decidingCheck !== expected.decidingCheck) reasons.push('rejecting boundary differs');
   if (!same(observation.effects ?? [], [])) reasons.push('an obstruction proposed effects');
   if (!same(observation.readSet, expected.readSet)) reasons.push('read set differs');
-  const wrote = (observation.writeSet !== undefined && Object.values(observation.writeSet).some((slots) => slots.length > 0))
-    || observation.textAfterHex !== undefined || (observation.patch !== undefined && observation.patch !== 'none');
-  if (wrote) reasons.push('an obstruction wrote state or text');
+  // An obstruction must say it wrote nothing; silence about writes is not evidence of none.
+  if (!same(observation.writeSet, EMPTY_WRITE_SET) || observation.patch !== 'none' || observation.textAfterHex !== undefined) {
+    reasons.push('an obstruction must report an empty write set, no patch and no text');
+  }
   return reasons;
 }
 
@@ -68,7 +70,7 @@ export function exactObservation(row) {
   const common = { target: PERSISTENT_ROPE, executed: true, evidence: [...expected.evidence], posture: expected.posture };
   if (expected.posture === 'obstructed') {
     return { ...common, typedOutcome: expected.typedOutcome, decidingCheck: expected.decidingCheck, effects: [],
-      readSet: expected.readSet };
+      readSet: expected.readSet, writeSet: { nodes: [], atoms: [], edges: [], edgeRanges: [] }, patch: 'none' };
   }
   return { ...common, textAfterHex: row.text.afterHex, effects: expected.effects, readSet: expected.readSet,
     writeSet: expected.writeSet,

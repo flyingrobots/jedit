@@ -12,8 +12,9 @@ import { committedJson, FixtureInconsistency, obstructedJson, resolveInvocation 
 import { Basis, repeat, utf8 } from './support/replace-range-schema-2/fixture-basis.mts';
 import { ReplaceRangeModel } from './support/replace-range-schema-2/replace-range-model.mts';
 import { ARTIFACT_PATH, renderArtifact } from './support/replace-range-schema-2/generate.mts';
+import { edgeTypeId } from './support/replace-range-schema-2/schema-2-facts.mts';
 import { ADDITION_ROWS } from './support/replace-range-schema-2/rows-additions.mts';
-import { contentEdgeId, contentNodeId, slotEdgeId } from './support/replace-range-schema-2/content-address-v1.mts';
+import { contentEdgeId, contentNodeId, hex, slotEdgeId } from './support/replace-range-schema-2/content-address-v1.mts';
 import { branch, buffer, claims, ExpectCommitted, ExpectObstructed, head, invoke, leaf, RowSpec }
   from './support/replace-range-schema-2/row-spec.mts';
 
@@ -188,4 +189,24 @@ test('content-address helpers refuse ids that are not 32 bytes', () => {
 
 test('a self edge without a stored-id override is an explicit authoring error', () => {
   assert.throws(() => new Basis([buffer('self-probe', head(branch(leaf('a'), 'self')))]), /self edge needs an id override/);
+});
+
+test('expansion reads every edge type and both child records before rejecting anything', () => {
+  // Oracle: DL-0163 read profile; a fault found early must not shorten the declared read set.
+  const wrongType = branch(leaf('ab'), leaf('cd'), { edges: [['left', leaf('ab')], ['root', leaf('cd')]] });
+  const basis = new Basis([buffer('read-probe', head(wrongType))]);
+  const row = new RowSpec({ id: 'read-probe', mapping: 'addition', obligation: 'probe' }, [buffer('read-probe', head(wrongType))],
+    invoke(0n, 1n, 'x'), new ExpectObstructed('MalformedRope', 'closure-validation'));
+  const model = new ReplaceRangeModel(basis.graph, resolveInvocation(row, basis));
+  model.run();
+  const ranges = [...model.view.rangeReads.values()].map((range) => range.from);
+  const headId = basis.buffers.get('read-probe').canonicalHead;
+  const rootId = basis.graph.outgoing(headId, edgeTypeId('root'))[0].to;
+  for (const edge of basis.graph.allOutgoing(rootId)) {
+    assert.ok(model.view.nodeReads.has(hex(edge.to)), 'both child records are read');
+  }
+  const counts = new Map();
+  for (const from of ranges) counts.set(from, (counts.get(from) ?? 0) + 1);
+  assert.ok([...counts.values()].some((count) => count === 6), 'some node had all six edge types read');
+  assert.ok([...counts.values()].every((count) => count === 6 || count === 1), JSON.stringify([...counts.values()]));
 });

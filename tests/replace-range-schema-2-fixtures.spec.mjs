@@ -366,3 +366,10 @@ test('the canonical decoder keeps a leading U+FEFF in text', () => {
   // Oracle: RFC 8949 text strings are exact UTF-8 bytes; a BOM is content, not encoding metadata.
   assert.doesNotThrow(() => decodeCanonicalCbor(Uint8Array.of(0x63, 0xef, 0xbb, 0xbf)));
 });
+
+test('an obstruction must report an empty write set and no patch', () => {
+  const entry = row(artifact, 'stale-basis');
+  const { writeSet, patch, ...silent } = exactObservation(entry);
+  assert.deepEqual([writeSet.nodes, patch], [[], 'none']);
+  assert.notDeepEqual(unmetReasons(entry, silent), []);
+});

@@ -32,7 +32,8 @@ boundary or precedence. Committable rows carry exact canonical facts, typed
 edges, `ContentAddressV1` ids, reachability, path-copy sharing, read and write
 footprints, normalized effects and checked counters. A test validates the
 artifact against the frozen schema-1 oracle, Echo's published identity vectors
-and an independent BLAKE3/CBOR implementation. Every row stays **unexecuted**:
+and BLAKE3/CBOR/`ContentAddressV1` transcriptions pinned to external reference
+vectors (shared by builder and validator). Every row stays **unexecuted**:
 nothing here claims that the rope runs.
 
 ## Sponsored Human

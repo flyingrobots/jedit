@@ -104,17 +104,19 @@ export class RopeReader {
 
   /**
    * Reads every schema edge type from a node and checks each count against `allowed` (a kind not listed
-   * allows none). Identity is then computed over this complete set, as ContentAddressV1 requires.
+   * allows none). Every type is read before any count is checked; with `readTargets`, every target's record is
+   * read too, so a fault found early never shortens the read set. Identity is then computed over this
+   * complete set, as ContentAddressV1 requires.
    */
-  edgeSet(id: Uint8Array, allowed: ReadonlyMap<EdgeKind, readonly [number, number]>): Map<EdgeKind, EdgeRecord[]> {
-    const edges = new Map<EdgeKind, EdgeRecord[]>();
-    for (const kind of EDGE_KINDS) {
-      const found = this.view.edges(id, edgeTypeId(kind));
+  edgeSet(id: Uint8Array, allowed: ReadonlyMap<EdgeKind, readonly [number, number]>,
+    readTargets = false): Map<EdgeKind, EdgeRecord[]> {
+    const edges = new Map<EdgeKind, EdgeRecord[]>(EDGE_KINDS.map((kind) => [kind, this.view.edges(id, edgeTypeId(kind))]));
+    if (readTargets) for (const edge of [...edges.values()].flat()) this.view.node(edge.to);
+    for (const [kind, found] of edges) {
       const [min, max] = allowed.get(kind) ?? [0, 0];
       if (found.length < min || found.length > max) {
         throw new Obstruction('MalformedRope', VALIDATION, `${hex(id)} has ${found.length} ${kind} edges`);
       }
-      edges.set(kind, found);
     }
     return edges;
   }
@@ -143,7 +145,7 @@ export class RopeReader {
   expand(branch: StoredNode): readonly [StoredNode, StoredNode] {
     const cached = this.expanded.get(hex(branch.id));
     if (cached !== undefined) return cached;
-    const edges = this.edgeSet(branch.id, BRANCH_EDGES);
+    const edges = this.edgeSet(branch.id, BRANCH_EDGES, true);
     const [left, right] = [edges.get('left')![0]!.to, edges.get('right')![0]!.to];
     const record = this.view.node(branch.id)!;
     const outgoing = RopeReader.outgoing(edges);

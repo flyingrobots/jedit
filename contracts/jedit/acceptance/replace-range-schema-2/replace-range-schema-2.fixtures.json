@@ -107,11 +107,13 @@
       "lineBreaks": "count of 0x0A; Head.lineCount = root lineBreaks + 1",
       "fromBytes": "one leaf up to 4096 bytes; otherwise split at the last character boundary at or before half",
       "leafRewrite": "an edit inside one leaf whose result is 1-4096 bytes rewrites that leaf and path-copies ancestors",
-      "general": "otherwise prefix(start), fromBytes(replacement), suffix(end), joined by AVL concatenation",
+      "general": "otherwise join(join(prefix(start), fromBytes(replacement)), suffix(end)); prefix and suffix descend the original root, reuse a whole child at an exact boundary and join the rest",
+      "join": "key-less AVL concatenation: children within one height become a branch; otherwise descend the taller side's inner spine, branch with the shorter tree, and apply single or double rotations exactly as tests/support/replace-range-schema-2/rope-build.mts joinRight/joinLeft do",
+      "normativeReference": "tests/support/replace-range-schema-2/rope-build.mts defines the graded shapes; a different shape is a reviewed fixture change",
       "descent": "a range descends left while end <= left length, right while start >= left length"
     },
     "validation": "a leaf is validated when its atom is decoded: codec, edge set (none allowed), identity, then size, UTF-8 and line breaks. A branch is validated when expanded: edge set (one left, one right, nothing else), identity over that complete set, then its children's decoded claims: checked sums, equality, height and balance. A head checks its edge set, identity, then extent and line count against its root. A sibling the edit never descends into is trusted on its decoded claims",
-    "readSet": "the program's witnessed reads: node records with their atoms, and (source, edge type) ranges, as the specification model resolved them. Echo's own validation and precondition reads are not listed",
+    "readSet": "the program's witnessed reads: node records with their atoms, and (source, edge type) ranges, as the specification model resolved them. Every validated node has all six edge types read before any count is checked, and expanding a branch also reads every edge target's record before any check. Validation then runs left to right and stops at the first failure. Echo's own validation and precondition reads are not listed",
     "writeSet": "Echo's write set: created node records and atoms, the Buffer atom, created and retargeted edges, and the (source, edge type) range key of each written edge. An Ensure of an existing identical node is not a write",
     "competing": "a later check the fixture also fails; verified by re-running the model with the deciding check passed (for closure validation, findings that leave usable data are recorded instead of thrown)",
     "validationTiming": "closure validation covers every node the operation resolves, including those the reconstruction and no-op comparison read; all of it completes before any endpoint is classified",
@@ -7231,6 +7233,7 @@
         },
         "readSet": {
           "nodes": [
+            "9bf07879e15ced69e3fd5d0defd60d0e030a70eca4ce99185decc02ed6390e56",
             "ac4bdd7b5cca7a77631330d3e262548c12d8ae7db9ff3c6866cd22cff1ed95c5",
             "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "f47487d3e48f0f651e2eb7809086444594147003a39d4029821f1158a629ccff"
@@ -13623,6 +13626,7 @@
         "readSet": {
           "nodes": [
             "43d6fb41ce14d3724c574a16d6f651529ae28adb32c2fc3a21e87ca58a17b2a9",
+            "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
             "b61b9679e99fa00c28bac77031b6a7f5a11c3d588d145c2ca5eed900ab76c015",
             "fca9344176b512889e62daf7b3ad0ff3a8005f6ccb5ac12d8f3dfce7c6b1e11f"
           ],
@@ -13871,8 +13875,11 @@
         "readSet": {
           "nodes": [
             "3a998f7e856f2e0126c1431a6a61dbf1db73dd5b16db0a837b9ff1e4d733e9ac",
+            "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
             "9df0d77475a3c8f4701f124121038be192f61b5acfa665771598c25cd0faedb4",
-            "bad8ad3399ce37567fe2511d33ebea95bf9605e1b8d15daeab9fa2aba6f24cc0"
+            "bad8ad3399ce37567fe2511d33ebea95bf9605e1b8d15daeab9fa2aba6f24cc0",
+            "c89c2a9f8ea94cd9659d702a2df18da8e45fb11c17ed1de60ba67e1d1ba4255a",
+            "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
           ],
           "edgeRanges": [
             {
@@ -13918,6 +13925,10 @@
             {
               "from": "bad8ad3399ce37567fe2511d33ebea95bf9605e1b8d15daeab9fa2aba6f24cc0",
               "type": "left"
+            },
+            {
+              "from": "bad8ad3399ce37567fe2511d33ebea95bf9605e1b8d15daeab9fa2aba6f24cc0",
+              "type": "right"
             },
             {
               "from": "bad8ad3399ce37567fe2511d33ebea95bf9605e1b8d15daeab9fa2aba6f24cc0",
@@ -14099,8 +14110,10 @@
         "readSet": {
           "nodes": [
             "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
+            "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
             "724f571b0f55b7ade0bc62104b0c691d70ebe5d9f45699e8d8a4cc5d13ee81f9",
-            "8ce7b19f6a1d71fe8b2aef35ac5bf990b04bcf3c9e69af359a3e91b756aed46b"
+            "8ce7b19f6a1d71fe8b2aef35ac5bf990b04bcf3c9e69af359a3e91b756aed46b",
+            "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
           ],
           "edgeRanges": [
             {
@@ -14109,7 +14122,19 @@
             },
             {
               "from": "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
+              "type": "anchor"
+            },
+            {
+              "from": "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
               "type": "canonicalHead"
+            },
+            {
+              "from": "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
+              "type": "left"
+            },
+            {
+              "from": "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
+              "type": "right"
             },
             {
               "from": "547adc5585fce8d81fe6fe56310034d255f262b3f74ea8bf2956331e5fd63d56",
@@ -15572,9 +15597,12 @@
         },
         "readSet": {
           "nodes": [
+            "5ea1c7b1ec64e7d0ed380581c3fbf2be5544e418c21fdd041a68d4464227e5eb",
             "784210f71340447198674dff8ecb291b7c0f382879df10ffd0156910017253c7",
             "bb9359419dd3f5bbb780c394536c36aee6672feb64ed2f5dffcdc7754b7458e2",
-            "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab"
+            "c89c2a9f8ea94cd9659d702a2df18da8e45fb11c17ed1de60ba67e1d1ba4255a",
+            "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab",
+            "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
           ],
           "edgeRanges": [
             {
@@ -15616,6 +15644,14 @@
             {
               "from": "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab",
               "type": "canonicalHead"
+            },
+            {
+              "from": "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab",
+              "type": "left"
+            },
+            {
+              "from": "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab",
+              "type": "right"
             },
             {
               "from": "df412dd94833c22df37de25a22b186fd959ab25951faddb3f5404038c14732ab",
@@ -15815,7 +15851,8 @@
             "4b85cf0fdb779b790ae0e6178b2b5a74a131517a18e880d7a8408be6ce09d809",
             "5fc4c3692dc4f9d8ef7c17dcc894a043b4109fe1814b5e3670c796c92a430abb",
             "7b458810fd4964f9ac0edf457d1641e232975fda820907a15b3fbd676f8149b9",
-            "a7f0c900352d249be076e2f164ec1ebd896f285d19e28bb8c3a0e215f628f2aa"
+            "a7f0c900352d249be076e2f164ec1ebd896f285d19e28bb8c3a0e215f628f2aa",
+            "e3b36aa560a68051db94b979ba6e321e65a13fd1fe9df04070949764bfd5ac4d"
           ],
           "edgeRanges": [
             {
@@ -15885,6 +15922,10 @@
             {
               "from": "a7f0c900352d249be076e2f164ec1ebd896f285d19e28bb8c3a0e215f628f2aa",
               "type": "left"
+            },
+            {
+              "from": "a7f0c900352d249be076e2f164ec1ebd896f285d19e28bb8c3a0e215f628f2aa",
+              "type": "right"
             },
             {
               "from": "a7f0c900352d249be076e2f164ec1ebd896f285d19e28bb8c3a0e215f628f2aa",
