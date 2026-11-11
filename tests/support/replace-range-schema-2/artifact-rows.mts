@@ -7,6 +7,7 @@ import { contentNodeId, hex, OutgoingEdge } from './content-address-v1.mts';
 import { Basis } from './fixture-basis.mts';
 import type { GraphState } from './graph.mts';
 import { CHECK_ORDER, checkRank, ECHO_ADMISSION, IDENTITY_LAW_VIOLATION } from './outcomes.mts';
+import type { Check } from './outcomes.mts';
 import { proposalFor } from './proposal.mts';
 import type { Proposal } from './proposal.mts';
 import { Invocation, ModelCommit, ReplaceRangeModel } from './replace-range-model.mts';
@@ -142,6 +143,22 @@ export function admissionWitnesses(basis: Basis): Json[] {
   });
 }
 
+const PASSABLE: ReadonlySet<Check> = new Set<Check>(['closure-validation', 'character-boundary', 'no-op']);
+
+/** The later check the model reaches when the deciding check is passed, and how far that could be evaluated. */
+function competingChecks(model: ReplaceRangeModel, deciding: Check): readonly [readonly Check[], string] {
+  if (!PASSABLE.has(deciding)) return [[], 'not evaluated: the model cannot pass this check'];
+  let rerun: ReturnType<ReplaceRangeModel['run']>;
+  try {
+    rerun = new ReplaceRangeModel(model.view.graph, model.invocation, deciding).run();
+  } catch {
+    return [[], 'not evaluable: the model cannot continue past this fault'];
+  }
+  if (rerun instanceof ModelCommit) return [[], 'verified: no later check fails'];
+  if (rerun.obstruction.check === deciding) return [[], 'not evaluable: the fault leaves no usable data'];
+  return [[rerun.obstruction.check], 'verified'];
+}
+
 export function obstructedJson(row: RowSpec, expected: ExpectObstructed, model: ReplaceRangeModel): Json {
   const result = model.run();
   if (result instanceof ModelCommit || result.obstruction.outcome !== expected.outcome
@@ -149,22 +166,15 @@ export function obstructedJson(row: RowSpec, expected: ExpectObstructed, model: 
     throw new FixtureInconsistency(`${row.id}: model ${result instanceof ModelCommit ? 'committed'
       : result.obstruction.message}, row expects ${expected.outcome} at ${expected.check}`);
   }
-  for (const later of expected.competing) {
-    if (checkRank(later) <= checkRank(expected.check)) throw new FixtureInconsistency(`${row.id}: ${later} is not later`);
-    let without: ReturnType<ReplaceRangeModel['run']> | null = null;
-    try {
-      without = new ReplaceRangeModel(model.view.graph, model.invocation, expected.check).run();
-    } catch {
-      without = null;
-    }
-    if (without === null || without instanceof ModelCommit || without.obstruction.check !== later) {
-      throw new FixtureInconsistency(`${row.id}: without ${expected.check} the fixture does not reach ${later}`);
-    }
+  const [computed, evaluation] = competingChecks(model, expected.check);
+  if (computed.join() !== expected.competing.join()) {
+    throw new FixtureInconsistency(`${row.id}: with ${expected.check} passed the model reaches [${computed.join()}], `
+      + `the row declares [${expected.competing.join()}]`);
   }
   return {
     posture: 'obstructed', typedOutcome: expected.outcome, decidingCheck: expected.check,
     precedence: { passed: CHECK_ORDER.slice(0, checkRank(expected.check)), deciding: expected.check,
-      competing: expected.competing },
+      competing: expected.competing, competingEvaluation: evaluation },
     readSet: readsJson(result), effects: [], patch: 'none', parentGraphUnchanged: true,
     evidence: OBSTRUCTED_EVIDENCE,
   };

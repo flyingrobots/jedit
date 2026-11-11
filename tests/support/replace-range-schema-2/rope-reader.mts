@@ -145,7 +145,7 @@ export class RopeReader {
     if (cached !== undefined) return cached;
     const edges = this.edgeSet(branch.id, BRANCH_EDGES);
     const [left, right] = [edges.get('left')![0]!.to, edges.get('right')![0]!.to];
-    const record = this.view.graph.node(branch.id)!;
+    const record = this.view.node(branch.id)!;
     const outgoing = RopeReader.outgoing(edges);
     if (!sameBytes(contentNodeId(WARP_ID, nodeTypeId('Branch'), record.atomType, record.atom, outgoing), branch.id)) {
       this.reject('ContentIdentityMismatch', `branch ${hex(branch.id)} is not its address`);

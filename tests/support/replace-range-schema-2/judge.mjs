@@ -2,7 +2,10 @@
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // The acceptance rule for one schema-2 row, as an executable predicate over an
 // execution observation. Nothing produces such an observation yet (#296); the
-// spec feeds it synthetic ones to show what can and cannot satisfy a row.
+// spec feeds it synthetic ones to show what can and cannot satisfy a row. Read sets are
+// compared exactly: they are the specification model's reads and so bind one
+// closure strategy until echo#926 fixes a selector; a different strategy is a
+// reviewed fixture change, not a pass.
 
 import { isDeepStrictEqual } from 'node:util';
 
@@ -33,6 +36,9 @@ function obstructedReasons(expected, observation) {
   if (observation.decidingCheck !== expected.decidingCheck) reasons.push('rejecting boundary differs');
   if (!same(observation.effects ?? [], [])) reasons.push('an obstruction proposed effects');
   if (!same(observation.readSet, expected.readSet)) reasons.push('read set differs');
+  const wrote = (observation.writeSet !== undefined && Object.values(observation.writeSet).some((slots) => slots.length > 0))
+    || observation.textAfterHex !== undefined || (observation.patch !== undefined && observation.patch !== 'none');
+  if (wrote) reasons.push('an obstruction wrote state or text');
   return reasons;
 }
 

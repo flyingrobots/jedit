@@ -6,6 +6,7 @@
 // the effects Echo's canonical order requires.
 import { decode as cborDecode } from 'cbor-x';
 import { attachmentDigest, compareBytes, hex, slotEdgeId, unhex } from './content-address-v1.mts';
+import { shapeOk } from './validate-basis.mjs';
 import { EVIDENCE } from './validator-oracle.mjs';
 
 const MAX_LEAF_BYTES = 4096;
@@ -148,6 +149,11 @@ function checkReach(row, state, basisHeadId) {
   const after = state.reachable(row.invocation.bufferId);
   if ([...after].sort().join() !== row.expected.reachability.fromBufferAfter.join()) fail(`${row.id} reachability`);
   const oldTree = before.reachable(basisHeadId);
+  const { sharedWithBasisHead, supersededFromBasisHead } = row.expected.reachability;
+  if (sharedWithBasisHead.join() !== [...oldTree].filter((id) => after.has(id)).sort().join()
+    || supersededFromBasisHead.join() !== [...oldTree].filter((id) => !after.has(id)).sort().join()) {
+    fail(`${row.id} shared and superseded sets are not derived from the basis head`);
+  }
   for (const leafHex of row.text.mustShareHex) {
     const leaf = [...oldTree].find((id) => state.nodes.get(id).type === 'Leaf' && state.nodes.get(id).fact.bytes === leafHex);
     if (leaf === undefined || !after.has(leaf)) fail(`${row.id} leaf ${leafHex.slice(0, 16)}… is not shared`);
@@ -188,7 +194,14 @@ export function checkCommitted(artifact, oracle) {
     const [basisRoot] = basisText.child(basisHead.id, 'root');
     const stored = basisRoot === undefined ? '' : hex(basisText.tree(basisRoot, row).text);
     if (stored !== row.text.beforeHex) fail(`${row.id} before-text is not the basis head's text`);
+    for (const node of row.expected.createdNodes) {
+      if (!shapeOk(node.type, node.edges)) fail(`${row.id} created ${node.type} ${node.id} has an unlawful edge set`);
+    }
     checkHead(row, state, basisHead);
+    const createdHead = row.expected.createdNodes.find((node) => node.id === row.expected.headAfter.id);
+    if (createdHead === undefined || JSON.stringify(createdHead.fact) !== JSON.stringify(row.expected.headAfter.fact)) {
+      fail(`${row.id} headAfter is not the created head`);
+    }
     const fromHead = state.reachable(row.expected.headAfter.id);
     if (row.expected.createdNodes.some((node) => !fromHead.has(node.id))) fail(`${row.id} creates a node the new head cannot reach`);
     checkEffects(row, artifact.profile, basisBuffer, basisHead.id);

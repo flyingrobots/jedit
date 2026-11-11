@@ -49,7 +49,13 @@ function u64le(value: number): Uint8Array {
   return out;
 }
 
+/** Every fixed-width preimage field is exactly 32 bytes, so no two tuples share a concatenation. */
+function ids(...values: readonly Uint8Array[]): void {
+  if (values.some((value) => value.length !== ID_BYTES)) throw new RangeError('ids, types and warps are 32 bytes');
+}
+
 export function attachmentDigest(atomType: Uint8Array, atom: Uint8Array): Uint8Array {
+  ids(atomType);
   return blake3(concatBytes([ATTACHMENT_VALUE_DOMAIN, Uint8Array.of(ATOM_ATTACHMENT_TAG), atomType,
     u64le(atom.length), atom]));
 }
@@ -60,6 +66,7 @@ function compareEdges(left: OutgoingEdge, right: OutgoingEdge): number {
 
 export function contentNodeId(warp: Uint8Array, nodeType: Uint8Array, atomType: Uint8Array, atom: Uint8Array,
   outgoing: readonly OutgoingEdge[]): Uint8Array {
+  ids(warp, nodeType, atomType);
   const sorted = [...outgoing].sort(compareEdges);
   for (let index = 1; index < sorted.length; index += 1) {
     if (compareEdges(sorted[index - 1]!, sorted[index]!) === 0) {
@@ -71,10 +78,12 @@ export function contentNodeId(warp: Uint8Array, nodeType: Uint8Array, atomType: 
 }
 
 export function contentEdgeId(warp: Uint8Array, from: Uint8Array, edgeType: Uint8Array, to: Uint8Array): Uint8Array {
+  ids(warp, from, edgeType, to);
   return blake3(concatBytes([CONTENT_EDGE_ID_DOMAIN, warp, from, edgeType, to]));
 }
 
 export function slotEdgeId(warp: Uint8Array, from: Uint8Array, edgeType: Uint8Array): Uint8Array {
+  ids(warp, from, edgeType);
   return blake3(concatBytes([SLOT_EDGE_ID_DOMAIN, warp, from, edgeType]));
 }
 

@@ -126,7 +126,7 @@ function decodeValue(reader: Reader): CborValue {
   if (major === MAJOR_TEXT) {
     const bytes = reader.take(Number(argument));
     try {
-      return new CborText(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+      return new CborText(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes));
     } catch {
       throw new CborDecodeError('text string is not UTF-8');
     }

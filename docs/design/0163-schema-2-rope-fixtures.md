@@ -24,9 +24,11 @@ updated: "2026-11-10"
 Publish one machine-readable schema-2 acceptance artifact that gives every one
 of the 40 retained `jedit.text.ReplaceRange.oracle@1` ids an independently
 specified schema-2 fixture and expected result, plus schema-2-only additions.
-Every row names its retained `semanticCode`, its DL-0159 mapping, its schema-2
-typed outcome, the boundary that decides it, and the precedence of every check
-that could also reject it. Committable rows carry exact canonical facts, typed
+Every row names its DL-0159 mapping. Every obstructed row names its schema-2
+typed outcome, the boundary that decides it and the precedence of the checks
+that could also reject it; a retained obstructed row also names its retained
+`semanticCode`. Committed rows and additions have a null `semanticCode` and no
+boundary or precedence. Committable rows carry exact canonical facts, typed
 edges, `ContentAddressV1` ids, reachability, path-copy sharing, read and write
 footprints, normalized effects and checked counters. A test validates the
 artifact against the frozen schema-1 oracle, Echo's published identity vectors
@@ -279,9 +281,13 @@ None: the artifact is not executed.
 The artifact covers all 40 retained ids and 18 additions; every row stays
 unexecuted and the passing count is still 0/40. The first green run caught a
 hand-copied semanticCode error, which is why the validator reads the oracle
-instead of trusting the rows. Keeping the validator free of builder imports
-(and testing that) made it possible to say the expectations were not checked by
-the code that produced them. The reconstruction profile is now normative for
+instead of trusting the rows. Four independent review rounds then found the
+validator still accepting wrong artifacts; it now holds its own hand-written
+list of outcomes, deciding checks, competing checks, required rows and moves,
+and its own rope-law check. The validator and builder share only the BLAKE3,
+CBOR and `ContentAddressV1` transcriptions, which external reference vectors
+pin, so ids are not recomputed by a second implementation. Read sets remain
+model-derived and change-detected. The reconstruction profile is now normative for
 #296: the authored rope must reproduce these shapes and reads, or the fixtures
 change through review. Exact reads remain the specification model's until
 echo#926 fixes a closure selector, and reachability starts at the Buffer until

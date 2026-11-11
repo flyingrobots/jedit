@@ -192,9 +192,10 @@ test('fixture tooling imports no planner, runtime or authored source, and the va
       assert.match(specifier, /^(?:\.\/[a-z0-9-]+\.m[jt]s|node:[a-z]+|cbor-x)$/, `${file} imports ${specifier}`);
     }
   }
-  const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'judge.mjs', 'validator-oracle.mjs'];
+  const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'validate-basis.mjs', 'judge.mjs',
+    'validator-oracle.mjs'];
   const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './canonical-cbor.mts', './validate-committed.mjs',
-    './validator-oracle.mjs']);
+    './validator-oracle.mjs', './validate-basis.mjs']);
   for (const file of independent) {
     for (const specifier of imports(file).filter((entry) => entry.startsWith('./'))) {
       assert.ok(allowed.has(specifier), `${file} must not import ${specifier}`);
@@ -306,4 +307,62 @@ test('the canonical decoder orders keys by encoded bytes, so a shorter key sorts
   // Oracle: edict.canonical-cbor/v1 sorts map keys by their encoded bytes (length first for text).
   assert.doesNotThrow(() => decodeCanonicalCbor(Uint8Array.of(0xa2, 0x61, 0x7a, 0x00, 0x62, 0x61, 0x61, 0x00)));
   assert.throws(() => decodeCanonicalCbor(Uint8Array.of(0xa2, 0x62, 0x61, 0x61, 0x00, 0x61, 0x7a, 0x00)));
+});
+
+test('created edges, edge shapes, field types, basis faults, witnesses and derived fields are checked', () => {
+  const ff = 'ff'.repeat(32);
+  const created = (copy, id = 'middle-ascii-insert') => row(copy, id).expected.createdNodes;
+  const withEdge = (copy, type, kind) => {
+    const node = created(copy).find((entry) => entry.type === type);
+    node.edges.push({ id: ff, type: kind, to: node.edges[0]?.to ?? created(copy)[0].id });
+  };
+  const cases = [
+    [checkIdentities, (copy) => { created(copy).find((node) => node.edges.length > 0).edges[0].id = ff; }],
+    [checkCommitted, (copy) => withEdge(copy, 'Branch', 'left')],
+    [checkCommitted, (copy) => withEdge(copy, 'Head', 'acceptedHostBasis')],
+    [checkAtoms, (copy) => {
+      const buffer = row(copy, 'empty-no-op').basis.nodes.find((node) => node.type === 'Buffer');
+      buffer.atomHex = buffer.atomHex.replace('6776657273696f6e00', '6776657273696f6e6130');
+      assert.match(buffer.atomHex, /6776657273696f6e6130/);
+    }],
+    [checkOutcomeBindings, (copy) => {
+      const entry = row(copy, 'leaf-exceeds-blob-at-zero');
+      entry.basis.nodes.find((node) => node.type === 'Head').fact.byteLength = '3';
+    }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'reversed-range').invocation.startByte = '0'; }],
+    [checkIdentities, (copy) => {
+      const entry = row(copy, 'empty-no-op');
+      const leaf = entry.basis.nodes.find((node) => node.type === 'Leaf');
+      entry.admissionWitnesses.push({ ...row(copy, 'bad-blob-content-hash').admissionWitnesses[0],
+        effect: { node: leaf.id }, contentAddress: leaf.id });
+    }],
+    [(copy) => checkRegister(copy, oracle, MAPPING), (copy) => { copy.additions.push(copy.additions[0]); }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'reversed-range').expected.precedence.competing = ['counters']; }],
+    [checkOutcomeBindings, (copy) => {
+      row(copy, 'stale-basis').movedObligations.push({ surface: 'nowhere', obligation: 'x', owner: 'y', status: 'z' });
+    }],
+    [checkOutcomeBindings, (copy) => { row(copy, 'middle-ascii-insert').movedObligations = []; }],
+    [checkCommitted, (copy) => { row(copy, 'middle-ascii-insert').expected.headAfter.fact.sequence = '9'; }],
+    [checkCommitted, (copy) => { row(copy, 'middle-ascii-insert').expected.reachability.sharedWithBasisHead = []; }],
+    [checkCommitted, (copy) => { row(copy, 'middle-ascii-insert').expected.reachability.supersededFromBasisHead = []; }],
+    [(copy) => checkRegister(copy, oracle, MAPPING), (copy) => { copy.retainedOracle.caseCount = 39; }],
+    [(copy) => checkRegister(copy, oracle, MAPPING), (copy) => { copy.rows[2].retainedCaseIndex = 7; }],
+  ];
+  for (const [check, mutate] of cases) {
+    assert.throws(() => check(mutated(mutate), oracle), /outcome-binding|atoms|committed|identity|register/,
+      mutate.toString().slice(0, 100));
+  }
+});
+
+test('an obstructed observation that writes anything does not satisfy its row', () => {
+  const entry = row(artifact, 'stale-basis');
+  const exact = exactObservation(entry);
+  for (const extra of [{ writeSet: { nodes: ['00'] } }, { textAfterHex: '00' }, { patch: 'derived' }]) {
+    assert.notDeepEqual(unmetReasons(entry, { ...exact, ...extra }), [], JSON.stringify(extra));
+  }
+});
+
+test('the canonical decoder keeps a leading U+FEFF in text', () => {
+  // Oracle: RFC 8949 text strings are exact UTF-8 bytes; a BOM is content, not encoding metadata.
+  assert.doesNotThrow(() => decodeCanonicalCbor(Uint8Array.of(0x63, 0xef, 0xbb, 0xbf)));
 });

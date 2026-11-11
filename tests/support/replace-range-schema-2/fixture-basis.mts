@@ -8,7 +8,6 @@ import { createHash } from 'node:crypto';
 import { blake3 } from './blake3.mts';
 import { concatBytes, contentEdgeId, contentNodeId, hex, OutgoingEdge, slotEdgeId } from './content-address-v1.mts';
 import { EdgeRecord, GraphState, NodeRecord } from './graph.mts';
-import { countLineBreaks } from './rope-reader.mts';
 import { atomTypeId, bufferId, edgeTypeId, encodeFact, nodeTypeId, WARP_ID } from './schema-2-facts.mts';
 import type { EdgeKind, FactKind } from './schema-2-facts.mts';
 
@@ -16,6 +15,13 @@ const ENCODER = new TextEncoder();
 const OBSERVATION_DOMAIN = ENCODER.encode('jedit.text.fixture-observation.v1\0');
 
 export type Bytes = Uint8Array;
+
+/** Line breaks counted here, not with the model's helper, so a shared bug cannot agree with itself. */
+function newlines(bytes: Bytes): bigint {
+  let count = 0n;
+  for (const byte of bytes) if (byte === 10) count += 1n;
+  return count;
+}
 
 export function utf8(text: string): Bytes {
   return ENCODER.encode(text);
@@ -184,12 +190,21 @@ export class Basis {
     return id;
   }
 
+  /** An edge target: the node's own stored id for 'self', a child already built, or a newly built tree. */
+  edgeTarget(target: TreeSpec | 'self', ownId: Bytes | null, built: ReadonlyMap<TreeSpec, Bytes> | null): Bytes {
+    if (target === 'self') {
+      if (ownId === null) throw new Error('a self edge needs an id override: no content id can name itself');
+      return ownId;
+    }
+    return built?.get(target) ?? this.tree(target).id;
+  }
+
   tree(spec: TreeSpec): Built {
     if (spec instanceof LeafSpec) {
-      const claims = new Map<string, bigint>([['lineBreaks', countLineBreaks(spec.bytes)], ...spec.overrides.claims]);
+      const claims = new Map<string, bigint>([['lineBreaks', newlines(spec.bytes)], ...spec.overrides.claims]);
       const fields = new Map<string, bigint | Bytes>([['bytes', spec.bytes], ['lineBreaks', claims.get('lineBreaks')!]]);
-      const edges = (spec.overrides.edges ?? []).flatMap(([kind, target]) =>
-        (target === 'self' ? [] : [[kind, this.tree(target).id] as const]));
+      const edges = (spec.overrides.edges ?? []).map(([kind, target]) =>
+        [kind, this.edgeTarget(target, spec.overrides.id, null)] as const);
       const id = this.content('Leaf', fields, edges, spec.overrides);
       return new Built(id, new Map([['byteLength', BigInt(spec.bytes.length)], ['height', 1n], ...claims]), spec.bytes);
     }
@@ -200,9 +215,10 @@ export class Basis {
     claims.set('height', 1n + [left, right].reduce((tallest, child) =>
       (child !== null && child.claims.get('height')! > tallest ? child.claims.get('height')! : tallest), 0n));
     for (const [name, value] of spec.overrides.claims) claims.set(name, value);
-    const ownId = spec.overrides.id;
+    const built = new Map<TreeSpec, Bytes>([[spec.left, left.id]]);
+    if (right !== null && spec.right !== 'self') built.set(spec.right, right.id);
     const edges = (spec.overrides.edges ?? [['left', spec.left], ['right', spec.right]]).map(([kind, target]) =>
-      [kind, target === 'self' ? ownId! : (target === spec.left ? left.id : this.tree(target).id)] as const);
+      [kind, this.edgeTarget(target, spec.overrides.id, built)] as const);
     const id = this.content('Branch', claims, edges, spec.overrides);
     return new Built(id, claims, concatBytes([left.text, right?.text ?? new Uint8Array()]));
   }

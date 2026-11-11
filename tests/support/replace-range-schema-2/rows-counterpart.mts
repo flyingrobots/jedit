@@ -109,7 +109,7 @@ export const COUNTERPART_ROWS: readonly RowSpec[] = [
     branch(leaf('b'), leaf('c'), { claims: claims({ byteLength: U64_MAX }) }),
     { claims: claims({ byteLength: 3n }) })))],
   invoke(0n, 1n, 'x'),
-  new ExpectObstructed('ArithmeticOverflow', 'closure-validation')),
+  new ExpectObstructed('ArithmeticOverflow', 'closure-validation', ['counters'])),
   new RowSpec(counterpart('leaf-extent-u64-max-at-zero', 'fact-malformed',
     'Bounded inline leaves cannot carry that Blob extent; specify malformed-extent rejection coverage',
     'A leaf holds at most 4,096 inline bytes, so the U64::MAX extent moves to the only place it can be '

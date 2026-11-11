@@ -162,7 +162,20 @@
       "obligation": "Empty root to Unicode text; head/root edges and line metrics",
       "retainedSemanticCode": null,
       "decision": null,
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -455,7 +468,20 @@
       "obligation": "Exact insertion position; unaffected subtrees retain identity",
       "retainedSemanticCode": null,
       "decision": "The schema-2 basis stores \"abcd\" as two leaves so an unaffected subtree exists to keep its id.",
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -936,7 +962,20 @@
       "obligation": "Empty text, absent root edge, correct head metrics and counters",
       "retainedSemanticCode": null,
       "decision": null,
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -1231,7 +1270,20 @@
       "obligation": "Exact UTF-8 replacement and unaffected content/sharing",
       "retainedSemanticCode": null,
       "decision": "The schema-2 basis splits \"A😀é\\nB\" after the emoji so the unaffected leaf keeps its id.",
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -1712,7 +1764,20 @@
       "obligation": "Cross-leaf edit, AVL invariants, path-copy sharing",
       "retainedSemanticCode": null,
       "decision": "The 12,288-byte basis keeps its text but stores the c run as five leaves, so the edit leaves a shared suffix and the AVL join must rotate.",
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -2888,7 +2953,20 @@
       "obligation": "Character-aligned leaf partition and branch metrics within a measured envelope",
       "retainedSemanticCode": null,
       "decision": null,
-      "movedObligations": [],
+      "movedObligations": [
+        {
+          "surface": "rewrite-diff-facts",
+          "obligation": "The Rewrite and Diff facts schema 1 recorded for each committed edit",
+          "owner": "DL-0159 Follow-On Debt (Rewrite and Diff facts in schema 2); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        },
+        {
+          "surface": "utf16-derived-reading",
+          "obligation": "The stored UTF-16 length of the new head",
+          "owner": "DL-0159 Coordinates and Follow-On Debt (UTF-16 derived reading); no tracking issue yet",
+          "status": "gap until discharged on that surface"
+        }
+      ],
       "status": "unexecuted",
       "target": "persistent-rope",
       "basis": {
@@ -3416,7 +3494,8 @@
             "basis"
           ],
           "deciding": "range-order",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -3564,7 +3643,8 @@
             "head-decode"
           ],
           "deciding": "range-bounds",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -3715,7 +3795,8 @@
             "closure-validation"
           ],
           "deciding": "character-boundary",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -3915,7 +3996,8 @@
             "closure-validation"
           ],
           "deciding": "character-boundary",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -4117,7 +4199,8 @@
           "deciding": "character-boundary",
           "competing": [
             "no-op"
-          ]
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [
@@ -4318,7 +4401,8 @@
             "character-boundary"
           ],
           "deciding": "no-op",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -4519,7 +4603,8 @@
             "character-boundary"
           ],
           "deciding": "no-op",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -4770,7 +4855,8 @@
             "buffer-decode"
           ],
           "deciding": "basis",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -4997,7 +5083,8 @@
             "buffer-decode"
           ],
           "deciding": "basis",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -5149,7 +5236,8 @@
             "no-op"
           ],
           "deciding": "counters",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -5351,7 +5439,8 @@
             "no-op"
           ],
           "deciding": "counters",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -5454,7 +5543,8 @@
         "precedence": {
           "passed": [],
           "deciding": "buffer-presence",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -5590,7 +5680,8 @@
             "buffer-presence"
           ],
           "deciding": "buffer-decode",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -5748,7 +5839,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -5980,7 +6072,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -6262,7 +6355,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the model cannot continue past this fault"
         },
         "readSet": {
           "nodes": [
@@ -6544,7 +6638,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -6833,7 +6928,10 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [
+            "character-boundary"
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [
@@ -7128,7 +7226,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -7318,7 +7417,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -7476,7 +7576,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -7650,7 +7751,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -7849,7 +7951,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -8048,7 +8151,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the model cannot continue past this fault"
         },
         "readSet": {
           "nodes": [
@@ -8280,7 +8384,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -8513,7 +8618,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -8819,7 +8925,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -9136,7 +9243,10 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [
+            "counters"
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [
@@ -9427,7 +9537,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -9652,7 +9763,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -9857,7 +9969,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -10098,7 +10211,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -10363,7 +10477,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -10645,7 +10760,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "verified: no later check fails"
         },
         "readSet": {
           "nodes": [
@@ -13325,7 +13441,8 @@
             "range-order"
           ],
           "deciding": "replacement",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -13500,7 +13617,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -13747,7 +13865,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -13974,7 +14093,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -14191,7 +14311,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -14400,7 +14521,8 @@
           "deciding": "closure-validation",
           "competing": [
             "no-op"
-          ]
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [
@@ -14634,7 +14756,8 @@
           "deciding": "closure-validation",
           "competing": [
             "no-op"
-          ]
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [
@@ -14876,7 +14999,8 @@
             "no-op"
           ],
           "deciding": "counters",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -15169,7 +15293,8 @@
             "no-op"
           ],
           "deciding": "counters",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluated: the model cannot pass this check"
         },
         "readSet": {
           "nodes": [
@@ -15442,7 +15567,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -15681,7 +15807,8 @@
             "range-bounds"
           ],
           "deciding": "closure-validation",
-          "competing": []
+          "competing": [],
+          "competingEvaluation": "not evaluable: the fault leaves no usable data"
         },
         "readSet": {
           "nodes": [
@@ -15904,7 +16031,8 @@
           "deciding": "no-op",
           "competing": [
             "counters"
-          ]
+          ],
+          "competingEvaluation": "verified"
         },
         "readSet": {
           "nodes": [

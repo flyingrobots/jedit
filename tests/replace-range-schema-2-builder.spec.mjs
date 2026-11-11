@@ -13,6 +13,7 @@ import { Basis, repeat, utf8 } from './support/replace-range-schema-2/fixture-ba
 import { ReplaceRangeModel } from './support/replace-range-schema-2/replace-range-model.mts';
 import { ARTIFACT_PATH, renderArtifact } from './support/replace-range-schema-2/generate.mts';
 import { ADDITION_ROWS } from './support/replace-range-schema-2/rows-additions.mts';
+import { contentEdgeId, contentNodeId, slotEdgeId } from './support/replace-range-schema-2/content-address-v1.mts';
 import { branch, buffer, claims, ExpectCommitted, ExpectObstructed, head, invoke, leaf, RowSpec }
   from './support/replace-range-schema-2/row-spec.mts';
 
@@ -61,8 +62,9 @@ test('a committed row whose hand-written text disagrees with the model is refuse
 function generator(seed) {
   let state = seed;
   return (bound) => {
-    state = (state * 1103515245 + 12345) & 0x7fffffff;
-    return state % bound;
+    // Exact 32-bit arithmetic; the low bits of an LCG cycle quickly, so draw from the high bits.
+    state = (Math.imul(state, 1103515245) + 12345) >>> 0;
+    return (state >>> 16) % bound;
   };
 }
 
@@ -167,4 +169,23 @@ test('the NoOp-masking additions declare no-op as a verified competing check', (
     assert.deepEqual(masked.expected.competing, ['no-op'], id);
     assert.deepEqual(render(masked).precedence.competing, ['no-op'], id);
   }
+});
+
+test('a row must declare every competing check the model reaches with the deciding check passed', () => {
+  const malformed = branch(leaf('A😀'), leaf('b'), { claims: claims({ byteLength: 7n }) });
+  assert.throws(() => probe(malformed, [2n, 2n], 'x', new ExpectObstructed('MalformedRope', 'closure-validation')),
+    FixtureInconsistency);
+  assert.equal(probe(malformed, [2n, 2n], 'x', new ExpectObstructed('MalformedRope', 'closure-validation',
+    ['character-boundary'])).precedence.competing[0], 'character-boundary');
+});
+
+test('content-address helpers refuse ids that are not 32 bytes', () => {
+  const id = new Uint8Array(32);
+  assert.throws(() => contentEdgeId(new Uint8Array(31), id, id, id), RangeError);
+  assert.throws(() => slotEdgeId(id, new Uint8Array(33), id), RangeError);
+  assert.throws(() => contentNodeId(id, id, new Uint8Array(0), new Uint8Array(), []), RangeError);
+});
+
+test('a self edge without a stored-id override is an explicit authoring error', () => {
+  assert.throws(() => new Basis([buffer('self-probe', head(branch(leaf('a'), 'self')))]), /self edge needs an id override/);
 });

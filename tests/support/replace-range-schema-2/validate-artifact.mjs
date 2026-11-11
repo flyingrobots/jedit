@@ -10,8 +10,8 @@
 import { createHash } from 'node:crypto';
 import { decode as cborDecode } from 'cbor-x';
 import { blake3 } from './blake3.mts';
-import { CborBytes, CborMap, CborUint, decodeCanonicalCbor } from './canonical-cbor.mts';
-import { CHECK_ORDER, EVIDENCE, EXPECTED_OBSTRUCTIONS, MOVED, OUTCOMES, RECORDS, REQUIRED_ADDITIONS }
+import { decodesAsRecord, headIsLawful } from './validate-basis.mjs';
+import { CHECK_ORDER, COMPETING, EVIDENCE, EXPECTED_OBSTRUCTIONS, MOVED, OUTCOMES, REQUIRED_ADDITIONS }
   from './validator-oracle.mjs';
 import { attachmentDigest, contentEdgeId, contentNodeId, OutgoingEdge, slotEdgeId, unhex, hex }
   from './content-address-v1.mts';
@@ -60,6 +60,13 @@ export function checkRegister(artifact, oracle, mappingTable) {
   const counts = { carry: 0, counterpart: 0 };
   for (const row of artifact.rows) counts[row.mapping] += 1;
   if (counts.carry !== 28 || counts.counterpart !== 12) fail('register', `counts ${JSON.stringify(counts)}`);
+  const additionIds = artifact.additions.map((addition) => addition.id);
+  if (new Set(additionIds).size !== additionIds.length) fail('register', 'an addition id appears twice');
+  if (artifact.retainedOracle.caseCount !== retained.length || artifact.register.carry !== 28
+    || artifact.register.counterpart !== 12) fail('register', 'the declared counts are not the register');
+  artifact.rows.forEach((row, index) => {
+    if (row.retainedCaseIndex !== index) fail('register', `${row.id} names retained case ${row.retainedCaseIndex}`);
+  });
   for (const addition of artifact.additions) {
     if (rows.includes(addition.id) || addition.mapping !== 'addition') fail('register', `${addition.id} replaces a row`);
     if (addition.status !== 'unexecuted' || addition.target !== 'persistent-rope') {
@@ -83,6 +90,33 @@ export function checkReadSet(row, readSet) {
   }
 }
 
+/** A counter at U64::MAX, or a new head whose claimed extent or line count must pass U64::MAX. */
+function countersOverflow(row, head) {
+  const max = 0xffff_ffff_ffff_ffffn;
+  const buffer = row.basis.nodes.find((node) => node.id === row.invocation.bufferId);
+  const replacement = unhex(row.invocation.replacementHex);
+  const removed = BigInt(row.invocation.endByte) - BigInt(row.invocation.startByte);
+  const newlines = BigInt(replacement.filter((byte) => byte === 0x0a).length);
+  return BigInt(head.fact.sequence) === max || BigInt(buffer.fact.version) === max
+    || BigInt(head.fact.byteLength) - removed + BigInt(replacement.length) > max
+    || (removed === 0n && BigInt(head.fact.lineCount) + newlines > max);
+}
+
+/** Rows decided at closure validation store an unlawful rope; rows decided elsewhere (except counters, whose
+ * fault may sit in a sibling the edit never validates) store a lawful one. rows decided elsewhere store a lawful one. */
+function checkBasisFault(row, check) {
+  const head = row.basis.nodes.find((node) => node.id === row.invocation.basisHeadId);
+  if (head === undefined) return;
+  const lawful = headIsLawful(row, head.id);
+  if (check === 'closure-validation' ? lawful : (check !== 'counters' && !lawful)) {
+    fail('outcome-binding', `${row.id} basis does not show a ${check} fault`);
+  }
+  if (check === 'counters' && !countersOverflow(row, head)) fail('outcome-binding', `${row.id} no counter can overflow`);
+  const [start, end] = [BigInt(row.invocation.startByte), BigInt(row.invocation.endByte)];
+  if (check === 'range-order' && !(start > end)) fail('outcome-binding', `${row.id} range is in order`);
+  if (check === 'range-bounds' && !(end > BigInt(head.fact.byteLength))) fail('outcome-binding', `${row.id} range is in bounds`);
+}
+
 /** The invocation names the basis it claims: the canonical head, or for BasisNotCanonical a different stored head. */
 function checkInvocationIds(row, outcome) {
   const target = row.basis.buffers.find((buffer) => buffer.bufferId === row.invocation.bufferId);
@@ -103,6 +137,14 @@ function checkRequiredRows(artifact) {
   const additions = new Set(artifact.additions.map((row) => row.id));
   for (const id of [...REQUIRED_ADDITIONS, ...EXPECTED_OBSTRUCTIONS.keys()]) {
     if (!all.has(id)) fail('outcome-binding', `${id} is missing`);
+  }
+  for (const row of all.values()) {
+    const named = row.movedObligations.map((moved) => moved.surface).sort().join();
+    if (named !== [...(MOVED.get(row.id) ?? [])].sort().join()) fail('outcome-binding', `${row.id} moves [${named}]`);
+    if (row.expected.posture === 'obstructed'
+      && row.expected.precedence.competing.join() !== (COMPETING.get(row.id) ?? []).join()) {
+      fail('outcome-binding', `${row.id} competing checks [${row.expected.precedence.competing.join()}]`);
+    }
   }
   for (const [id, surfaces] of MOVED) {
     const named = all.get(id).movedObligations.map((moved) => moved.surface);
@@ -155,6 +197,7 @@ export function checkOutcomeBindings(artifact, oracle) {
     }
     if (expected.evidence.join() !== EVIDENCE.obstructed.join()) fail('outcome-binding', `${row.id} evidence`);
     checkReadSet(row, expected.readSet);
+    checkBasisFault(row, expected.decidingCheck);
     checkInvocationIds(row, expected.typedOutcome);
   }
   for (const row of [...artifact.rows, ...artifact.additions]) {
@@ -204,7 +247,7 @@ export function checkIdentities(artifact) {
     for (const witness of row.admissionWitnesses) {
       const node = nodes.find((entry) => entry.id === witness.effect.node);
       if (witness.expectedOutcome !== 'IdentityLawViolation' || witness.boundary !== 'echo-admission'
-        || node === undefined || witness.contentAddress !== addressOf(ids, node, edgesFrom(edges, node.id))) {
+        || node === undefined || node.admission !== 'requires-non-bridge-writer' || witness.contentAddress === node.id || witness.contentAddress !== addressOf(ids, node, edgesFrom(edges, node.id))) {
         fail('identity', `${row.id} witness for ${witness.effect.node} is not an IdentityLawViolation at admission`);
       }
     }
@@ -220,6 +263,10 @@ export function checkIdentities(artifact) {
     for (const node of row.expected.createdNodes) {
       if (addressOf(ids, node, node.edges.map((edge) => ({ ...edge, from: node.id }))) !== node.id) {
         fail('identity', `${row.id} created ${node.id} is not its address`);
+      }
+      for (const edge of node.edges) {
+        const expected = contentEdgeId(ids.warp, unhex(node.id), ids.edges.get(edge.type), unhex(edge.to));
+        if (hex(expected) !== edge.id) fail('identity', `${row.id} created edge ${edge.id} is not its address`);
       }
     }
   }
@@ -239,22 +286,6 @@ function checkEdgeId(ids, row, nodes, edge) {
   if (hex(expected) !== edge.id) fail('identity', `${row.id} edge ${edge.id} is not its address`);
 }
 
-/** Whether an atom is a canonical closed record of its type within the U8 and leaf bounds. */
-function decodesAsRecord(type, atomHex) {
-  let value;
-  try {
-    value = decodeCanonicalCbor(unhex(atomHex));
-  } catch {
-    return false;
-  }
-  const fields = RECORDS.get(type);
-  if (!(value instanceof CborMap) || fields === undefined || [...value.entries.keys()].sort().join() !== fields.join()) return false;
-  const height = value.entries.get('height');
-  const bytes = value.entries.get('bytes');
-  if (height !== undefined && (!(height instanceof CborUint) || height.value > 255n)) return false;
-  return bytes === undefined || (bytes instanceof CborBytes && bytes.value.length <= 4096);
-}
-
 /** cbor-x decodes every decodable atom to exactly the declared fact. */
 export function checkAtoms(artifact) {
   for (const row of [...artifact.rows, ...artifact.additions]) {
@@ -264,11 +295,7 @@ export function checkAtoms(artifact) {
         if (decodesAsRecord(node.type, node.atomHex)) fail('atoms', `${row.id} ${node.id} is marked undecodable but decodes`);
         continue;
       }
-      try {
-        decodeCanonicalCbor(unhex(node.atomHex));
-      } catch {
-        fail('atoms', `${row.id} ${node.id} atom is not canonical CBOR`);
-      }
+      if (!decodesAsRecord(node.type, node.atomHex)) fail('atoms', `${row.id} ${node.id} atom is not its closed record`);
       const decoded = cborDecode(Buffer.from(node.atomHex, 'hex'));
       const fields = Object.keys(decoded).sort();
       if (fields.join() !== Object.keys(node.fact).sort().join()) fail('atoms', `${row.id} ${node.id} fields differ`);

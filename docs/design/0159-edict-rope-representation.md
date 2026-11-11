@@ -858,6 +858,11 @@ Moved and removed representations:
   moves to the UTF-16 derived reading (Coordinates, Follow-On Debt). That
   obligation stays a gap until the derived reading discharges it. No issue
   tracks it yet; #389 reports the missing owner instead of filing one.
+- **Rewrite, Diff and stored UTF-16 on committed rows.** The six retained
+  committable cases also expected Rewrite/Diff facts and a stored UTF-16 length.
+  Schema 2 has neither; each committed row records both moves (Rewrite and
+  Diff facts under Follow-On Debt, UTF-16 under the derived reading). They stay
+  gaps until those surfaces exist, and no issue tracks them yet.
 - **Blob.** Blob slices and offsets no longer exist. Their extent and arithmetic
   coverage moves to ancestor extent claims and checked child sums, as above.
 - **Height.** The U32 height becomes a U8 codec bound. The child-consistency

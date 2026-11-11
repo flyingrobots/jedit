@@ -96,7 +96,7 @@ export const CARRY_OBSTRUCTED_ROWS: readonly RowSpec[] = [
     'Malformed materialization must not be hidden by NoOp', MASK_DECISION, maskMove('malformed-closure-masks-no-op')),
   [buffer('branch-truncated-no-op-mask', EXTENT_MISMATCH())],
   invoke(0n, 4098n, utf8(`${'a'.repeat(4096)}b`)),
-  new ExpectObstructed('MalformedRope', 'closure-validation')),
+  new ExpectObstructed('MalformedRope', 'closure-validation', ['character-boundary'])),
   new RowSpec(obstructed('empty-root-nonzero-length-no-op-mask', 'malformed-rope',
     'Missing root with nonzero head length cannot become NoOp', MASK_DECISION, maskMove('empty-root-masks-no-op')),
   [buffer('empty-root-nonzero-length-no-op-mask', OVERSIZED())], invoke(0n, 1n, ''),

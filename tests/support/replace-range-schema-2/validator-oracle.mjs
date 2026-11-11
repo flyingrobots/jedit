@@ -71,6 +71,8 @@ export const REQUIRED_ADDITIONS = Object.freeze(['shared-head-two-buffers', 'equ
 /** Retained rows whose obligation moves (in part) to another surface, and the surfaces it must name. */
 export const MOVED = new Map([
   ['rope-utf16-length-overflow', ['utf16-derived-reading']],
+  ...['empty-unicode-insert', 'middle-ascii-insert', 'whole-buffer-delete', 'unicode-replacement', 'cross-leaf-rebalance',
+    'replacement-larger-than-leaf'].map((id) => [id, ['rewrite-diff-facts', 'utf16-derived-reading']]),
   ['branch-height-u32-max-at-zero', ['addition:branch-height-exceeds-u8']],
   ['branch-truncated-no-op-mask', ['addition:malformed-closure-masks-no-op']],
   ['empty-root-nonzero-length-no-op-mask', ['addition:empty-root-masks-no-op']],
@@ -91,3 +93,10 @@ export const EVIDENCE = Object.freeze({
   obstructed: ['receipt naming the typed outcome and deciding check', 'no patch derived and no WAL write',
     'reachable state after equals the basis'],
 });
+
+/** Rows that declare later checks their fixture also fails, as the model verifies them. */
+export const COMPETING = new Map([
+  ['empty-range-inside-codepoint', ['no-op']], ['branch-truncated-no-op-mask', ['character-boundary']],
+  ['leaf-range-end-overflow', ['counters']], ['malformed-closure-masks-no-op', ['no-op']],
+  ['empty-root-masks-no-op', ['no-op']], ['head-sequence-at-limit-no-op', ['counters']],
+]);
