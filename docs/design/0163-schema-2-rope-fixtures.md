@@ -261,4 +261,13 @@ None: the artifact is not executed.
 
 ## Retrospective
 
-Pending.
+The artifact covers all 40 retained ids and 13 additions; every row stays
+unexecuted and the passing count is still 0/40. The first green run caught a
+hand-copied semanticCode error, which is why the validator reads the oracle
+instead of trusting the rows. Keeping the validator free of builder imports
+(and testing that) made it possible to say the expectations were not checked by
+the code that produced them. The reconstruction profile is now normative for
+#296: the authored rope must reproduce these shapes and reads, or the fixtures
+change through review. Exact reads remain the specification model's until
+echo#926 fixes a closure selector, and reachability starts at the Buffer until
+echo#927 fixes the worldline-root layout.
