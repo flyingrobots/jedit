@@ -5,13 +5,14 @@
 // edge structure, identity, then its children's decoded claims (checked sums,
 // equality, height, balance). A parent never trusts a child it has not decoded.
 import { contentNodeId, hex, OutgoingEdge } from './content-address-v1.mts';
-import { atomTypeId, bytesField, decodeFact, edgeTypeId, FactDecodeError, MAX_LEAF_BYTES, nodeTypeId, U64_MAX,
+import { atomTypeId, bytesField, decodeFact, EDGE_KINDS, edgeTypeId, FactDecodeError, MAX_LEAF_BYTES, nodeTypeId, U64_MAX,
   uintField, WARP_ID } from './schema-2-facts.mts';
-import type { FactFields, FactKind } from './schema-2-facts.mts';
-import type { RecordingView } from './graph.mts';
+import type { EdgeKind, FactFields, FactKind } from './schema-2-facts.mts';
+import type { EdgeRecord, RecordingView } from './graph.mts';
 import { Obstruction } from './outcomes.mts';
 
 const VALIDATION = 'closure-validation';
+const BRANCH_EDGES: ReadonlyMap<EdgeKind, readonly [number, number]> = new Map([['left', [1, 1]], ['right', [1, 1]]]);
 
 /** A stored rope node as its decoded atom claims it. */
 export class StoredNode {
@@ -93,8 +94,30 @@ export class RopeReader {
     return this.leaf(record.id, record.atomType, record.atom, fields);
   }
 
+  /**
+   * Reads every schema edge type from a node and checks each count against `allowed` (a kind not listed
+   * allows none). Identity is then computed over this complete set, as ContentAddressV1 requires.
+   */
+  edgeSet(id: Uint8Array, allowed: ReadonlyMap<EdgeKind, readonly [number, number]>): Map<EdgeKind, EdgeRecord[]> {
+    const edges = new Map<EdgeKind, EdgeRecord[]>();
+    for (const kind of EDGE_KINDS) {
+      const found = this.view.edges(id, edgeTypeId(kind));
+      const [min, max] = allowed.get(kind) ?? [0, 0];
+      if (found.length < min || found.length > max) {
+        throw new Obstruction('MalformedRope', VALIDATION, `${hex(id)} has ${found.length} ${kind} edges`);
+      }
+      edges.set(kind, found);
+    }
+    return edges;
+  }
+
+  static outgoing(edges: ReadonlyMap<EdgeKind, readonly EdgeRecord[]>): OutgoingEdge[] {
+    return [...edges.values()].flat().map((edge) => new OutgoingEdge(edge.edgeType, edge.to));
+  }
+
   leaf(id: Uint8Array, atomType: Uint8Array, atom: Uint8Array, fields: FactFields): StoredNode {
     const bytes = bytesField(fields, 'bytes');
+    this.edgeSet(id, new Map());
     if (!sameBytes(contentNodeId(WARP_ID, nodeTypeId('Leaf'), atomType, atom, []), id)) {
       throw new Obstruction('ContentIdentityMismatch', VALIDATION, `leaf ${hex(id)} is not its content address`);
     }
@@ -108,22 +131,14 @@ export class RopeReader {
     return new StoredNode(id, true, [BigInt(bytes.length), countLineBreaks(bytes), 1n], bytes);
   }
 
-  oneEdge(id: Uint8Array, kind: 'left' | 'right'): Uint8Array {
-    const edges = this.view.edges(id, edgeTypeId(kind));
-    if (edges.length !== 1) {
-      throw new Obstruction('MalformedRope', VALIDATION, `branch ${hex(id)} has ${edges.length} ${kind} edges`);
-    }
-    return edges[0]!.to;
-  }
-
   /** Expands a branch into its two children, validating the branch on the way. */
   expand(branch: StoredNode): readonly [StoredNode, StoredNode] {
     const cached = this.expanded.get(hex(branch.id));
     if (cached !== undefined) return cached;
-    const left = this.oneEdge(branch.id, 'left');
-    const right = this.oneEdge(branch.id, 'right');
+    const edges = this.edgeSet(branch.id, BRANCH_EDGES);
+    const [left, right] = [edges.get('left')![0]!.to, edges.get('right')![0]!.to];
     const record = this.view.graph.node(branch.id)!;
-    const outgoing = [new OutgoingEdge(edgeTypeId('left'), left), new OutgoingEdge(edgeTypeId('right'), right)];
+    const outgoing = RopeReader.outgoing(edges);
     if (!sameBytes(contentNodeId(WARP_ID, nodeTypeId('Branch'), record.atomType, record.atom, outgoing), branch.id)) {
       throw new Obstruction('ContentIdentityMismatch', VALIDATION, `branch ${hex(branch.id)} is not its address`);
     }

@@ -193,7 +193,7 @@ test('fixture tooling imports no planner, runtime or authored source, and the va
     }
   }
   const independent = ['validate-artifact.mjs', 'validate-committed.mjs', 'judge.mjs'];
-  const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './validate-committed.mjs']);
+  const allowed = new Set(['./content-address-v1.mts', './blake3.mts', './canonical-cbor.mts', './validate-committed.mjs']);
   for (const file of independent) {
     for (const specifier of imports(file).filter((entry) => entry.startsWith('./'))) {
       assert.ok(allowed.has(specifier), `${file} must not import ${specifier}`);
@@ -239,4 +239,34 @@ test('the judge compares observations structurally, not by property order', () =
   const reordered = { ...exact, effects: exact.effects.map((effect) => Object.fromEntries(Object.entries(effect).reverse())),
     readSet: Object.fromEntries(Object.entries(exact.readSet).reverse()) };
   assert.deepEqual(unmetReasons(entry, reordered), []);
+});
+
+test('invocation ids, additions, witnesses, atom form, write sets and texts are each checked', () => {
+  const cases = [
+    [checkOutcomeBindings, (copy) => {
+      const entry = row(copy, 'stale-basis');
+      entry.invocation.basisHeadId = entry.basis.buffers[0].canonicalHead;
+    }, /outcome-binding/],
+    [checkOutcomeBindings, (copy) => {
+      const entry = row(copy, 'foreign-basis');
+      entry.invocation.bufferId = entry.basis.buffers[1].bufferId;
+    }, /outcome-binding/],
+    [checkOutcomeBindings, (copy) => { row(copy, 'rope-utf16-length-overflow').movedObligations[0].owner = ''; },
+      /outcome-binding/],
+    [(copy) => checkRegister(copy, oracle, MAPPING), (copy) => { copy.additions[0].status = 'passing'; }, /register/],
+    [(copy) => checkRegister(copy, oracle, MAPPING), (copy) => { copy.additions[0].target = 'reference'; }, /register/],
+    [checkIdentities, (copy) => { row(copy, 'bad-blob-content-hash').admissionWitnesses[0].boundary = 'closure-validation'; },
+      /identity/],
+    [checkAtoms, (copy) => {
+      const node = row(copy, 'empty-unicode-insert').basis.nodes.find((entry) => entry.type === 'Head');
+      node.atomHex = node.atomHex.replace(/(6873657175656e6365)00/, '$11800');
+    }, /atoms/],
+    [checkCommitted, (copy) => { row(copy, 'middle-ascii-insert').expected.writeSet.edgeRanges = []; }, /committed/],
+    [checkCommitted, (copy) => { row(copy, 'middle-ascii-insert').text.beforeHex = '61626364'.replace('64', '65'); },
+      /committed/],
+    [checkCommitted, (copy) => { row(copy, 'shared-head-two-buffers').expected.evidence = []; }, /committed/],
+  ];
+  for (const [check, mutate, pattern] of cases) {
+    assert.throws(() => check(mutated(mutate), oracle), pattern, mutate.toString().slice(0, 80));
+  }
 });

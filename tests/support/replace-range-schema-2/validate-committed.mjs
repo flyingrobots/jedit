@@ -126,7 +126,16 @@ function checkEffects(row, profile, basisBuffer, basisHeadId) {
   }
   const basisIds = new Set(row.basis.nodes.map((node) => node.id));
   const written = createdNodes.map((node) => node.id).filter((id) => !basisIds.has(id)).sort();
-  if (row.expected.writeSet.nodes.join() !== written.join()) fail(`${row.id} write set nodes`);
+  const basisEdges = new Set(row.basis.edges.map((edge) => edge.id));
+  const newEdges = createdNodes.filter((node) => !basisIds.has(node.id)).flatMap((node) =>
+    node.edges.filter((edge) => !basisEdges.has(edge.id)).map((edge) => ({ ...edge, from: node.id })));
+  const slotEdge = effects.find((effect) => effect.kind === 'ReplaceEdge').edge;
+  const ranges = new Map([[`${basisBuffer.id}/canonicalHead`, { from: basisBuffer.id, type: 'canonicalHead' }],
+    ...newEdges.map((edge) => [`${edge.from}/${edge.type}`, { from: edge.from, type: edge.type }])]);
+  const expectedWrites = { nodes: written, atoms: [...written, basisBuffer.id].sort(),
+    edges: [...newEdges.map((edge) => edge.id), slotEdge].sort(),
+    edgeRanges: [...ranges].sort(([a], [b]) => (a < b ? -1 : 1)).map(([, range]) => range) };
+  if (JSON.stringify(row.expected.writeSet) !== JSON.stringify(expectedWrites)) fail(`${row.id} write set`);
 }
 
 function checkReach(row, state, basisHeadId) {
@@ -161,9 +170,20 @@ export function checkCommitted(artifact, oracle) {
     if (terminal !== undefined && terminal.result.materializedTextUtf8Hex !== row.text.afterHex) {
       fail(`${row.id} text differs from the retained outcome`);
     }
+    const before = unhex(row.text.beforeHex);
+    const [start, end] = [Number(row.invocation.startByte), Number(row.invocation.endByte)];
+    const spliced = Uint8Array.from([...before.subarray(0, start), ...unhex(row.invocation.replacementHex),
+      ...before.subarray(end)]);
+    if (hex(spliced) !== row.text.afterHex) fail(`${row.id} after-text is not the splice of the before-text`);
+    if (row.expected.evidence.length === 0) fail(`${row.id} names no execution evidence`);
     const state = new PostState(row);
     const basisBuffer = row.basis.nodes.find((node) => node.id === row.invocation.bufferId);
     const basisHead = row.basis.nodes.find((node) => node.id === row.invocation.basisHeadId);
+    const basisText = new PostState({ ...row, expected: { createdNodes: [], effects: [{ kind: 'ReplaceEdge',
+      edge: row.expected.effects.find((effect) => effect.kind === 'ReplaceEdge').edge, to: basisHead.id }] } });
+    const [basisRoot] = basisText.child(basisHead.id, 'root');
+    const stored = basisRoot === undefined ? '' : hex(basisText.tree(basisRoot, row).text);
+    if (stored !== row.text.beforeHex) fail(`${row.id} before-text is not the basis head's text`);
     checkHead(row, state, basisHead);
     checkEffects(row, artifact.profile, basisBuffer, basisHead.id);
     checkReach(row, state, basisHead.id);

@@ -866,7 +866,8 @@ Moved and removed representations:
 The artifact also carries schema-2 additions: the positive shared Head, equal
 leaves, constructor leaf counts, invalid replacement bytes, malformed edges, and two
 malformed closures that would otherwise be NoOp, which pin closure validation
-before the no-op check.
+before the no-op check, overflow of the edit's own new head, and lawfully
+addressed nodes carrying an unexpected edge type.
 
 The remaining operation gates are unchanged: exact public Core/Target/package,
 manifest and codecs with separate verification; generic Echo consumption with

@@ -7,6 +7,7 @@
 import { createHash } from 'node:crypto';
 import { decode as cborDecode } from 'cbor-x';
 import { blake3 } from './blake3.mts';
+import { decodeCanonicalCbor } from './canonical-cbor.mts';
 import { attachmentDigest, contentEdgeId, contentNodeId, OutgoingEdge, slotEdgeId, unhex, hex }
   from './content-address-v1.mts';
 
@@ -56,6 +57,9 @@ export function checkRegister(artifact, oracle, mappingTable) {
   if (counts.carry !== 28 || counts.counterpart !== 12) fail('register', `counts ${JSON.stringify(counts)}`);
   for (const addition of artifact.additions) {
     if (rows.includes(addition.id) || addition.mapping !== 'addition') fail('register', `${addition.id} replaces a row`);
+    if (addition.status !== 'unexecuted' || addition.target !== 'persistent-rope') {
+      fail('register', `${addition.id} claims ${addition.status} for ${addition.target}`);
+    }
   }
 }
 
@@ -73,6 +77,20 @@ export function checkReadSet(row, readSet) {
   const known = new Set([...row.basis.nodes.map((node) => node.id), row.invocation.bufferId, row.invocation.basisHeadId]);
   if (readSet.nodes.length === 0 || readSet.nodes.some((id) => !known.has(id))) {
     fail('outcome-binding', `${row.id} read set names no read or an unknown node`);
+  }
+}
+
+/** The invocation names the basis it claims: the canonical head, or for BasisNotCanonical a different stored head. */
+function checkInvocationIds(row, outcome) {
+  const target = row.basis.buffers.find((buffer) => buffer.bufferId === row.invocation.bufferId);
+  if (target === undefined) {
+    if (outcome !== 'FactMissing') fail('outcome-binding', `${row.id} invokes a buffer the basis lacks`);
+    return;
+  }
+  const stored = row.basis.nodes.some((node) => node.id === row.invocation.basisHeadId && node.type === 'Head');
+  const canonical = target.canonicalHead === row.invocation.basisHeadId;
+  if (outcome === 'BasisNotCanonical' ? (canonical || !stored) : !canonical) {
+    fail('outcome-binding', `${row.id} basis head does not match its expected outcome`);
   }
 }
 
@@ -111,6 +129,15 @@ export function checkOutcomeBindings(artifact, oracle) {
       fail('outcome-binding', `${row.id} departs from ${terminal.semanticCode} without a decision`);
     }
     checkReadSet(row, expected.readSet);
+    checkInvocationIds(row, expected.typedOutcome);
+  }
+  for (const row of [...artifact.rows, ...artifact.additions]) {
+    if (row.expected.posture === 'committed') checkInvocationIds(row, null);
+    for (const moved of row.movedObligations) {
+      if (![moved.surface, moved.obligation, moved.owner, moved.status].every((text) => typeof text === 'string' && text.length > 0)) {
+        fail('outcome-binding', `${row.id} records a moved obligation without surface, owner or status`);
+      }
+    }
   }
 }
 
@@ -148,6 +175,13 @@ export function checkIdentities(artifact) {
   for (const row of [...artifact.rows, ...artifact.additions]) {
     const { nodes, edges } = row.basis;
     const witnessed = new Set(row.admissionWitnesses.map((witness) => witness.effect.node));
+    for (const witness of row.admissionWitnesses) {
+      const node = nodes.find((entry) => entry.id === witness.effect.node);
+      if (witness.expectedOutcome !== 'IdentityLawViolation' || witness.boundary !== 'echo-admission'
+        || node === undefined || witness.contentAddress !== addressOf(ids, node, edgesFrom(edges, node.id))) {
+        fail('identity', `${row.id} witness for ${witness.effect.node} is not an IdentityLawViolation at admission`);
+      }
+    }
     for (const node of nodes) {
       const address = addressOf(ids, node, edgesFrom(edges, node.id));
       const injected = node.admission === 'requires-non-bridge-writer';
@@ -185,6 +219,11 @@ export function checkAtoms(artifact) {
     const created = row.expected.posture === 'committed' ? row.expected.createdNodes : [];
     for (const node of [...row.basis.nodes, ...created]) {
       if ('undecodable' in node.fact) continue;
+      try {
+        decodeCanonicalCbor(unhex(node.atomHex));
+      } catch {
+        fail('atoms', `${row.id} ${node.id} atom is not canonical CBOR`);
+      }
       const decoded = cborDecode(Buffer.from(node.atomHex, 'hex'));
       const fields = Object.keys(decoded).sort();
       if (fields.join() !== Object.keys(node.fact).sort().join()) fail('atoms', `${row.id} ${node.id} fields differ`);

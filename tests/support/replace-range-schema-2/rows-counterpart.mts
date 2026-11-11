@@ -56,8 +56,9 @@ export const COUNTERPART_ROWS: readonly RowSpec[] = [
   new RowSpec(counterpart('cyclic-right-endpoint', 'fact-malformed',
     'Cyclic structural edges: define admission-versus-read rejection and prove non-acceptance',
     'A content id commits to its outgoing edges, so no admitted node can reach itself: Echo refuses the '
-    + 'self-edge node with IdentityLawViolation. Read time checks identity before structure, so the injected '
-    + 'cycle is ContentIdentityMismatch, not a traversal cycle error.'),
+    + 'self-edge node with IdentityLawViolation. At read time the self-edge is a lawful edge set, '
+    + 'and identity is checked before the traversal could revisit the node, so the injected cycle is '
+    + 'ContentIdentityMismatch, not a traversal cycle error.'),
   [buffer('cyclic-right-endpoint', head(branch(leaf('abc'), 'self',
     { id: SELF_REFERENCING_ID, claims: claims({ byteLength: 3n, lineBreaks: 0n, height: 2n }) })))],
   invoke(3n, 3n, 'x'),

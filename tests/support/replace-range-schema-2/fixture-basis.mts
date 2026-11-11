@@ -188,7 +188,9 @@ export class Basis {
     if (spec instanceof LeafSpec) {
       const claims = new Map<string, bigint>([['lineBreaks', countLineBreaks(spec.bytes)], ...spec.overrides.claims]);
       const fields = new Map<string, bigint | Bytes>([['bytes', spec.bytes], ['lineBreaks', claims.get('lineBreaks')!]]);
-      const id = this.content('Leaf', fields, [], spec.overrides);
+      const edges = (spec.overrides.edges ?? []).flatMap(([kind, target]) =>
+        (target === 'self' ? [] : [[kind, this.tree(target).id] as const]));
+      const id = this.content('Leaf', fields, edges, spec.overrides);
       return new Built(id, new Map([['byteLength', BigInt(spec.bytes.length)], ['height', 1n], ...claims]), spec.bytes);
     }
     const left = this.tree(spec.left);

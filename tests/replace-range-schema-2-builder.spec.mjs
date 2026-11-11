@@ -133,3 +133,30 @@ test('malformed closures that would otherwise be NoOp are rejected by closure va
     assert.equal(render(twin).typedOutcome, 'NoOp', `${id} twin`);
   }
 });
+
+const U64_MAX = 0xffff_ffff_ffff_ffffn;
+
+function probe(tree, range, replacement, expected) {
+  return render(new RowSpec({ id: 'builder-probe', mapping: 'addition', obligation: 'probe' },
+    [buffer('builder-probe', head(tree))], invoke(range[0], range[1], replacement), expected));
+}
+
+test('the new head\'s line count and extent are checked at the counters step', () => {
+  // Oracle: DL-0159 checked arithmetic; the declared order puts the result's counters after no-op.
+  const manyBreaks = branch(branch(leaf('a'), leaf('b'), { claims: claims({ lineBreaks: U64_MAX - 1n }) }), leaf('c'));
+  assert.equal(probe(manyBreaks, [3n, 3n], '\n', new ExpectObstructed('ArithmeticOverflow', 'counters')).decidingCheck,
+    'counters');
+  const manyBytes = branch(branch(leaf('a'), leaf('b'), { claims: claims({ byteLength: U64_MAX - 1n }) }), leaf('c'));
+  assert.equal(probe(manyBytes, [U64_MAX, U64_MAX], 'x', new ExpectObstructed('ArithmeticOverflow', 'counters'))
+    .decidingCheck, 'counters');
+});
+
+test('identity is computed over every outgoing edge; an unexpected edge type is MalformedRope', () => {
+  // Oracle: Echo ContentAddressV1 hashes a content node's complete outgoing edge set.
+  const extra = branch(leaf('ab'), leaf('cd'), { edges: [['left', leaf('ab')], ['right', leaf('cd')], ['anchor', leaf('zz')]] });
+  assert.equal(probe(extra, [0n, 1n], 'x', new ExpectObstructed('MalformedRope', 'closure-validation')).typedOutcome,
+    'MalformedRope');
+  const leafWithEdge = leaf('ab', { edges: [['left', leaf('zz')]] });
+  assert.equal(probe(branch(leafWithEdge, leaf('cd')), [3n, 4n], 'x',
+    new ExpectObstructed('MalformedRope', 'closure-validation')).typedOutcome, 'MalformedRope');
+});

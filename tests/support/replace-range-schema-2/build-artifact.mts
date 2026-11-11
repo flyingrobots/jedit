@@ -45,8 +45,11 @@ function profile(): Json {
       general: 'otherwise prefix(start), fromBytes(replacement), suffix(end), joined by AVL concatenation',
       descent: 'a range descends left while end <= left length, right while start >= left length',
     },
-    validation: 'a leaf is validated when its atom is decoded; a branch when expanded: edge counts, identity, then '
-      + 'its decoded children\'s checked sums, equality, height and balance, before any child is expanded',
+    validation: 'a leaf is validated when its atom is decoded: codec, edge set (none allowed), identity, then '
+      + 'size, UTF-8 and line breaks. A branch is validated when expanded: edge set (one left, one right, nothing '
+      + 'else), identity over that complete set, then its children\'s decoded claims: checked sums, equality, height '
+      + 'and balance. A head checks its edge set, identity, then extent and line count against its root. A '
+      + 'sibling the edit never descends into is trusted on its decoded claims',
     readSet: 'the program\'s witnessed reads: node records with their atoms, and (source, edge type) ranges, as the '
       + 'specification model resolved them. Echo\'s own validation and precondition reads are not listed',
     writeSet: 'Echo\'s write set: created node records and atoms, the Buffer atom, created and retargeted edges, and '
@@ -61,7 +64,8 @@ function profile(): Json {
     pending: {
       worldlineRoot: 'echo#927 owns the worldline-root-to-Buffer layout; reachability starts at the Buffer',
       closureSelector: 'echo#926 owns the bounded closure read; reads here are the model\'s, not a selector\'s',
-      envelope: 'v1 resource envelope unmeasured; rows record their needs and a refusal outside it is a gap',
+      envelope: 'v1 resource envelope unmeasured; the model does not evaluate the envelope check, rows record their '
+        + 'needs, and a refusal outside the envelope is a gap',
     },
   };
 }

@@ -3,7 +3,7 @@
 // Specification model of schema-2 ReplaceRange, used only to derive fixture
 // expectations. It shares no code with the native planner or authored source.
 // Every state read goes through a RecordingView, so its footprint is observed.
-import { contentNodeId, hex, OutgoingEdge } from './content-address-v1.mts';
+import { contentNodeId, hex } from './content-address-v1.mts';
 import { RecordingView } from './graph.mts';
 import type { GraphState, NodeRecord } from './graph.mts';
 import { Obstruction } from './outcomes.mts';
@@ -14,7 +14,7 @@ import { checkedAdd, isUtf8, RopeReader } from './rope-reader.mts';
 import type { StoredNode } from './rope-reader.mts';
 import { atomTypeId, decodeFact, edgeTypeId, FactDecodeError, MAX_LEAF_BYTES, nodeTypeId, textField, uintField,
   U64_MAX, WARP_ID } from './schema-2-facts.mts';
-import type { FactFields, FactKind } from './schema-2-facts.mts';
+import type { EdgeKind, FactFields, FactKind } from './schema-2-facts.mts';
 
 export class Invocation {
   readonly bufferId: Uint8Array;
@@ -54,6 +54,8 @@ export class ModelObstruction {
     this.obstruction = obstruction;
   }
 }
+
+const HEAD_EDGES: ReadonlyMap<EdgeKind, readonly [number, number]> = new Map([['root', [0, 1]], ['anchor', [1, 1]]]);
 
 function same(left: Uint8Array, right: Uint8Array): boolean {
   return hex(left) === hex(right);
@@ -146,8 +148,12 @@ export class ReplaceRangeModel {
     if (noOp && this.skip !== 'no-op') throw new Obstruction('NoOp', 'no-op', 'replacement equals the replaced bytes');
     const sequence = checkedIncrement(uintField(headFields, 'sequence'), 'head sequence');
     const version = checkedIncrement(uintField(bufferFields, 'version'), 'buffer version');
-    const lineCount = checkedAdd(tree === null ? 0n : lineBreaks(tree), 1n, 'new head line count');
-    const newHead = new Map<string, bigint>([['byteLength', tree === null ? 0n : byteLength(tree)],
+    const total = tree === null ? 0n : byteLength(tree);
+    const lineCount = (tree === null ? 0n : lineBreaks(tree)) + 1n;
+    if (total > U64_MAX || lineCount > U64_MAX) {
+      throw new Obstruction('ArithmeticOverflow', 'counters', 'the new head extent or line count overflows U64');
+    }
+    const newHead = new Map<string, bigint>([['byteLength', total],
       ['lineCount', lineCount], ['sequence', sequence]]);
     const newBuffer = new Map<string, bigint | string>([['bufferKey', textField(bufferFields, 'bufferKey')],
       ['version', version]]);
@@ -155,12 +161,9 @@ export class ReplaceRangeModel {
   }
 
   validateHead(head: NodeRecord, fields: FactFields): readonly [StoredNode | null, Uint8Array] {
-    const roots = this.view.edges(head.id, edgeTypeId('root'));
-    const anchors = this.view.edges(head.id, edgeTypeId('anchor'));
-    if (roots.length > 1 || anchors.length !== 1) {
-      throw new Obstruction('MalformedRope', 'closure-validation', 'head edges are not one anchor and at most one root');
-    }
-    const outgoing = [...roots, ...anchors].map((edge) => new OutgoingEdge(edge.edgeType, edge.to));
+    const edges = this.reader.edgeSet(head.id, HEAD_EDGES);
+    const [roots, anchors] = [edges.get('root')!, edges.get('anchor')!];
+    const outgoing = RopeReader.outgoing(edges);
     if (!same(contentNodeId(WARP_ID, nodeTypeId('Head'), head.atomType, head.atom, outgoing), head.id)) {
       throw new Obstruction('ContentIdentityMismatch', 'closure-validation', 'head is not its content address');
     }

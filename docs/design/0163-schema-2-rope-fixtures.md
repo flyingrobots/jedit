@@ -161,8 +161,11 @@ The artifact is canonical JSON with a SHA-256 sidecar.
   is top-down: a branch's sum, height and identity are checked from its
   children's claimed atoms before descending, and every node the operation
   resolves, including those the reconstruction and no-op comparison read, is
-  validated before any endpoint is classified.
-- **Competing checks.** A row may name later checks its fixture also fails;
+  validated before any endpoint is classified. Every node the model expands has
+  all schema edge types read, so identity is computed over its complete edge
+  set and an unexpected edge type is MalformedRope. A sibling the edit never
+  descends into is trusted on its decoded claims. The new head's extent and
+  line count are checked at the counters step.- **Competing checks.** A row may name later checks its fixture also fails;
   each is verified by re-running the model with the deciding check passed.
 - **Outcomes, boundaries and precedence.** Checks run in a fixed order: Buffer
   presence, Buffer decode, basis, range order, replacement validity, envelope,
@@ -267,7 +270,7 @@ None: the artifact is not executed.
 
 ## Retrospective
 
-The artifact covers all 40 retained ids and 15 additions; every row stays
+The artifact covers all 40 retained ids and 18 additions; every row stays
 unexecuted and the passing count is still 0/40. The first green run caught a
 hand-copied semanticCode error, which is why the validator reads the oracle
 instead of trusting the rows. Keeping the validator free of builder imports
