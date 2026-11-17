@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Started the authored schema-2 persistent-rope `ReplaceRange` (#296).
+  `edict/replace-range/src/rope/` adds generated octet tables and a
+  canonical-CBOR atom codec, both as digest-pinned source modules. A spec
+  checks the generated source and the module pins. The modules compile to
+  Core and Target IR at Amblicit `7dbcbc23`. Execution waits on Echo's
+  checked-integer provider and on Amblicit's 64 KiB provider-response cap.
+
 - Relocked Jedit to Echo main `d527f47176d506deae30d3ee4bbf36b924e7bb30` and
   Amblicit main `7dbcbc23d72705c5e224fc994a6c767881958912`, which carry the
   public rope prerequisites (ContentAddressV1 identity, typed-edge and guided

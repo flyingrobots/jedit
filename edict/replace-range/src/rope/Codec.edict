@@ -1,0 +1,59 @@
+// Canonical CBOR for the schema-2 text facts (`edict.canonical-cbor/v1`).
+//
+// Each atom is a definite-length map keyed by field name, keys in canonical
+// order (shorter first, then bytewise), every integer in its shortest form.
+// Decoding is exact: a well-typed atom in any other spelling, with another
+// field set or with trailing bytes is Malformed.
+package jedit.text.codec@1;
+
+use module jedit.text.octets@1 digest "sha256:ad9eea0f13427a87ea9ad07fc8f54cae4e97073e8e13cb0475060e4fcebf6c91" as octets;
+
+failure Malformed;
+
+// The largest atom a schema-2 text fact can have: a Leaf with 4,096 bytes.
+type Atom = Bytes<max=4352>;
+type Parsed = { value: U64, next: U64 };
+type LeafFact = { bytes: Bytes<max=4096>, lineBreaks: U64 };
+type BranchFact = { byteLength: U64, lineBreaks: U64, height: U64 };
+type HeadFact = { byteLength: U64, lineCount: U64, sequence: U64 };
+// A Buffer's key stays in its encoded form: the program never reads it, and
+// rewriting the atom must keep it byte for byte.
+type BufferFact = { version: U64, encodedKey: Bytes<max=4096> };
+
+// ---- Encoding ----
+
+fn quot(v: U64, d: U64) -> U64 { return default(checkedDiv(v, d), 0u64); }
+fn rem(v: U64, d: U64) -> U64 { return default(checkedRem(v, d), 0u64); }
+fn be2(v: U64) -> Bytes<max=2> { return octets.octet(rem(quot(v, 256u64), 256u64)) + octets.octet(rem(v, 256u64)); }
+fn be4(v: U64) -> Bytes<max=4> { return be2(rem(quot(v, 65536u64), 65536u64)) + be2(rem(v, 65536u64)); }
+fn be8(v: U64) -> Bytes<max=8> { return be4(quot(v, 4294967296u64)) + be4(rem(v, 4294967296u64)); }
+
+// The initial octet major + info. Both are octets with a sum below 256 at
+// every call; a sum that is not an octet would encode as no octet at all.
+fn initial(major: U64, info: U64) -> Bytes<max=1> { return octets.octet(default(checkedAdd(major, info), 256u64)); }
+
+// The shortest header for major type `major` (already shifted: 0 unsigned,
+// 64 byte string, 96 text string, 160 map) and argument v.
+fn header(major: U64, v: U64) -> Bytes<max=9> {
+  return if v < 24u64 then initial(major, v)
+    else if v < 256u64 then initial(major, 24u64) + octets.octet(v)
+    else if v < 65536u64 then initial(major, 25u64) + be2(v)
+    else if v < 4294967296u64 then initial(major, 26u64) + be4(v)
+    else initial(major, 27u64) + be8(v);
+}
+fn uint(v: U64) -> Bytes<max=9> { return header(0u64, v); }
+
+fn leafAtom(bytes: Bytes<max=4096>, lineBreaks: U64) -> Atom {
+  return b"\xa2\x65bytes" + header(64u64, len(bytes)) + bytes + b"\x6alineBreaks" + uint(lineBreaks);
+}
+fn branchAtom(fact: BranchFact) -> Atom {
+  return b"\xa3\x66height" + uint(fact.height) + b"\x6abyteLength" + uint(fact.byteLength)
+    + b"\x6alineBreaks" + uint(fact.lineBreaks);
+}
+fn headAtom(fact: HeadFact) -> Atom {
+  return b"\xa3\x68sequence" + uint(fact.sequence) + b"\x69lineCount" + uint(fact.lineCount)
+    + b"\x6abyteLength" + uint(fact.byteLength);
+}
+fn bufferAtom(fact: BufferFact) -> Atom {
+  return b"\xa2\x67version" + uint(fact.version) + b"\x69bufferKey" + fact.encodedKey;
+}
