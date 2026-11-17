@@ -50,3 +50,26 @@ test('every identity type id is the fixture profile id for its label', () => {
   }
   assert.deepEqual(new Map([...ids].sort()), new Map([...expected].sort()));
 });
+
+test('the jedit.text@2 lawpack is exactly the generated document', async () => {
+  const { ropeLawpackText } = await import('./rope-lawpack.mjs');
+  assert.equal(readFileSync(path.join(ropeSourceRoot, '..', '..', 'rope', 'edict.lawpack.json'), 'utf8'),
+    ropeLawpackText());
+});
+
+test('every fold and list bound in the rope source is an envelope constant', async () => {
+  const { envelope } = await import('./rope-lawpack.mjs');
+  const height = envelope.maxTreeHeight;
+  const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves,
+    envelope.maxArenaNodes]);
+  const allowedLists = new Set([height, envelope.maxArenaNodes, envelope.maxFreshNodes, envelope.maxClosureNodes, 256]);
+  for (const { file } of ropeModules) {
+    const source = checkedIn(file);
+    for (const [, bound] of source.matchAll(/fold\([^;]*?, (\d+)u64\)/g)) {
+      assert.ok(allowedFolds.has(Number(bound)), `${file} folds ${bound} times`);
+    }
+    for (const [, bound] of source.matchAll(/, max=(\d+)>/g)) {
+      assert.ok(allowedLists.has(Number(bound)), `${file} bounds a list at ${bound}`);
+    }
+  }
+});

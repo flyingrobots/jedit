@@ -6,7 +6,10 @@
   `edict/replace-range/src/rope/` adds generated octet tables and a
   canonical-CBOR atom codec with exact decoding, the schema-2 identity
   module, and the arena join law (branch, rotations, joinRight/joinLeft
-  folds), all as digest-pinned source modules. A spec
+  folds), prefix/suffix cut, reachable fresh nodes, fromBytes, the leaf
+  rewrite and the no-op comparison, all as digest-pinned source modules, plus
+  a generated `jedit.text@2` lawpack whose envelope constants a spec ties to
+  every fold and list bound. A spec
   checks the generated source and the module pins. The modules compile to
   Core and Target IR at Amblicit `7dbcbc23`. Execution waits on Echo's
   checked-integer provider and on Amblicit's 64 KiB provider-response cap.
