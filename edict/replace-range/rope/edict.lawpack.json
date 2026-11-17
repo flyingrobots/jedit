@@ -481,8 +481,8 @@
         },
         "budgets": {
           "jedit.text@2.replaceRangeBudget": {
-            "maxSteps": 4611686018427388000,
-            "maxAllocatedBytes": 4611686018427388000,
+            "maxSteps": 9007199254740991,
+            "maxAllocatedBytes": 16777216,
             "maxOutputBytes": 1048576
           }
         }
@@ -526,9 +526,9 @@
           },
           "maxInputBytes": 65536,
           "maxResultBytes": 4096,
-          "maxAllocatedBytes": 4611686018427388000,
+          "maxAllocatedBytes": 16777216,
           "budgetCeiling": {
-            "steps": 4611686018427388000,
+            "steps": 9007199254740991,
             "readBytes": 4194304,
             "writeBytes": 4194304
           },

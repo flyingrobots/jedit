@@ -101,6 +101,14 @@ flat-text source above. They are not yet part of the locked package chain.
   Its outcome code follows the documented check precedence. The closure now
   starts at the basis Head and follows root, left and right edges, so the
   Head row and an empty Head need no separate read.
+- `ReplaceRange.edict` is the effect intent, built by
+  `rope/edict.application.json`. It reads the Buffer atom and its
+  canonicalHead, checks the basis, the range order and the replacement,
+  reads the Head's anchor, and makes one closure read. It then maps the
+  plan's outcome code to its typed obstruction. On success it ensures every
+  fresh node and edge in bounded `for` loops, ensures the new Head with its
+  root and anchor edges, and retargets canonicalHead. It does not yet emit
+  the Buffer version bump; see below.
 - The codec parsers are total, reporting `ok`, so the selector and the fold
   steps can use them. The `decode*` functions are the failing forms.
 
@@ -154,6 +162,14 @@ growth was denied". The modules pin Echo main's `echo.dpo@2` profile
 `ReplaceAtom` needs Echo's attachment-value digest of the current Buffer
 atom (BLAKE3 over `echo.bridge.attachment-value.v1`). Source has no way to
 compute that digest yet, so the effect intent cannot bump `Buffer.version`.
+
+Built through `rope/edict.application.json` with Amblicit `738d3da7`, the
+whole program parses, resolves and type-checks. It then fails the budget
+check under the v1 schedule: 2,236,089,839,033 static steps and
+11,338,540,947,802 allocated bytes. That is a v1 reference figure only.
+Echo's effect-program configuration also caps `maxAllocatedBytes` at
+16 MiB. The v2 figure the amblicit#330 agent measured for these modules,
+26.5 MB, is above that cap.
 
 None of these modules has executed yet.
 

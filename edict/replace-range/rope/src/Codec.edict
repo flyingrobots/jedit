@@ -16,10 +16,9 @@ type Atom = Bytes<max=4352>;
 type LeafFact = { bytes: Atom, lineBreaks: U64 };
 type BranchFact = { byteLength: U64, lineBreaks: U64, height: U64 };
 type HeadFact = { byteLength: U64, lineCount: U64, sequence: U64 };
-// A Buffer atom is at most 4,096 bytes. Its key stays in encoded form: the
-// program never reads it, and rewriting the atom keeps it byte for byte.
-type BufferAtom = Bytes<max=4096>;
-type BufferFact = { version: U64, encodedKey: BufferAtom };
+// A Buffer's key stays in encoded form: the program never reads it, and
+// rewriting the atom keeps it byte for byte.
+type BufferFact = { version: U64, encodedKey: Atom };
 
 // ---- Encoding ----
 
@@ -59,7 +58,7 @@ fn headAtom(fact: HeadFact) -> Atom {
   return b"\xa3\x68sequence" + uint(fact.sequence) + b"\x69lineCount" + uint(fact.lineCount)
     + b"\x6abyteLength" + uint(fact.byteLength);
 }
-fn bufferAtom(fact: BufferFact) -> Bytes<max=4200> {
+fn bufferAtom(fact: BufferFact) -> Bytes<max=4400> {
   return b"\xa2\x67version" + uint(fact.version) + b"\x69bufferKey" + fact.encodedKey;
 }
 
@@ -165,7 +164,7 @@ fn decodeLeaf(a: Atom) -> LeafFact fails Malformed {
   return if parsed.ok then parsed.fact else fail Malformed;
 }
 
-fn decodeBuffer(a: BufferAtom) -> BufferFact fails Malformed {
+fn decodeBuffer(a: Atom) -> BufferFact fails Malformed {
   let version = opening(a, b"\xa2\x67version");
   let keyStart = literal(a, version.next, b"\x69bufferKey");
   let key = item(a, keyStart, 96u64);

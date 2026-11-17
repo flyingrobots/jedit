@@ -1,0 +1,36 @@
+{
+  "schema": "edict.application/v1",
+  "coordinate": "jedit.text.replace_range@2",
+  "sources": [
+    "src/ReplaceRange.edict",
+    "src/Plan.edict",
+    "src/Proposal.edict",
+    "src/Closure.edict",
+    "src/Build.edict",
+    "src/Rope.edict",
+    "src/Identity.edict",
+    "src/Codec.edict",
+    "src/Octets.edict"
+  ],
+  "lawpacks": [
+    {
+      "manifest": "vendor/jedit-text-2/manifest.cbor",
+      "exports": "vendor/jedit-text-2/exports.cbor",
+      "adapter": "vendor/jedit-text-2/adapter.cbor",
+      "targetConfiguration": "vendor/jedit-text-2/echo-operation-configuration.cbor"
+    }
+  ],
+  "target": {
+    "profile": "echo.dpo@2",
+    "providerPackage": ".build/echo-provider",
+    "pureIntrinsics": {
+      "catalog": "generated/resources/resource.target-intrinsics-2.cbor",
+      "required": [
+        { "coordinate": "echo.dpo@2.contentAddress", "contractVersion": "echo.content-address/v1" },
+        { "coordinate": "echo.dpo@2.contentEdgeId", "contractVersion": "echo.content-address/v1" },
+        { "coordinate": "echo.dpo@2.slotEdgeId", "contractVersion": "echo.content-address/v1" }
+      ]
+    }
+  },
+  "outputDirectory": ".build/application"
+}

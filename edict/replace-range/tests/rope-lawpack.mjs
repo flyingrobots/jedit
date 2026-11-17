@@ -13,6 +13,10 @@ const FIXTURES = path.join(ROOT, '..', '..', 'contracts', 'jedit', 'acceptance',
 const LAWPACK = 'jedit.text@2';
 const ADDRESSING = Object.freeze({ content: 0, mutable: 1 });
 const ID = 'Bytes<exact=32>';
+// Echo's effect-program configuration admits at most 16 MiB of allocation.
+const EFFECT_ALLOCATION_CEILING = 16777216;
+// A reference step ceiling, exact in JSON; the envelope budget is measured under v2.
+const REFERENCE_STEPS = Number.MAX_SAFE_INTEGER;
 
 /** The v1 envelope. Fold and list bounds in src/rope are literals equal to these. */
 export const envelope = Object.freeze({
@@ -182,7 +186,7 @@ export function ropeLawpack() {
         effectImplementations: implementations,
         // A v1-schedule reference ceiling only; the envelope budget is measured under v2 (amblicit#330).
         budgets: { [coordinate('replaceRangeBudget')]: {
-          maxSteps: 4611686018427387904, maxAllocatedBytes: 4611686018427387904, maxOutputBytes: 1048576,
+          maxSteps: REFERENCE_STEPS, maxAllocatedBytes: EFFECT_ALLOCATION_CEILING, maxOutputBytes: 1048576,
         } },
       }],
       verifier: { class: 'declarative', ruleset: { local: 'verifier-rules' } },
@@ -197,8 +201,8 @@ export function ropeLawpack() {
             footprintLaw: { $edictBytes: footprintLaw(profile).toString('hex') },
             graphReads: { maxEdgeScans: 64, maxClosureNodes: envelope.maxClosureNodes,
               maxClosureDepth: envelope.maxTreeHeight, closureSelector: 'select' },
-            maxInputBytes: 65536, maxResultBytes: 4096, maxAllocatedBytes: 4611686018427387904,
-            budgetCeiling: { steps: 4611686018427387904, readBytes: 4194304, writeBytes: 4194304 },
+            maxInputBytes: 65536, maxResultBytes: 4096, maxAllocatedBytes: EFFECT_ALLOCATION_CEILING,
+            budgetCeiling: { steps: REFERENCE_STEPS, readBytes: 4194304, writeBytes: 4194304 },
             authorityProfile: 'jedit.text.authority/v2',
           } },
         { name: 'verifier-rules', coordinate: 'jedit.text.verifier-rules/v2', output: 'verifier-rules.cbor',

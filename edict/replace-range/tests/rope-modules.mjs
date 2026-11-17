@@ -23,11 +23,19 @@ export const ropeModules = Object.freeze([
   Object.freeze({ file: 'Closure.edict', coordinate: 'jedit.text.closure@1' }),
   Object.freeze({ file: 'Proposal.edict', coordinate: 'jedit.text.proposal@1' }),
   Object.freeze({ file: 'Plan.edict', coordinate: 'jedit.text.plan@1' }),
+  Object.freeze({ file: 'ReplaceRange.edict', coordinate: 'jedit.text.replace_range@2' }),
 ]);
 
 export function sourceDigest(source) {
   const bytes = encode([...SOURCE_DIGEST_DOMAIN, Buffer.from(source)]);
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+}
+
+const LAWPACK = 'jedit.text@2';
+
+// The digest of the vendored jedit.text@2 lawpack manifest.
+function lawpackDigest(root) {
+  return readFileSync(path.join(root, '..', 'vendor', 'jedit-text-2', 'manifest.sha256'), 'utf8').trim();
 }
 
 const TARGET_PATTERN = /^use target (\S+) digest "sha256:[0-9a-f]{64}" as /;
@@ -48,6 +56,9 @@ export function pinnedRopeSources(root = ropeSourceRoot) {
       const target = TARGET_PATTERN.exec(line);
       if (target !== null && target[1] === profile.id) {
         return line.replace(/digest "sha256:[0-9a-f]{64}"/, `digest "${profile.digest}"`);
+      }
+      if (line.startsWith(`use lawpack ${LAWPACK} `)) {
+        return line.replace(/digest "sha256:[0-9a-f]{64}"/, `digest "${lawpackDigest(root)}"`);
       }
       const match = IMPORT_PATTERN.exec(line);
       if (match === null) return line;

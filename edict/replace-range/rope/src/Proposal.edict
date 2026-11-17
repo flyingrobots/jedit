@@ -9,10 +9,10 @@
 package jedit.text.proposal@1;
 
 use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
-use module jedit.text.codec@1 digest "sha256:b004264172fb301bb075184de6a62232df70dbaca0a2d9fd2b64f740d15e0f33" as codec;
+use module jedit.text.codec@1 digest "sha256:319a0656b75a485bb989e6d5f8fca2f04dc57d82379182cf13d12dcf5768075d" as codec;
 use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
 use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
-use module jedit.text.closure@1 digest "sha256:543d7a70824db9554fee2e77505c50161f42a4476aabbb67d0c736bb5b38404a" as closure;
+use module jedit.text.closure@1 digest "sha256:31456473aca5406b63af90a8dd3942a5dd0ab52cb1c4ebcc169c37f395e29802" as closure;
 
 type Id = Bytes<exact=32>;
 type Pieces = { replacement: Bytes<max=16384>, rewritten: Bytes<max=25088> };
