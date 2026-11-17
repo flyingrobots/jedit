@@ -59,7 +59,7 @@ precedence, and can see that none of it was computed by the code it judges.
 
 - The retained oracle
   `contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json`
-  (sha256 `89a15993…`, pinned by its sidecar) has 40 cases: 6 committable and 34
+  (sha256 `c818acab…`, pinned by its sidecar) has 40 cases: 6 committable and 34
   obstructed. Its physical expectations are schema-1 only.
 - DL-0159 at `5f8c44b0` maps those 40 ids to 28 `carry` and 12 `counterpart`
   obligations, all unproved, and owns their decisions.
