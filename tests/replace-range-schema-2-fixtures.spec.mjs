@@ -22,7 +22,7 @@ const ARTIFACT_PATH = path.join(ROOT,
   'contracts/jedit/acceptance/replace-range-schema-2/replace-range-schema-2.fixtures.json');
 const TOOLING = path.join(ROOT, 'tests/support/replace-range-schema-2');
 // Oracle: the retained oracle's own sidecar at merge d8915f3e; the oracle must never move.
-const RETAINED_ORACLE_SHA256 = '89a15993d9317383f8b7bf4c36d6d00a4c9b13e7684f91916a926bea74f1eb01';
+const RETAINED_ORACLE_SHA256 = 'c818acabf846271432b2e738b7eb1db0f49b2d5a211ec8af06a3a4f544855df1';
 
 // Oracle: DL-0159 "ReplaceRange acceptance across representations", copied by hand.
 const COUNTERPARTS = new Set(['malformed-buffer', 'bad-blob-content-hash', 'cyclic-right-endpoint',

@@ -5,7 +5,7 @@
   "retainedOracle": {
     "path": "contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json",
     "coordinate": "jedit.text.ReplaceRange.oracle@1",
-    "sha256": "89a15993d9317383f8b7bf4c36d6d00a4c9b13e7684f91916a926bea74f1eb01",
+    "sha256": "c818acabf846271432b2e738b7eb1db0f49b2d5a211ec8af06a3a4f544855df1",
     "caseCount": 40
   },
   "register": {

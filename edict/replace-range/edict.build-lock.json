@@ -2,10 +2,10 @@
   "schema": "jedit.edict-build-lock/v1",
   "applicationCoordinate": "jedit.text.replace_range@1",
   "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
-  "toolchainLockSha256": "9ed519fcba6348ec3c3c2dc4357283707792b2cd8fa86bca6e2b5c91bc7eeded",
+  "toolchainLockSha256": "d9e61922579d281ddc207cadf5bfa7a5e063815ffec11ae9b4e5b6efed654dcd",
   "sourceClosure": {
     "schema": "jedit.edict-source-closure/v1",
-    "digest": "sha256:85eb1904dca11d4c24ff346bbd9aa294fb12907d8ea53357eea63124d2171350",
+    "digest": "sha256:500fa2db55ed7a6f47d774d665ea450b55b24aacaa5178005d1bd4cdee2f1753",
     "files": [
       {
         "path": "application/edict.application.json",
@@ -13,15 +13,15 @@
       },
       {
         "path": "application/edict.lawpack.json",
-        "sha256": "cf8f19b72290c3b04532d3b33e1c7ab1189c13f129b1e6035b673fe68481cf15"
+        "sha256": "b5e3117561b7fe284ec5e3a1fd119bb927c76308f80ad6425d23a63d9f0d2caa"
       },
       {
         "path": "application/edict.toolchain-lock.json",
-        "sha256": "9ed519fcba6348ec3c3c2dc4357283707792b2cd8fa86bca6e2b5c91bc7eeded"
+        "sha256": "d9e61922579d281ddc207cadf5bfa7a5e063815ffec11ae9b4e5b6efed654dcd"
       },
       {
         "path": "application/src/ReplaceRange.edict",
-        "sha256": "47e76e0c3fcfb0505b656eed0413e6987a537ec79452f8a06a1ad05b4c6744e1"
+        "sha256": "eacab2235ffe8ac616fda8f2de4c15473f959064a7123c48412332b3e475a1e2"
       },
       {
         "path": "application/tests/assert-build-output.mjs",
@@ -45,11 +45,11 @@
       },
       {
         "path": "application/tests/runtime/Cargo.toml",
-        "sha256": "8f9b4cae837885255409bae1378c78bc42aca0a59100c3a98c45bce9704869f3"
+        "sha256": "fcfcde3f1f60c863cd8facfbd442e7fc9da19a403418608ebe693ec81fb8b479"
       },
       {
         "path": "application/tests/runtime/Cargo.lock",
-        "sha256": "aa688a8c6d470d412d339d970c9fd482922f144c466c880f84e12d16126e8594"
+        "sha256": "b117028b49f9a0ad7dc26b8c4fd4f9cb1837640630bb3d58e2a4c1272fa4d909"
       },
       {
         "path": "application/tests/runtime/compiled_boundary.rs",
@@ -65,7 +65,7 @@
       },
       {
         "path": "application/vendor/jedit-text/edict.lawpack-output.json",
-        "sha256": "450769b2362bf95d2f46550f93131f5836792dd9e5fb8bc251bd4e2b73a6c80b"
+        "sha256": "e209786128ae974522c037a9de0205fac3c2fe56255ff21be4e60d68e593d2a4"
       },
       {
         "path": "application/vendor/jedit-text/exports.cbor",
@@ -77,11 +77,11 @@
       },
       {
         "path": "application/vendor/jedit-text/manifest.cbor",
-        "sha256": "4cba21c9edbb57c83c32f27507a174ccb050fee09618c6ea19a8db0c756d090f"
+        "sha256": "3c7124c5ae2eaa4e1bf9641c20e85fea7b5585f2a1911aa9f2eb79f0bef9b06e"
       },
       {
         "path": "application/vendor/jedit-text/manifest.sha256",
-        "sha256": "0a311988ff5b66c22c5cb467a37733916767d659884cbbf89bf1597a69abf3f5"
+        "sha256": "c12ececf142436caede819846368c9b0d20dd2128d94ceae584b341b09ea9c9d"
       },
       {
         "path": "project/.github/workflows/ci.yml",
@@ -99,22 +99,22 @@
   },
   "lawpackRelease": {
     "coordinate": "jedit.text@1",
-    "digest": "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b"
+    "digest": "sha256:7858b6a5f525374f22d0aa65e1384f618fa63d2800f96145fd4635d783a430b5"
   },
   "provider": {
     "coordinate": "echo.edict-provider@1",
-    "digest": "sha256:17cca54e166fe42c6dfbcb76f4a0d9c8ff3bc873e8dd2ac1d15bcf48b3ac183e"
+    "digest": "sha256:8ccd667843add54dd3bb6ef75e06e2250154cbe2641d72d8f73172f60e781bee"
   },
   "artifacts": {
     "core": {
       "coordinate": "jedit.text.replace_range@1",
       "domain": "edict.core.module/v1",
-      "digest": "sha256:4a2302d8137683d609056fd55bff53ee8d27ee7b2eda248d15d3d56f78957972"
+      "digest": "sha256:749c6fc536c8c58605fdb182dcbc2955af773de488d0d0470826a3bfb956da52"
     },
     "targetIr": {
       "coordinate": "echo.span-ir/v1",
       "domain": "edict.target-ir.artifact/v1",
-      "digest": "sha256:984f4bf77556bb8f0af03b3572633c9f92cf9ba767b3364714916e1d3b61806a"
+      "digest": "sha256:7f17db037faa3c990fca68b3dc75b912e4488d595e7c9456806e61355452f8dd"
     },
     "resultProjection": {
       "coordinate": "jedit.text.replace_range@1.replaceRange",
@@ -124,25 +124,25 @@
     "executablePackage": {
       "coordinate": "executable-operation-package.echo",
       "domain": "echo.operation-package/v1",
-      "digest": "sha256:7502a7a1d6821e56ddb8415f6b3e578e1ab09b14e02e3ce27afffd8e5bc2fb92",
-      "rawSha256": "921a9539c96af537d4086c8a6199086d5d652a54a37dd4d6dcf86c3eedfc5e9b"
+      "digest": "sha256:4baaaf40b2ac67c329c4300562b428eaa08a8f0e7b1ab4034a43a864361ba3fe",
+      "rawSha256": "2c05bb769c276694192042e89f8c82256c97fe5d542ec20658605d03ab3e76b3"
     },
     "verificationReportArtifact": {
       "coordinate": "verifier-report.echo-operation",
       "domain": "echo.operation-package-verifier-report/v1",
-      "digest": "sha256:fc04cbb5dd1eebc7ec4e93048078447ea9501c2396b0d7caa63a405743ac08eb",
-      "rawSha256": "7d45df74e86919f49f87d8ab3c739b8fdd3e20c3ee4df9ccb3655fa205070f74"
+      "digest": "sha256:adb3cc34b7e5ab370811169a90acb4f79ed035240e1aa947c708c0d003794a6b",
+      "rawSha256": "003c472a835f3cad28822b1a0d1599b745c86ccc0c8d568c66407f102b042986"
     },
     "verificationReport": {
       "coordinate": "jedit.edict-verification-evidence/v1",
       "domain": "jedit.edict-verification-evidence/v1",
-      "digest": "sha256:bc3a55e07c7bcfd64b38f854cb11cad8674a85106df85673dc0a5ee5d3e997db",
-      "rawSha256": "2684954a352e70204021e83d046c8669357a94e57bd71c6bd1622f1e131a295b"
+      "digest": "sha256:a5842e59e26d1c5c30b15a7d7eebe82294f06ff39e9fe45a7c0b2ec7dead8237",
+      "rawSha256": "3b815614454cd10751b8975d1b0fbf2595cdf00d3dc98c069f97e1304d5e1c73"
     },
     "executableSubject": {
       "coordinate": "echo.executable-subject/v1",
       "domain": "echo.executable-subject/v1",
-      "digest": "sha256:201239ec554087ab4ea50a2e1449691886e52e12b4edbf5a3d7610814c8f3273"
+      "digest": "sha256:f22d88305596d947a0abe3d28ebb7703f3d8bff4e336bdc642ccf3a29d3ff126"
     }
   }
 }
