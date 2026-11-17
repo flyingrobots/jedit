@@ -30,13 +30,25 @@ export function sourceDigest(source) {
   return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 }
 
+const TARGET_PATTERN = /^use target (\S+) digest "sha256:[0-9a-f]{64}" as /;
+
+// The echo.dpo@2 profile the lawpack adapter accepts; every `use target` follows it.
+function targetProfile(root) {
+  return JSON.parse(readFileSync(path.join(root, '..', 'echo-dpo-2-profile.json'), 'utf8')).profile;
+}
+
 /** Returns every module's source with each import pinned to its dependency's digest. */
 export function pinnedRopeSources(root = ropeSourceRoot) {
+  const profile = targetProfile(root);
   const digests = new Map();
   const sources = new Map();
   for (const { file, coordinate } of ropeModules) {
     const lines = readFileSync(path.join(root, file), 'utf8').split('\n');
     const pinned = lines.map((line) => {
+      const target = TARGET_PATTERN.exec(line);
+      if (target !== null && target[1] === profile.id) {
+        return line.replace(/digest "sha256:[0-9a-f]{64}"/, `digest "${profile.digest}"`);
+      }
       const match = IMPORT_PATTERN.exec(line);
       if (match === null) return line;
       const digest = digests.get(match[1]);

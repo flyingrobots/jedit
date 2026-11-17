@@ -79,3 +79,13 @@ test('every fold and list bound in the rope source is an envelope constant', asy
     }
   }
 });
+
+test('every rope module targets the echo.dpo@2 profile the lawpack adapter pins', () => {
+  const pins = JSON.parse(readFileSync(path.join(ropeSourceRoot, '..', 'echo-dpo-2-profile.json'), 'utf8'));
+  for (const { file } of ropeModules) {
+    for (const [, id, digest] of checkedIn(file).matchAll(/^use target (\S+) digest "([^"]+)" as /gm)) {
+      assert.equal(id, pins.profile.id, `${file} targets ${id}`);
+      assert.equal(digest, pins.profile.digest, `${file} pins a stale ${id} digest`);
+    }
+  }
+});
