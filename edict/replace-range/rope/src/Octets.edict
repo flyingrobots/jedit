@@ -3,128 +3,1030 @@ package jedit.text.octets@1;
 
 // The one-octet byte string whose value is v, or empty when v is not an octet.
 fn octet(v: U64) -> Bytes<max=1> {
-  let table: List<Bytes<max=1>, max=256> = [
-    b"\x00", b"\x01", b"\x02", b"\x03", b"\x04", b"\x05", b"\x06", b"\x07", b"\x08", b"\x09", b"\x0a", b"\x0b", b"\x0c", b"\x0d", b"\x0e", b"\x0f",
-    b"\x10", b"\x11", b"\x12", b"\x13", b"\x14", b"\x15", b"\x16", b"\x17", b"\x18", b"\x19", b"\x1a", b"\x1b", b"\x1c", b"\x1d", b"\x1e", b"\x1f",
-    b"\x20", b"\x21", b"\x22", b"\x23", b"\x24", b"\x25", b"\x26", b"\x27", b"\x28", b"\x29", b"\x2a", b"\x2b", b"\x2c", b"\x2d", b"\x2e", b"\x2f",
-    b"\x30", b"\x31", b"\x32", b"\x33", b"\x34", b"\x35", b"\x36", b"\x37", b"\x38", b"\x39", b"\x3a", b"\x3b", b"\x3c", b"\x3d", b"\x3e", b"\x3f",
-    b"\x40", b"\x41", b"\x42", b"\x43", b"\x44", b"\x45", b"\x46", b"\x47", b"\x48", b"\x49", b"\x4a", b"\x4b", b"\x4c", b"\x4d", b"\x4e", b"\x4f",
-    b"\x50", b"\x51", b"\x52", b"\x53", b"\x54", b"\x55", b"\x56", b"\x57", b"\x58", b"\x59", b"\x5a", b"\x5b", b"\x5c", b"\x5d", b"\x5e", b"\x5f",
-    b"\x60", b"\x61", b"\x62", b"\x63", b"\x64", b"\x65", b"\x66", b"\x67", b"\x68", b"\x69", b"\x6a", b"\x6b", b"\x6c", b"\x6d", b"\x6e", b"\x6f",
-    b"\x70", b"\x71", b"\x72", b"\x73", b"\x74", b"\x75", b"\x76", b"\x77", b"\x78", b"\x79", b"\x7a", b"\x7b", b"\x7c", b"\x7d", b"\x7e", b"\x7f",
-    b"\x80", b"\x81", b"\x82", b"\x83", b"\x84", b"\x85", b"\x86", b"\x87", b"\x88", b"\x89", b"\x8a", b"\x8b", b"\x8c", b"\x8d", b"\x8e", b"\x8f",
-    b"\x90", b"\x91", b"\x92", b"\x93", b"\x94", b"\x95", b"\x96", b"\x97", b"\x98", b"\x99", b"\x9a", b"\x9b", b"\x9c", b"\x9d", b"\x9e", b"\x9f",
-    b"\xa0", b"\xa1", b"\xa2", b"\xa3", b"\xa4", b"\xa5", b"\xa6", b"\xa7", b"\xa8", b"\xa9", b"\xaa", b"\xab", b"\xac", b"\xad", b"\xae", b"\xaf",
-    b"\xb0", b"\xb1", b"\xb2", b"\xb3", b"\xb4", b"\xb5", b"\xb6", b"\xb7", b"\xb8", b"\xb9", b"\xba", b"\xbb", b"\xbc", b"\xbd", b"\xbe", b"\xbf",
-    b"\xc0", b"\xc1", b"\xc2", b"\xc3", b"\xc4", b"\xc5", b"\xc6", b"\xc7", b"\xc8", b"\xc9", b"\xca", b"\xcb", b"\xcc", b"\xcd", b"\xce", b"\xcf",
-    b"\xd0", b"\xd1", b"\xd2", b"\xd3", b"\xd4", b"\xd5", b"\xd6", b"\xd7", b"\xd8", b"\xd9", b"\xda", b"\xdb", b"\xdc", b"\xdd", b"\xde", b"\xdf",
-    b"\xe0", b"\xe1", b"\xe2", b"\xe3", b"\xe4", b"\xe5", b"\xe6", b"\xe7", b"\xe8", b"\xe9", b"\xea", b"\xeb", b"\xec", b"\xed", b"\xee", b"\xef",
-    b"\xf0", b"\xf1", b"\xf2", b"\xf3", b"\xf4", b"\xf5", b"\xf6", b"\xf7", b"\xf8", b"\xf9", b"\xfa", b"\xfb", b"\xfc", b"\xfd", b"\xfe", b"\xff",
-  ];
-  return if v < listLen(table) then listAt(table, v) else b"";
-}
-
-// The octet whose value is v, or 255 when v is not an octet.
-fn bound(v: U64) -> U8 {
-  let table: List<U8, max=256> = [
-    0u8, 1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8, 9u8, 10u8, 11u8, 12u8, 13u8, 14u8, 15u8,
-    16u8, 17u8, 18u8, 19u8, 20u8, 21u8, 22u8, 23u8, 24u8, 25u8, 26u8, 27u8, 28u8, 29u8, 30u8, 31u8,
-    32u8, 33u8, 34u8, 35u8, 36u8, 37u8, 38u8, 39u8, 40u8, 41u8, 42u8, 43u8, 44u8, 45u8, 46u8, 47u8,
-    48u8, 49u8, 50u8, 51u8, 52u8, 53u8, 54u8, 55u8, 56u8, 57u8, 58u8, 59u8, 60u8, 61u8, 62u8, 63u8,
-    64u8, 65u8, 66u8, 67u8, 68u8, 69u8, 70u8, 71u8, 72u8, 73u8, 74u8, 75u8, 76u8, 77u8, 78u8, 79u8,
-    80u8, 81u8, 82u8, 83u8, 84u8, 85u8, 86u8, 87u8, 88u8, 89u8, 90u8, 91u8, 92u8, 93u8, 94u8, 95u8,
-    96u8, 97u8, 98u8, 99u8, 100u8, 101u8, 102u8, 103u8, 104u8, 105u8, 106u8, 107u8, 108u8, 109u8, 110u8, 111u8,
-    112u8, 113u8, 114u8, 115u8, 116u8, 117u8, 118u8, 119u8, 120u8, 121u8, 122u8, 123u8, 124u8, 125u8, 126u8, 127u8,
-    128u8, 129u8, 130u8, 131u8, 132u8, 133u8, 134u8, 135u8, 136u8, 137u8, 138u8, 139u8, 140u8, 141u8, 142u8, 143u8,
-    144u8, 145u8, 146u8, 147u8, 148u8, 149u8, 150u8, 151u8, 152u8, 153u8, 154u8, 155u8, 156u8, 157u8, 158u8, 159u8,
-    160u8, 161u8, 162u8, 163u8, 164u8, 165u8, 166u8, 167u8, 168u8, 169u8, 170u8, 171u8, 172u8, 173u8, 174u8, 175u8,
-    176u8, 177u8, 178u8, 179u8, 180u8, 181u8, 182u8, 183u8, 184u8, 185u8, 186u8, 187u8, 188u8, 189u8, 190u8, 191u8,
-    192u8, 193u8, 194u8, 195u8, 196u8, 197u8, 198u8, 199u8, 200u8, 201u8, 202u8, 203u8, 204u8, 205u8, 206u8, 207u8,
-    208u8, 209u8, 210u8, 211u8, 212u8, 213u8, 214u8, 215u8, 216u8, 217u8, 218u8, 219u8, 220u8, 221u8, 222u8, 223u8,
-    224u8, 225u8, 226u8, 227u8, 228u8, 229u8, 230u8, 231u8, 232u8, 233u8, 234u8, 235u8, 236u8, 237u8, 238u8, 239u8,
-    240u8, 241u8, 242u8, 243u8, 244u8, 245u8, 246u8, 247u8, 248u8, 249u8, 250u8, 251u8, 252u8, 253u8, 254u8, 255u8,
-  ];
-  return if v < listLen(table) then listAt(table, v) else 255u8;
-}
-
-// Whether b is below the octet base + offset.
-fn below(b: U8, base: U64, offset: U64) -> Bool {
-  return base <= 240u64 && offset <= 15u64 && b < bound(base + offset);
-}
-
-// Sixteen times the high nibble of b.
-fn highBase(b: U8) -> U64 {
-  return if b < 128u8
-    then if b < 64u8
-      then if b < 32u8
-        then if b < 16u8
-          then 0u64
-          else 16u64
-        else if b < 48u8
-          then 32u64
-          else 48u64
-      else if b < 96u8
-        then if b < 80u8
-          then 64u64
-          else 80u64
-        else if b < 112u8
-          then 96u64
-          else 112u64
-    else if b < 192u8
-      then if b < 160u8
-        then if b < 144u8
-          then 128u64
-          else 144u64
-        else if b < 176u8
-          then 160u64
-          else 176u64
-      else if b < 224u8
-        then if b < 208u8
-          then 192u64
-          else 208u64
-        else if b < 240u8
-          then 224u64
-          else 240u64;
-}
-
-// The low nibble of b, given base = highBase(b).
-fn lowOffset(b: U8, base: U64) -> U64 {
-  return if below(b, base, 8u64)
-    then if below(b, base, 4u64)
-      then if below(b, base, 2u64)
-        then if below(b, base, 1u64)
-          then 0u64
-          else 1u64
-        else if below(b, base, 3u64)
-          then 2u64
-          else 3u64
-      else if below(b, base, 6u64)
-        then if below(b, base, 5u64)
-          then 4u64
-          else 5u64
-        else if below(b, base, 7u64)
-          then 6u64
-          else 7u64
-    else if below(b, base, 12u64)
-      then if below(b, base, 10u64)
-        then if below(b, base, 9u64)
-          then 8u64
-          else 9u64
-        else if below(b, base, 11u64)
-          then 10u64
-          else 11u64
-      else if below(b, base, 14u64)
-        then if below(b, base, 13u64)
-          then 12u64
-          else 13u64
-        else if below(b, base, 15u64)
-          then 14u64
-          else 15u64;
+  return if 255u64 < v then b"" else if v < 128u64
+    then if v < 64u64
+      then if v < 32u64
+        then if v < 16u64
+          then if v < 8u64
+            then if v < 4u64
+              then if v < 2u64
+                then if v < 1u64
+                  then b"\x00"
+                  else b"\x01"
+                else if v < 3u64
+                  then b"\x02"
+                  else b"\x03"
+              else if v < 6u64
+                then if v < 5u64
+                  then b"\x04"
+                  else b"\x05"
+                else if v < 7u64
+                  then b"\x06"
+                  else b"\x07"
+            else if v < 12u64
+              then if v < 10u64
+                then if v < 9u64
+                  then b"\x08"
+                  else b"\x09"
+                else if v < 11u64
+                  then b"\x0a"
+                  else b"\x0b"
+              else if v < 14u64
+                then if v < 13u64
+                  then b"\x0c"
+                  else b"\x0d"
+                else if v < 15u64
+                  then b"\x0e"
+                  else b"\x0f"
+          else if v < 24u64
+            then if v < 20u64
+              then if v < 18u64
+                then if v < 17u64
+                  then b"\x10"
+                  else b"\x11"
+                else if v < 19u64
+                  then b"\x12"
+                  else b"\x13"
+              else if v < 22u64
+                then if v < 21u64
+                  then b"\x14"
+                  else b"\x15"
+                else if v < 23u64
+                  then b"\x16"
+                  else b"\x17"
+            else if v < 28u64
+              then if v < 26u64
+                then if v < 25u64
+                  then b"\x18"
+                  else b"\x19"
+                else if v < 27u64
+                  then b"\x1a"
+                  else b"\x1b"
+              else if v < 30u64
+                then if v < 29u64
+                  then b"\x1c"
+                  else b"\x1d"
+                else if v < 31u64
+                  then b"\x1e"
+                  else b"\x1f"
+        else if v < 48u64
+          then if v < 40u64
+            then if v < 36u64
+              then if v < 34u64
+                then if v < 33u64
+                  then b"\x20"
+                  else b"\x21"
+                else if v < 35u64
+                  then b"\x22"
+                  else b"\x23"
+              else if v < 38u64
+                then if v < 37u64
+                  then b"\x24"
+                  else b"\x25"
+                else if v < 39u64
+                  then b"\x26"
+                  else b"\x27"
+            else if v < 44u64
+              then if v < 42u64
+                then if v < 41u64
+                  then b"\x28"
+                  else b"\x29"
+                else if v < 43u64
+                  then b"\x2a"
+                  else b"\x2b"
+              else if v < 46u64
+                then if v < 45u64
+                  then b"\x2c"
+                  else b"\x2d"
+                else if v < 47u64
+                  then b"\x2e"
+                  else b"\x2f"
+          else if v < 56u64
+            then if v < 52u64
+              then if v < 50u64
+                then if v < 49u64
+                  then b"\x30"
+                  else b"\x31"
+                else if v < 51u64
+                  then b"\x32"
+                  else b"\x33"
+              else if v < 54u64
+                then if v < 53u64
+                  then b"\x34"
+                  else b"\x35"
+                else if v < 55u64
+                  then b"\x36"
+                  else b"\x37"
+            else if v < 60u64
+              then if v < 58u64
+                then if v < 57u64
+                  then b"\x38"
+                  else b"\x39"
+                else if v < 59u64
+                  then b"\x3a"
+                  else b"\x3b"
+              else if v < 62u64
+                then if v < 61u64
+                  then b"\x3c"
+                  else b"\x3d"
+                else if v < 63u64
+                  then b"\x3e"
+                  else b"\x3f"
+      else if v < 96u64
+        then if v < 80u64
+          then if v < 72u64
+            then if v < 68u64
+              then if v < 66u64
+                then if v < 65u64
+                  then b"\x40"
+                  else b"\x41"
+                else if v < 67u64
+                  then b"\x42"
+                  else b"\x43"
+              else if v < 70u64
+                then if v < 69u64
+                  then b"\x44"
+                  else b"\x45"
+                else if v < 71u64
+                  then b"\x46"
+                  else b"\x47"
+            else if v < 76u64
+              then if v < 74u64
+                then if v < 73u64
+                  then b"\x48"
+                  else b"\x49"
+                else if v < 75u64
+                  then b"\x4a"
+                  else b"\x4b"
+              else if v < 78u64
+                then if v < 77u64
+                  then b"\x4c"
+                  else b"\x4d"
+                else if v < 79u64
+                  then b"\x4e"
+                  else b"\x4f"
+          else if v < 88u64
+            then if v < 84u64
+              then if v < 82u64
+                then if v < 81u64
+                  then b"\x50"
+                  else b"\x51"
+                else if v < 83u64
+                  then b"\x52"
+                  else b"\x53"
+              else if v < 86u64
+                then if v < 85u64
+                  then b"\x54"
+                  else b"\x55"
+                else if v < 87u64
+                  then b"\x56"
+                  else b"\x57"
+            else if v < 92u64
+              then if v < 90u64
+                then if v < 89u64
+                  then b"\x58"
+                  else b"\x59"
+                else if v < 91u64
+                  then b"\x5a"
+                  else b"\x5b"
+              else if v < 94u64
+                then if v < 93u64
+                  then b"\x5c"
+                  else b"\x5d"
+                else if v < 95u64
+                  then b"\x5e"
+                  else b"\x5f"
+        else if v < 112u64
+          then if v < 104u64
+            then if v < 100u64
+              then if v < 98u64
+                then if v < 97u64
+                  then b"\x60"
+                  else b"\x61"
+                else if v < 99u64
+                  then b"\x62"
+                  else b"\x63"
+              else if v < 102u64
+                then if v < 101u64
+                  then b"\x64"
+                  else b"\x65"
+                else if v < 103u64
+                  then b"\x66"
+                  else b"\x67"
+            else if v < 108u64
+              then if v < 106u64
+                then if v < 105u64
+                  then b"\x68"
+                  else b"\x69"
+                else if v < 107u64
+                  then b"\x6a"
+                  else b"\x6b"
+              else if v < 110u64
+                then if v < 109u64
+                  then b"\x6c"
+                  else b"\x6d"
+                else if v < 111u64
+                  then b"\x6e"
+                  else b"\x6f"
+          else if v < 120u64
+            then if v < 116u64
+              then if v < 114u64
+                then if v < 113u64
+                  then b"\x70"
+                  else b"\x71"
+                else if v < 115u64
+                  then b"\x72"
+                  else b"\x73"
+              else if v < 118u64
+                then if v < 117u64
+                  then b"\x74"
+                  else b"\x75"
+                else if v < 119u64
+                  then b"\x76"
+                  else b"\x77"
+            else if v < 124u64
+              then if v < 122u64
+                then if v < 121u64
+                  then b"\x78"
+                  else b"\x79"
+                else if v < 123u64
+                  then b"\x7a"
+                  else b"\x7b"
+              else if v < 126u64
+                then if v < 125u64
+                  then b"\x7c"
+                  else b"\x7d"
+                else if v < 127u64
+                  then b"\x7e"
+                  else b"\x7f"
+    else if v < 192u64
+      then if v < 160u64
+        then if v < 144u64
+          then if v < 136u64
+            then if v < 132u64
+              then if v < 130u64
+                then if v < 129u64
+                  then b"\x80"
+                  else b"\x81"
+                else if v < 131u64
+                  then b"\x82"
+                  else b"\x83"
+              else if v < 134u64
+                then if v < 133u64
+                  then b"\x84"
+                  else b"\x85"
+                else if v < 135u64
+                  then b"\x86"
+                  else b"\x87"
+            else if v < 140u64
+              then if v < 138u64
+                then if v < 137u64
+                  then b"\x88"
+                  else b"\x89"
+                else if v < 139u64
+                  then b"\x8a"
+                  else b"\x8b"
+              else if v < 142u64
+                then if v < 141u64
+                  then b"\x8c"
+                  else b"\x8d"
+                else if v < 143u64
+                  then b"\x8e"
+                  else b"\x8f"
+          else if v < 152u64
+            then if v < 148u64
+              then if v < 146u64
+                then if v < 145u64
+                  then b"\x90"
+                  else b"\x91"
+                else if v < 147u64
+                  then b"\x92"
+                  else b"\x93"
+              else if v < 150u64
+                then if v < 149u64
+                  then b"\x94"
+                  else b"\x95"
+                else if v < 151u64
+                  then b"\x96"
+                  else b"\x97"
+            else if v < 156u64
+              then if v < 154u64
+                then if v < 153u64
+                  then b"\x98"
+                  else b"\x99"
+                else if v < 155u64
+                  then b"\x9a"
+                  else b"\x9b"
+              else if v < 158u64
+                then if v < 157u64
+                  then b"\x9c"
+                  else b"\x9d"
+                else if v < 159u64
+                  then b"\x9e"
+                  else b"\x9f"
+        else if v < 176u64
+          then if v < 168u64
+            then if v < 164u64
+              then if v < 162u64
+                then if v < 161u64
+                  then b"\xa0"
+                  else b"\xa1"
+                else if v < 163u64
+                  then b"\xa2"
+                  else b"\xa3"
+              else if v < 166u64
+                then if v < 165u64
+                  then b"\xa4"
+                  else b"\xa5"
+                else if v < 167u64
+                  then b"\xa6"
+                  else b"\xa7"
+            else if v < 172u64
+              then if v < 170u64
+                then if v < 169u64
+                  then b"\xa8"
+                  else b"\xa9"
+                else if v < 171u64
+                  then b"\xaa"
+                  else b"\xab"
+              else if v < 174u64
+                then if v < 173u64
+                  then b"\xac"
+                  else b"\xad"
+                else if v < 175u64
+                  then b"\xae"
+                  else b"\xaf"
+          else if v < 184u64
+            then if v < 180u64
+              then if v < 178u64
+                then if v < 177u64
+                  then b"\xb0"
+                  else b"\xb1"
+                else if v < 179u64
+                  then b"\xb2"
+                  else b"\xb3"
+              else if v < 182u64
+                then if v < 181u64
+                  then b"\xb4"
+                  else b"\xb5"
+                else if v < 183u64
+                  then b"\xb6"
+                  else b"\xb7"
+            else if v < 188u64
+              then if v < 186u64
+                then if v < 185u64
+                  then b"\xb8"
+                  else b"\xb9"
+                else if v < 187u64
+                  then b"\xba"
+                  else b"\xbb"
+              else if v < 190u64
+                then if v < 189u64
+                  then b"\xbc"
+                  else b"\xbd"
+                else if v < 191u64
+                  then b"\xbe"
+                  else b"\xbf"
+      else if v < 224u64
+        then if v < 208u64
+          then if v < 200u64
+            then if v < 196u64
+              then if v < 194u64
+                then if v < 193u64
+                  then b"\xc0"
+                  else b"\xc1"
+                else if v < 195u64
+                  then b"\xc2"
+                  else b"\xc3"
+              else if v < 198u64
+                then if v < 197u64
+                  then b"\xc4"
+                  else b"\xc5"
+                else if v < 199u64
+                  then b"\xc6"
+                  else b"\xc7"
+            else if v < 204u64
+              then if v < 202u64
+                then if v < 201u64
+                  then b"\xc8"
+                  else b"\xc9"
+                else if v < 203u64
+                  then b"\xca"
+                  else b"\xcb"
+              else if v < 206u64
+                then if v < 205u64
+                  then b"\xcc"
+                  else b"\xcd"
+                else if v < 207u64
+                  then b"\xce"
+                  else b"\xcf"
+          else if v < 216u64
+            then if v < 212u64
+              then if v < 210u64
+                then if v < 209u64
+                  then b"\xd0"
+                  else b"\xd1"
+                else if v < 211u64
+                  then b"\xd2"
+                  else b"\xd3"
+              else if v < 214u64
+                then if v < 213u64
+                  then b"\xd4"
+                  else b"\xd5"
+                else if v < 215u64
+                  then b"\xd6"
+                  else b"\xd7"
+            else if v < 220u64
+              then if v < 218u64
+                then if v < 217u64
+                  then b"\xd8"
+                  else b"\xd9"
+                else if v < 219u64
+                  then b"\xda"
+                  else b"\xdb"
+              else if v < 222u64
+                then if v < 221u64
+                  then b"\xdc"
+                  else b"\xdd"
+                else if v < 223u64
+                  then b"\xde"
+                  else b"\xdf"
+        else if v < 240u64
+          then if v < 232u64
+            then if v < 228u64
+              then if v < 226u64
+                then if v < 225u64
+                  then b"\xe0"
+                  else b"\xe1"
+                else if v < 227u64
+                  then b"\xe2"
+                  else b"\xe3"
+              else if v < 230u64
+                then if v < 229u64
+                  then b"\xe4"
+                  else b"\xe5"
+                else if v < 231u64
+                  then b"\xe6"
+                  else b"\xe7"
+            else if v < 236u64
+              then if v < 234u64
+                then if v < 233u64
+                  then b"\xe8"
+                  else b"\xe9"
+                else if v < 235u64
+                  then b"\xea"
+                  else b"\xeb"
+              else if v < 238u64
+                then if v < 237u64
+                  then b"\xec"
+                  else b"\xed"
+                else if v < 239u64
+                  then b"\xee"
+                  else b"\xef"
+          else if v < 248u64
+            then if v < 244u64
+              then if v < 242u64
+                then if v < 241u64
+                  then b"\xf0"
+                  else b"\xf1"
+                else if v < 243u64
+                  then b"\xf2"
+                  else b"\xf3"
+              else if v < 246u64
+                then if v < 245u64
+                  then b"\xf4"
+                  else b"\xf5"
+                else if v < 247u64
+                  then b"\xf6"
+                  else b"\xf7"
+            else if v < 252u64
+              then if v < 250u64
+                then if v < 249u64
+                  then b"\xf8"
+                  else b"\xf9"
+                else if v < 251u64
+                  then b"\xfa"
+                  else b"\xfb"
+              else if v < 254u64
+                then if v < 253u64
+                  then b"\xfc"
+                  else b"\xfd"
+                else if v < 255u64
+                  then b"\xfe"
+                  else b"\xff";
 }
 
 // The value of one octet as a U64.
 fn widen(b: U8) -> U64 {
-  let base = highBase(b);
-  let offset = lowOffset(b, base);
-  return if base <= 240u64 && offset <= 15u64 then base + offset else 0u64;
+  return if b < 128u8
+    then if b < 64u8
+      then if b < 32u8
+        then if b < 16u8
+          then if b < 8u8
+            then if b < 4u8
+              then if b < 2u8
+                then if b < 1u8
+                  then 0u64
+                  else 1u64
+                else if b < 3u8
+                  then 2u64
+                  else 3u64
+              else if b < 6u8
+                then if b < 5u8
+                  then 4u64
+                  else 5u64
+                else if b < 7u8
+                  then 6u64
+                  else 7u64
+            else if b < 12u8
+              then if b < 10u8
+                then if b < 9u8
+                  then 8u64
+                  else 9u64
+                else if b < 11u8
+                  then 10u64
+                  else 11u64
+              else if b < 14u8
+                then if b < 13u8
+                  then 12u64
+                  else 13u64
+                else if b < 15u8
+                  then 14u64
+                  else 15u64
+          else if b < 24u8
+            then if b < 20u8
+              then if b < 18u8
+                then if b < 17u8
+                  then 16u64
+                  else 17u64
+                else if b < 19u8
+                  then 18u64
+                  else 19u64
+              else if b < 22u8
+                then if b < 21u8
+                  then 20u64
+                  else 21u64
+                else if b < 23u8
+                  then 22u64
+                  else 23u64
+            else if b < 28u8
+              then if b < 26u8
+                then if b < 25u8
+                  then 24u64
+                  else 25u64
+                else if b < 27u8
+                  then 26u64
+                  else 27u64
+              else if b < 30u8
+                then if b < 29u8
+                  then 28u64
+                  else 29u64
+                else if b < 31u8
+                  then 30u64
+                  else 31u64
+        else if b < 48u8
+          then if b < 40u8
+            then if b < 36u8
+              then if b < 34u8
+                then if b < 33u8
+                  then 32u64
+                  else 33u64
+                else if b < 35u8
+                  then 34u64
+                  else 35u64
+              else if b < 38u8
+                then if b < 37u8
+                  then 36u64
+                  else 37u64
+                else if b < 39u8
+                  then 38u64
+                  else 39u64
+            else if b < 44u8
+              then if b < 42u8
+                then if b < 41u8
+                  then 40u64
+                  else 41u64
+                else if b < 43u8
+                  then 42u64
+                  else 43u64
+              else if b < 46u8
+                then if b < 45u8
+                  then 44u64
+                  else 45u64
+                else if b < 47u8
+                  then 46u64
+                  else 47u64
+          else if b < 56u8
+            then if b < 52u8
+              then if b < 50u8
+                then if b < 49u8
+                  then 48u64
+                  else 49u64
+                else if b < 51u8
+                  then 50u64
+                  else 51u64
+              else if b < 54u8
+                then if b < 53u8
+                  then 52u64
+                  else 53u64
+                else if b < 55u8
+                  then 54u64
+                  else 55u64
+            else if b < 60u8
+              then if b < 58u8
+                then if b < 57u8
+                  then 56u64
+                  else 57u64
+                else if b < 59u8
+                  then 58u64
+                  else 59u64
+              else if b < 62u8
+                then if b < 61u8
+                  then 60u64
+                  else 61u64
+                else if b < 63u8
+                  then 62u64
+                  else 63u64
+      else if b < 96u8
+        then if b < 80u8
+          then if b < 72u8
+            then if b < 68u8
+              then if b < 66u8
+                then if b < 65u8
+                  then 64u64
+                  else 65u64
+                else if b < 67u8
+                  then 66u64
+                  else 67u64
+              else if b < 70u8
+                then if b < 69u8
+                  then 68u64
+                  else 69u64
+                else if b < 71u8
+                  then 70u64
+                  else 71u64
+            else if b < 76u8
+              then if b < 74u8
+                then if b < 73u8
+                  then 72u64
+                  else 73u64
+                else if b < 75u8
+                  then 74u64
+                  else 75u64
+              else if b < 78u8
+                then if b < 77u8
+                  then 76u64
+                  else 77u64
+                else if b < 79u8
+                  then 78u64
+                  else 79u64
+          else if b < 88u8
+            then if b < 84u8
+              then if b < 82u8
+                then if b < 81u8
+                  then 80u64
+                  else 81u64
+                else if b < 83u8
+                  then 82u64
+                  else 83u64
+              else if b < 86u8
+                then if b < 85u8
+                  then 84u64
+                  else 85u64
+                else if b < 87u8
+                  then 86u64
+                  else 87u64
+            else if b < 92u8
+              then if b < 90u8
+                then if b < 89u8
+                  then 88u64
+                  else 89u64
+                else if b < 91u8
+                  then 90u64
+                  else 91u64
+              else if b < 94u8
+                then if b < 93u8
+                  then 92u64
+                  else 93u64
+                else if b < 95u8
+                  then 94u64
+                  else 95u64
+        else if b < 112u8
+          then if b < 104u8
+            then if b < 100u8
+              then if b < 98u8
+                then if b < 97u8
+                  then 96u64
+                  else 97u64
+                else if b < 99u8
+                  then 98u64
+                  else 99u64
+              else if b < 102u8
+                then if b < 101u8
+                  then 100u64
+                  else 101u64
+                else if b < 103u8
+                  then 102u64
+                  else 103u64
+            else if b < 108u8
+              then if b < 106u8
+                then if b < 105u8
+                  then 104u64
+                  else 105u64
+                else if b < 107u8
+                  then 106u64
+                  else 107u64
+              else if b < 110u8
+                then if b < 109u8
+                  then 108u64
+                  else 109u64
+                else if b < 111u8
+                  then 110u64
+                  else 111u64
+          else if b < 120u8
+            then if b < 116u8
+              then if b < 114u8
+                then if b < 113u8
+                  then 112u64
+                  else 113u64
+                else if b < 115u8
+                  then 114u64
+                  else 115u64
+              else if b < 118u8
+                then if b < 117u8
+                  then 116u64
+                  else 117u64
+                else if b < 119u8
+                  then 118u64
+                  else 119u64
+            else if b < 124u8
+              then if b < 122u8
+                then if b < 121u8
+                  then 120u64
+                  else 121u64
+                else if b < 123u8
+                  then 122u64
+                  else 123u64
+              else if b < 126u8
+                then if b < 125u8
+                  then 124u64
+                  else 125u64
+                else if b < 127u8
+                  then 126u64
+                  else 127u64
+    else if b < 192u8
+      then if b < 160u8
+        then if b < 144u8
+          then if b < 136u8
+            then if b < 132u8
+              then if b < 130u8
+                then if b < 129u8
+                  then 128u64
+                  else 129u64
+                else if b < 131u8
+                  then 130u64
+                  else 131u64
+              else if b < 134u8
+                then if b < 133u8
+                  then 132u64
+                  else 133u64
+                else if b < 135u8
+                  then 134u64
+                  else 135u64
+            else if b < 140u8
+              then if b < 138u8
+                then if b < 137u8
+                  then 136u64
+                  else 137u64
+                else if b < 139u8
+                  then 138u64
+                  else 139u64
+              else if b < 142u8
+                then if b < 141u8
+                  then 140u64
+                  else 141u64
+                else if b < 143u8
+                  then 142u64
+                  else 143u64
+          else if b < 152u8
+            then if b < 148u8
+              then if b < 146u8
+                then if b < 145u8
+                  then 144u64
+                  else 145u64
+                else if b < 147u8
+                  then 146u64
+                  else 147u64
+              else if b < 150u8
+                then if b < 149u8
+                  then 148u64
+                  else 149u64
+                else if b < 151u8
+                  then 150u64
+                  else 151u64
+            else if b < 156u8
+              then if b < 154u8
+                then if b < 153u8
+                  then 152u64
+                  else 153u64
+                else if b < 155u8
+                  then 154u64
+                  else 155u64
+              else if b < 158u8
+                then if b < 157u8
+                  then 156u64
+                  else 157u64
+                else if b < 159u8
+                  then 158u64
+                  else 159u64
+        else if b < 176u8
+          then if b < 168u8
+            then if b < 164u8
+              then if b < 162u8
+                then if b < 161u8
+                  then 160u64
+                  else 161u64
+                else if b < 163u8
+                  then 162u64
+                  else 163u64
+              else if b < 166u8
+                then if b < 165u8
+                  then 164u64
+                  else 165u64
+                else if b < 167u8
+                  then 166u64
+                  else 167u64
+            else if b < 172u8
+              then if b < 170u8
+                then if b < 169u8
+                  then 168u64
+                  else 169u64
+                else if b < 171u8
+                  then 170u64
+                  else 171u64
+              else if b < 174u8
+                then if b < 173u8
+                  then 172u64
+                  else 173u64
+                else if b < 175u8
+                  then 174u64
+                  else 175u64
+          else if b < 184u8
+            then if b < 180u8
+              then if b < 178u8
+                then if b < 177u8
+                  then 176u64
+                  else 177u64
+                else if b < 179u8
+                  then 178u64
+                  else 179u64
+              else if b < 182u8
+                then if b < 181u8
+                  then 180u64
+                  else 181u64
+                else if b < 183u8
+                  then 182u64
+                  else 183u64
+            else if b < 188u8
+              then if b < 186u8
+                then if b < 185u8
+                  then 184u64
+                  else 185u64
+                else if b < 187u8
+                  then 186u64
+                  else 187u64
+              else if b < 190u8
+                then if b < 189u8
+                  then 188u64
+                  else 189u64
+                else if b < 191u8
+                  then 190u64
+                  else 191u64
+      else if b < 224u8
+        then if b < 208u8
+          then if b < 200u8
+            then if b < 196u8
+              then if b < 194u8
+                then if b < 193u8
+                  then 192u64
+                  else 193u64
+                else if b < 195u8
+                  then 194u64
+                  else 195u64
+              else if b < 198u8
+                then if b < 197u8
+                  then 196u64
+                  else 197u64
+                else if b < 199u8
+                  then 198u64
+                  else 199u64
+            else if b < 204u8
+              then if b < 202u8
+                then if b < 201u8
+                  then 200u64
+                  else 201u64
+                else if b < 203u8
+                  then 202u64
+                  else 203u64
+              else if b < 206u8
+                then if b < 205u8
+                  then 204u64
+                  else 205u64
+                else if b < 207u8
+                  then 206u64
+                  else 207u64
+          else if b < 216u8
+            then if b < 212u8
+              then if b < 210u8
+                then if b < 209u8
+                  then 208u64
+                  else 209u64
+                else if b < 211u8
+                  then 210u64
+                  else 211u64
+              else if b < 214u8
+                then if b < 213u8
+                  then 212u64
+                  else 213u64
+                else if b < 215u8
+                  then 214u64
+                  else 215u64
+            else if b < 220u8
+              then if b < 218u8
+                then if b < 217u8
+                  then 216u64
+                  else 217u64
+                else if b < 219u8
+                  then 218u64
+                  else 219u64
+              else if b < 222u8
+                then if b < 221u8
+                  then 220u64
+                  else 221u64
+                else if b < 223u8
+                  then 222u64
+                  else 223u64
+        else if b < 240u8
+          then if b < 232u8
+            then if b < 228u8
+              then if b < 226u8
+                then if b < 225u8
+                  then 224u64
+                  else 225u64
+                else if b < 227u8
+                  then 226u64
+                  else 227u64
+              else if b < 230u8
+                then if b < 229u8
+                  then 228u64
+                  else 229u64
+                else if b < 231u8
+                  then 230u64
+                  else 231u64
+            else if b < 236u8
+              then if b < 234u8
+                then if b < 233u8
+                  then 232u64
+                  else 233u64
+                else if b < 235u8
+                  then 234u64
+                  else 235u64
+              else if b < 238u8
+                then if b < 237u8
+                  then 236u64
+                  else 237u64
+                else if b < 239u8
+                  then 238u64
+                  else 239u64
+          else if b < 248u8
+            then if b < 244u8
+              then if b < 242u8
+                then if b < 241u8
+                  then 240u64
+                  else 241u64
+                else if b < 243u8
+                  then 242u64
+                  else 243u64
+              else if b < 246u8
+                then if b < 245u8
+                  then 244u64
+                  else 245u64
+                else if b < 247u8
+                  then 246u64
+                  else 247u64
+            else if b < 252u8
+              then if b < 250u8
+                then if b < 249u8
+                  then 248u64
+                  else 249u64
+                else if b < 251u8
+                  then 250u64
+                  else 251u64
+              else if b < 254u8
+                then if b < 253u8
+                  then 252u64
+                  else 253u64
+                else if b < 255u8
+                  then 254u64
+                  else 255u64;
 }

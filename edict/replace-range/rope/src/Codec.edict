@@ -6,7 +6,7 @@
 // field set or with trailing bytes is Malformed.
 package jedit.text.codec@1;
 
-use module jedit.text.octets@1 digest "sha256:ad9eea0f13427a87ea9ad07fc8f54cae4e97073e8e13cb0475060e4fcebf6c91" as octets;
+use module jedit.text.octets@1 digest "sha256:c7c413d8dacc28d07d06d0e69f9718ff7970b13f5b350322f484898936f25aca" as octets;
 
 failure Malformed;
 

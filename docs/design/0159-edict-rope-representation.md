@@ -205,6 +205,12 @@ Scope of "equal subtrees have equal ids": equal under `ContentAddressV1`
 within one warp instance. Ids from different identity profiles or different
 warps are not comparable.
 
+Stated assumption: equal ids mean equal content, because ContentAddressV1
+relies on BLAKE3 collision resistance. The authored proposal therefore
+merges repeated ids without comparing atoms; a different atom under one id
+would need a collision. Echo's identity law makes the same assumption. No test
+can fail first here, because a correct program has no reachable failure.
+
 Edict source computes ids from the inputs the bridge uses (edict#260). Both
 implementations must match published, independent identity vectors, including
 empty and non-empty heads.
