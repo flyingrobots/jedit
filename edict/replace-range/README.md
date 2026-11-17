@@ -63,7 +63,14 @@ flat-text source above. They are not yet part of the locked package chain.
   provider response too large, so widening searches the high nibble and then
   the low nibble.
 - `Codec.edict` encodes the canonical-CBOR atoms of the Head, Branch, Leaf and
-  Buffer facts.
+  Buffer facts. It also decodes them exactly: a well-typed atom in another
+  spelling, with another field set or with trailing bytes is `Malformed`.
+- `Identity.edict` declares the schema-2 type ids and computes
+  ContentAddressV1 ids through Echo's `echo.dpo@2` identity intrinsics. A
+  spec checks every type id against the #404 fixture profile.
+- `Rope.edict` holds the arena form of `rope-build.mts`: branch, the two
+  rotations, and joinRight, joinLeft and join as bounded folds. The folds use
+  a 32-entry path stack and 66 steps, sized for `text.maxTreeHeight = 32`.
 
 `tests/rope-modules.mjs` lists the modules in dependency order and pins each
 `use module` import to its dependency's source digest.
@@ -83,6 +90,17 @@ What the public compiler does with these modules at Amblicit `7dbcbc23`:
   `crates/amblicit-cli/src/application_build.rs`). The complete operation
   will be far larger than that, so this cap blocks the full build until
   Amblicit raises it.
+
+Under the default v1 cost schedule, `join` alone needs at least 5,949,016,807
+static steps and 15,228,165,577 allocated bytes. That is the compiler's
+`InvalidBound` report against the declared budget. The v2 shared-read
+schedule cannot yet be selected from a CLI application build.
+
+Two more Echo boundaries were measured. Echo's verifier refuses
+ContentAddressV1 intrinsics called inside a source helper ("the
+effect-program judgment refuses the package"), although the lowerer accepts
+them; computing ids in a fold needs that. Each module compiles to Core and
+Target IR on its own.
 
 None of these modules has executed yet.
 
