@@ -829,6 +829,15 @@ schema 1 called the inconsistent branch a malformed fact, while schema 2 decodes
 it and rejects the broken rope invariant as MalformedRope. Each such departure
 carries a written decision in the artifact.
 
+A row's recorded `readSet` is a lower bound on the observed footprint, not
+an exact match (#296 ruling, 2026-11-17). One closure read has to over-read
+the join spines, because how deep a join descends depends on the height of a
+prefix or suffix built below it. The observed reads must include every
+recorded node and edge range. They must also stay within the closure
+envelope: at most the Buffer plus `text.maxClosureNodes` nodes, at a closure
+depth of at most `text.maxTreeHeight` plus the Head. Exact equality would
+fail a correct program, and an unbounded superset would hide over-reading.
+
 Obstructed rows are decided by the first failing check in this order: Buffer
 presence, Buffer decode, basis, range order, replacement validity, envelope,
 Head decode, range bounds against the Head's claimed length, closure

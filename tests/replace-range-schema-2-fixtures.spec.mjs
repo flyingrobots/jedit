@@ -12,7 +12,8 @@ import { blake3 } from './support/replace-range-schema-2/blake3.mts';
 import { decodeCanonicalCbor } from './support/replace-range-schema-2/canonical-cbor.mts';
 import { attachmentDigest, contentEdgeId, contentNodeId, hex, OutgoingEdge, slotEdgeId }
   from './support/replace-range-schema-2/content-address-v1.mts';
-import { exactObservation, unmetReasons } from './support/replace-range-schema-2/judge.mjs';
+import { exactObservation, unmetReasons as judged } from './support/replace-range-schema-2/judge.mjs';
+import { ropeReadBounds } from '../edict/replace-range/tests/rope-lawpack.mjs';
 import { checkAtoms, checkCommitted, checkIdentities, checkOracleUnchanged, checkOutcomeBindings, checkRegister }
   from './support/replace-range-schema-2/validate-artifact.mjs';
 
@@ -157,6 +158,8 @@ test('committed rows rebuild into a lawful rope with the retained text, sharing 
     row(copy, 'unicode-replacement').text.mustShareHex.push('aaaa');
   }), oracle), /committed/);
 });
+
+const unmetReasons = (entry, observation) => judged(entry, observation, ropeReadBounds);
 
 test('text equality, generic refusal, resource refusal or a Reference pass never satisfies a persistent row', () => {
   for (const entry of [...artifact.rows, ...artifact.additions]) {
@@ -372,4 +375,34 @@ test('an obstruction must report an empty write set and no patch', () => {
   const { writeSet, patch, ...silent } = exactObservation(entry);
   assert.deepEqual([writeSet.nodes, patch], [[], 'none']);
   assert.notDeepEqual(unmetReasons(entry, silent), []);
+});
+
+// #296 ruling: the recorded read set is a lower bound, and the observed reads stay within the envelope.
+test('a read set that adds reads within the envelope satisfies its row', () => {
+  for (const id of ['middle-ascii-insert', 'stale-basis']) {
+    const entry = row(artifact, id);
+    const exact = exactObservation(entry);
+    const wider = { ...exact, readSet: { nodes: [...exact.readSet.nodes, 'ab'.repeat(32)],
+      edgeRanges: [...exact.readSet.edgeRanges, { from: 'ab'.repeat(32), type: 'left' }] } };
+    assert.deepEqual(unmetReasons(entry, wider), [], id);
+  }
+});
+
+test('a read set that omits a recorded read does not satisfy its row', () => {
+  const entry = row(artifact, 'middle-ascii-insert');
+  const exact = exactObservation(entry);
+  const missingNode = { ...exact, readSet: { ...exact.readSet, nodes: exact.readSet.nodes.slice(1) } };
+  const missingRange = { ...exact, readSet: { ...exact.readSet, edgeRanges: exact.readSet.edgeRanges.slice(1) } };
+  assert.match(unmetReasons(entry, missingNode).join(), /omits a recorded read/);
+  assert.match(unmetReasons(entry, missingRange).join(), /omits a recorded read/);
+});
+
+test('a read set beyond the closure envelope does not satisfy its row', () => {
+  const entry = row(artifact, 'middle-ascii-insert');
+  const exact = exactObservation(entry);
+  const extra = Array.from({ length: ropeReadBounds.maxReadNodes }, (_, index) => index.toString(16).padStart(64, '0'));
+  const wide = { ...exact, readSet: { ...exact.readSet, nodes: [...exact.readSet.nodes, ...extra] } };
+  const deep = { ...exact, closureDepth: ropeReadBounds.maxClosureDepth + 1 };
+  assert.match(unmetReasons(entry, wide).join(), /exceeds the closure envelope/);
+  assert.match(unmetReasons(entry, deep).join(), /exceeds the closure envelope/);
 });

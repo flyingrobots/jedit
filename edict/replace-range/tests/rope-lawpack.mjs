@@ -25,6 +25,15 @@ export const envelope = Object.freeze({
   maxNoOpLeaves: 64, maxEffects: 1024,
 });
 
+/**
+ * The read-set envelope a row check enforces (#296 ruling): the Buffer node
+ * plus at most the closure's nodes, and closure depth at most the tree height
+ * plus the Head.
+ */
+export const ropeReadBounds = Object.freeze({
+  maxReadNodes: envelope.maxClosureNodes + 1, maxClosureDepth: envelope.maxTreeHeight + 1,
+});
+
 const obstructions = Object.freeze([
   ['FactMissing', 'resourceFault'], ['FactMalformed', 'integrityFault'], ['BasisNotCanonical', 'domainMappable'],
   ['RangeOrderInvalid', 'domainMappable'], ['ReplacementNotUtf8', 'domainMappable'],
