@@ -57,13 +57,16 @@ test('the jedit.text@2 lawpack is exactly the generated document', async () => {
     ropeLawpackText());
 });
 
+// A branch's outgoing edge set (left and right) is a schema fact, not an envelope limit.
+const BRANCH_EDGES = 2;
+
 test('every fold and list bound in the rope source is an envelope constant', async () => {
   const { envelope } = await import('./rope-lawpack.mjs');
   const height = envelope.maxTreeHeight;
   const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves, envelope.maxClosureEdges + 1,
     envelope.maxArenaNodes]);
   const allowedLists = new Set([height, envelope.maxArenaNodes, envelope.maxFreshNodes, envelope.maxClosureNodes, envelope.maxClosureOccurrences,
-    envelope.maxClosureEdges, 256]);
+    envelope.maxClosureEdges, BRANCH_EDGES, 256]);
   for (const { file } of ropeModules) {
     const source = checkedIn(file);
     for (const [, bound] of source.matchAll(/fold\([^;]*?, (\d+)u64\)/g)) {
