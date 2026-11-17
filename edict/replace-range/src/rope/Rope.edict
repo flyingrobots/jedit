@@ -193,24 +193,27 @@ fn join(arena: Arena, l: U64, r: U64) -> Built {
 //
 // Descends left while the offset is at most the left child's length, so an
 // offset on a child boundary resolves to the end of the left subtree's last
-// leaf. `local` is the offset within that leaf.
+// leaf; with `after`, it resolves to the start of the right subtree's first
+// leaf instead. `local` is the offset within that leaf.
 
-type Find = { arena: Arena, cur: U64, offset: U64, done: Bool, fault: U64 };
+type Find = { arena: Arena, cur: U64, offset: U64, after: Bool, done: Bool, fault: U64 };
 type Found = { leaf: U64, local: U64, fault: U64 };
 
 fn findStep(s: Find) -> Find {
   let n = node(s.arena, s.cur);
   let leftLength = byteLength(s.arena, n.left);
+  let goLeft = if s.after then s.offset < leftLength else s.offset <= leftLength;
   return if s.done then s
-    else if n.leaf then { arena: s.arena, cur: s.cur, offset: s.offset, done: true, fault: s.fault }
-    else if !open(s.arena, s.cur) then { arena: s.arena, cur: s.cur, offset: s.offset, done: true, fault: closureFault() }
-    else if s.offset <= leftLength then { arena: s.arena, cur: n.left, offset: s.offset, done: false, fault: s.fault }
-    else if leftLength <= s.offset then { arena: s.arena, cur: n.right, offset: s.offset - leftLength, done: false, fault: s.fault }
-    else { arena: s.arena, cur: s.cur, offset: s.offset, done: true, fault: closureFault() };
+    else if n.leaf then { arena: s.arena, cur: s.cur, offset: s.offset, after: s.after, done: true, fault: s.fault }
+    else if !open(s.arena, s.cur) then { arena: s.arena, cur: s.cur, offset: s.offset, after: s.after, done: true, fault: closureFault() }
+    else if goLeft then { arena: s.arena, cur: n.left, offset: s.offset, after: s.after, done: false, fault: s.fault }
+    else if leftLength <= s.offset
+      then { arena: s.arena, cur: n.right, offset: s.offset - leftLength, after: s.after, done: false, fault: s.fault }
+    else { arena: s.arena, cur: s.cur, offset: s.offset, after: s.after, done: true, fault: closureFault() };
 }
 
-fn find(arena: Arena, root: U64, offset: U64) -> Found {
-  let final = fold({ arena, cur: root, offset, done: !present(arena, root), fault: ok() }, findStep, 33u64);
+fn find(arena: Arena, root: U64, offset: U64, after: Bool) -> Found {
+  let final = fold({ arena, cur: root, offset, after, done: !present(arena, root), fault: ok() }, findStep, 33u64);
   return { leaf: final.cur, local: final.offset, fault: if final.done then final.fault else incompleteFault() };
 }
 

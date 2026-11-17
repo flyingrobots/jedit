@@ -76,6 +76,11 @@ flat-text source above. They are not yet part of the locked package chain.
   `freshNodes`. `freshNodes` is a breadth-first walk that lists only the
   fresh nodes reachable from the new root, so nodes a rotation discarded are
   never emitted.
+- `Build.edict` holds the byte-level parts: `fromBytes` (up to 16,384
+  replacement bytes in at most four levels), `locate` and the leaf rewrite
+  with its path copy, and the equal-length no-op comparison. Leaf bytes stay
+  outside the arena: a stored leaf's are its closure row, and a fresh leaf
+  names the replacement or the rewritten leaf.
 
 `tests/rope-modules.mjs` lists the modules in dependency order and pins each
 `use module` import to its dependency's source digest.

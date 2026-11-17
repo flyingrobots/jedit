@@ -19,6 +19,7 @@ export const ropeModules = Object.freeze([
   Object.freeze({ file: 'Codec.edict', coordinate: 'jedit.text.codec@1' }),
   Object.freeze({ file: 'Identity.edict', coordinate: 'jedit.text.identity@1' }),
   Object.freeze({ file: 'Rope.edict', coordinate: 'jedit.text.rope@1' }),
+  Object.freeze({ file: 'Build.edict', coordinate: 'jedit.text.build@1' }),
 ]);
 
 export function sourceDigest(source) {
