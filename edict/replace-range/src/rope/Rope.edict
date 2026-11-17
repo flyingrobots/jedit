@@ -27,6 +27,9 @@ fn closureFault() -> U64 { return 1u64; }
 fn overflowFault() -> U64 { return 2u64; }
 fn capacityFault() -> U64 { return 3u64; }
 fn incompleteFault() -> U64 { return 4u64; }
+fn malformedFault() -> U64 { return 5u64; }
+fn factFault() -> U64 { return 6u64; }
+fn identityFault() -> U64 { return 7u64; }
 
 fn absent() -> U64 { return 4294967295u64; }
 fn emptyNode() -> Node {

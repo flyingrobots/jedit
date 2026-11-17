@@ -17,7 +17,8 @@ const ID = 'Bytes<exact=32>';
 /** The v1 envelope. Fold and list bounds in src/rope are literals equal to these. */
 export const envelope = Object.freeze({
   maxTreeHeight: 32, maxLeafBytes: 4096, maxReplacementBytes: 16384, maxClosureNodes: 256,
-  maxArenaNodes: 512, maxFreshNodes: 256, maxNoOpLeaves: 64, maxEffects: 1024,
+  maxClosureOccurrences: 128, maxClosureEdges: 256, maxArenaNodes: 512, maxFreshNodes: 256,
+  maxNoOpLeaves: 64, maxEffects: 1024,
 });
 
 const obstructions = Object.freeze([

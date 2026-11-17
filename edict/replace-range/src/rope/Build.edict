@@ -8,7 +8,7 @@
 // is a rewritten leaf.
 package jedit.text.build@1;
 
-use module jedit.text.rope@1 digest "sha256:08d163da7f56a83dc1d7da11f9048ca57a87b21e9704c0167b183d2f90c7e36b" as rope;
+use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
 
 type Replacement = Bytes<max=16384>;
 type LeafBytes = Bytes<max=4352>;

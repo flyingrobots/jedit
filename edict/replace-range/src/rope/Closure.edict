@@ -1,0 +1,200 @@
+// The bounded closure read's selector and the arena it yields.
+//
+// The read starts at the Head's root. A guide carries a position's byte
+// interval [lo, hi] in the basis text and its mode. The selector expands:
+// - every branch whose interval holds the start or end offset (the boundary
+//   paths prefix, suffix and locate descend);
+// - both outer spines of each sibling hanging off a boundary path, because a
+//   join descends one of them to a depth the selector cannot know;
+// - every branch inside [start, end] when the no-op comparison needs it.
+// Leaves are never selected, so every occurrence is an expanded branch whose
+// left and right edge rows are the next two, in occurrence order.
+//
+// This over-reads by design; the #296 ruling bounds it below by each
+// fixture's read set and above by the envelope.
+package jedit.text.closure@1;
+
+use target echo.dpo@2 digest "sha256:73bf7e3c96124ffc793b893c32881018990213b4a956401ce72b1cadd5658682" as echo;
+use module jedit.text.codec@1 digest "sha256:bc16cf30f6ddf65563796d87985aec65388e90967bf4245f0d1605f6647df90f" as codec;
+use module jedit.text.identity@1 digest "sha256:56104d1b27e4eeacf74f997c528c5d2704510b50be7d51b32fda7ae9cd5f036c" as ids;
+use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
+
+type NodeRow = { atomBytes: Bytes<max=4352>, atomType: Bytes<max=32>, nodeId: Bytes<exact=32>, nodeType: Bytes<exact=32> };
+type Guide = { lo: U64, hi: U64, mode: U64, start: U64, end: U64, range: Bool };
+type EdgeRow = { edgeId: Bytes<exact=32>, from: U64, node: U64, slot: U64 };
+type Occurrence = { depth: U64, edge: U64, guide: Guide, node: U64 };
+type Closure = { nodes: List<NodeRow, max=256>, edges: List<EdgeRow, max=256>, occurrences: List<Occurrence, max=128> };
+type Outgoing = { edgeType: Bytes<exact=32>, to: Bytes<exact=32> };
+type Candidate = { guide: Guide, depth: U64, slot: U64, parent: NodeRow, child: NodeRow };
+type Decision = { expand: Bool, guide: Guide, wellFormed: Bool, sufficient: Bool };
+
+fn boundaryMode() -> U64 { return 0u64; }
+fn leftSpineMode() -> U64 { return 1u64; }
+fn rightSpineMode() -> U64 { return 2u64; }
+fn siblingMode() -> U64 { return 3u64; }
+fn rangeMode() -> U64 { return 4u64; }
+
+// The byte length a row claims, from its own atom.
+type Claim = { length: U64, branch: Bool, ok: Bool };
+fn claim(row: NodeRow) -> Claim {
+  let branch = codec.branchFact(row.atomBytes);
+  let leaf = codec.leafFact(row.atomBytes);
+  return if row.nodeType == ids.branchType() then { length: branch.fact.byteLength, branch: true, ok: branch.ok }
+    else if row.nodeType == ids.leafType() then { length: len(leaf.fact.bytes), branch: false, ok: leaf.ok }
+    else { length: 0u64, branch: false, ok: false };
+}
+
+fn holds(lo: U64, hi: U64, offset: U64) -> Bool { return lo <= offset && offset <= hi; }
+
+fn childMode(g: Guide, slot: U64, lo: U64, hi: U64) -> U64 {
+  return if g.mode == leftSpineMode() || g.mode == rightSpineMode() || g.mode == rangeMode() then g.mode
+    else if g.mode == siblingMode() then (if slot == 0u64 then leftSpineMode() else rightSpineMode())
+    else if holds(lo, hi, g.start) || holds(lo, hi, g.end) then boundaryMode()
+    else if g.range && g.start <= lo && hi <= g.end then rangeMode()
+    else siblingMode();
+}
+
+fn wanted(mode: U64, slot: U64) -> Bool {
+  return !(mode == leftSpineMode() && slot == 1u64) && !(mode == rightSpineMode() && slot == 0u64);
+}
+
+fn select(candidate: Candidate) -> Decision {
+  let g = candidate.guide;
+  let child = claim(candidate.child);
+  let span = if g.lo <= g.hi then g.hi - g.lo else 0u64;
+  let fits = child.ok && g.lo <= g.hi && child.length <= span;
+  let lo = if candidate.slot == 0u64 then g.lo else (if child.length <= g.hi then g.hi - child.length else 0u64);
+  let hi = if candidate.slot == 0u64 then default(checkedAdd(g.lo, child.length), g.hi) else g.hi;
+  let mode = childMode(g, candidate.slot, lo, hi);
+  let parentMode = if g.mode == leftSpineMode() || g.mode == rightSpineMode() then g.mode else boundaryMode();
+  let next: Guide = { lo, hi, mode, start: g.start, end: g.end, range: g.range };
+  return { expand: fits && child.branch && wanted(parentMode, candidate.slot), guide: next,
+    wellFormed: fits, sufficient: true };
+}
+
+fn rootGuide(length: U64, start: U64, end: U64, range: Bool) -> Guide {
+  return { lo: 0u64, hi: length, mode: boundaryMode(), start, end, range };
+}
+
+// ---- the arena of a closure ----
+//
+// Arena position 0 is the start occurrence; position e + 1 is edge row e.
+// Occurrence k's children are edge rows 2k and 2k + 1, so positions 2k + 1
+// and 2k + 2. Each position's row is decoded, typed and, when its outgoing
+// edges are known, identity-checked; a sibling the edit never expands is
+// trusted on its decoded claims.
+
+type Load = { closure: Closure, warp: Bytes<exact=32>, arena: rope.Arena, k: U64, fault: U64 };
+
+fn rowAt(c: Closure, p: U64) -> U64 {
+  let occurrence = if 0u64 < listLen(c.occurrences) then listAt(c.occurrences, 0u64).node else 4294967295u64;
+  return if p == 0u64 then occurrence
+    else if 1u64 <= p && p - 1u64 < listLen(c.edges) then listAt(c.edges, p - 1u64).node else 4294967295u64;
+}
+fn rowOf(c: Closure, index: U64) -> NodeRow {
+  let empty: NodeRow = { atomBytes: b"", atomType: b"", nodeId: ids.leafType(), nodeType: ids.leafType() };
+  return if index < listLen(c.nodes) then listAt(c.nodes, index) else empty;
+}
+fn edgeAt(c: Closure, e: U64) -> EdgeRow {
+  let missing: EdgeRow = { edgeId: ids.leftEdge(), from: 4294967295u64, node: 4294967295u64, slot: 4294967295u64 };
+  return if e < listLen(c.edges) then listAt(c.edges, e) else missing;
+}
+// Whether arena position p is occurrence k.
+fn isOccurrence(c: Closure, p: U64, k: U64) -> Bool {
+  let edge = if k < listLen(c.occurrences) then listAt(c.occurrences, k).edge else 4294967295u64;
+  return k < listLen(c.occurrences) && (if p == 0u64 then k == 0u64 else edge < 4294967295u64 && edge + 1u64 == p);
+}
+
+fn stored(leaf: Bool, byteLength: U64, lineBreaks: U64, height: U64, children: Bool, k: U64, source: U64) -> rope.Node {
+  let left = if children && k <= 1000u64 then k + k + 1u64 else rope.absent();
+  let right = if children && k <= 1000u64 then k + k + 2u64 else rope.absent();
+  return { stored: true, expanded: children, leaf, byteLength, lineBreaks, height, left, right,
+    row: true, source, from: 0u64, to: if leaf then byteLength else 0u64 };
+}
+
+fn leafNode(s: Load, r: NodeRow, source: U64) -> Load {
+  let parsed = codec.leafFact(r.atomBytes);
+  let bytes = parsed.fact.bytes;
+  let id = echo.contentAddress(s.warp, ids.leafType(), ids.leafAtomType(), r.atomBytes, []);
+  let fault = if !parsed.ok || r.atomType != ids.leafAtomType() then rope.factFault()
+    else if id != r.nodeId then rope.identityFault()
+    else if len(bytes) == 0u64 || 4096u64 < len(bytes) || !isUtf8(bytes) || count(bytes, b"\n") != parsed.fact.lineBreaks
+      then rope.malformedFault()
+    else rope.ok();
+  return append(s, stored(true, len(bytes), parsed.fact.lineBreaks, 1u64, false, 0u64, source), false, fault);
+}
+
+fn branchNode(s: Load, r: NodeRow, source: U64, expanded: Bool) -> Load {
+  let parsed = codec.branchFact(r.atomBytes);
+  let k = s.k;
+  let first = if k <= 1000u64 then k + k else 4294967295u64;
+  let left = edgeAt(s.closure, first);
+  let right = edgeAt(s.closure, if first < 4294967295u64 then first + 1u64 else first);
+  let edges: List<Outgoing, max=2> = [{ edgeType: ids.leftEdge(), to: rowOf(s.closure, left.node).nodeId },
+    { edgeType: ids.rightEdge(), to: rowOf(s.closure, right.node).nodeId }];
+  let id = echo.contentAddress(s.warp, ids.branchType(), ids.branchAtomType(), r.atomBytes, edges);
+  let shaped = left.from == k && left.slot == 0u64 && right.from == k && right.slot == 1u64;
+  let fault = if !parsed.ok || r.atomType != ids.branchAtomType() then rope.factFault()
+    else if expanded && (!shaped || id != r.nodeId) then rope.identityFault()
+    else rope.ok();
+  let f = parsed.fact;
+  return append(s, stored(false, f.byteLength, f.lineBreaks, f.height, expanded, k, source), expanded, fault);
+}
+
+fn append(s: Load, n: rope.Node, advance: Bool, fault: U64) -> Load {
+  return if listLen(s.arena) < 512u64 && s.k < 1000u64
+    then { closure: s.closure, warp: s.warp, arena: listAppend(s.arena, n), k: if advance then s.k + 1u64 else s.k,
+      fault: max(s.fault, fault) }
+    else { closure: s.closure, warp: s.warp, arena: s.arena, k: s.k, fault: rope.capacityFault() };
+}
+
+fn loadStep(s: Load) -> Load {
+  let p = listLen(s.arena);
+  let source = rowAt(s.closure, p);
+  let r = rowOf(s.closure, source);
+  return if s.fault != rope.ok() || !(p <= listLen(s.closure.edges)) then s
+    else if !(source < listLen(s.closure.nodes)) then { closure: s.closure, warp: s.warp, arena: s.arena, k: s.k, fault: rope.factFault() }
+    else if r.nodeType == ids.leafType() then leafNode(s, r, source)
+    else if r.nodeType == ids.branchType() then branchNode(s, r, source, isOccurrence(s.closure, p, s.k))
+    else { closure: s.closure, warp: s.warp, arena: s.arena, k: s.k, fault: rope.factFault() };
+}
+
+// ---- rope invariants over the expanded branches ----
+
+type Check = { arena: rope.Arena, next: U64, fault: U64 };
+
+fn consistent(arena: rope.Arena, n: rope.Node) -> Bool {
+  let l = rope.node(arena, n.left);
+  let r = rope.node(arena, n.right);
+  let length = checkedAdd(l.byteLength, r.byteLength);
+  let breaks = checkedAdd(l.lineBreaks, r.lineBreaks);
+  let taller = max(l.height, r.height);
+  let balanced = rope.notTaller(l.height, r.height) && rope.notTaller(r.height, l.height);
+  return isSome(length) && isSome(breaks) && unwrap(length) == n.byteLength && unwrap(breaks) == n.lineBreaks
+    && taller < 255u64 && n.height == taller + 1u64 && balanced;
+}
+
+// Distinguishes an extent sum that overflows from one that disagrees.
+fn overflows(arena: rope.Arena, n: rope.Node) -> Bool {
+  let l = rope.node(arena, n.left);
+  let r = rope.node(arena, n.right);
+  return !isSome(checkedAdd(l.byteLength, r.byteLength)) || !isSome(checkedAdd(l.lineBreaks, r.lineBreaks));
+}
+
+fn checkStep(s: Check) -> Check {
+  let n = rope.node(s.arena, s.next);
+  let fault = if !(n.stored && n.expanded) || consistent(s.arena, n) then rope.ok()
+    else if overflows(s.arena, n) then rope.overflowFault() else rope.malformedFault();
+  return if s.fault == rope.ok() && s.next < listLen(s.arena) && s.next < 512u64
+    then { arena: s.arena, next: s.next + 1u64, fault } else s;
+}
+
+type Loaded = { arena: rope.Arena, fault: U64 };
+
+// The arena of a closure read, with every resolved node validated.
+fn load(c: Closure, warp: Bytes<exact=32>) -> Loaded {
+  let initial: Load = { closure: c, warp, arena: [], k: 0u64, fault: rope.ok() };
+  let loaded = fold(initial, loadStep, 257u64);
+  let checked = fold({ arena: loaded.arena, next: 0u64, fault: loaded.fault }, checkStep, 257u64);
+  return { arena: loaded.arena, fault: checked.fault };
+}

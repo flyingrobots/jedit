@@ -84,6 +84,16 @@
           "value": 256
         },
         {
+          "coordinate": "jedit.text@2.maxClosureOccurrences",
+          "type": "U64",
+          "value": 128
+        },
+        {
+          "coordinate": "jedit.text@2.maxClosureEdges",
+          "type": "U64",
+          "value": 256
+        },
+        {
           "coordinate": "jedit.text@2.maxArenaNodes",
           "type": "U64",
           "value": 512
