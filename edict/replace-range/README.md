@@ -94,9 +94,10 @@ What the public compiler does with these modules at Amblicit `7dbcbc23`:
 Under the default v1 cost schedule, `join` alone needs at least 5,949,016,807
 static steps and 15,228,165,577 allocated bytes. That is the compiler's
 `InvalidBound` report against the declared budget. The v2 shared-read
-schedule cannot yet be selected from a CLI application build.
+schedule cannot yet be selected from a CLI application build; that is an
+Amblicit gap.
 
-Two more Echo boundaries were measured. Echo's verifier refuses
+Echo's verifier refuses
 ContentAddressV1 intrinsics called inside a source helper ("the
 effect-program judgment refuses the package"), although the lowerer accepts
 them; computing ids in a fold needs that. Each module compiles to Core and
