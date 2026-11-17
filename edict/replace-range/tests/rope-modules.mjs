@@ -10,7 +10,7 @@ const SOURCE_DIGEST_DOMAIN = ['edict.digest/v1', 'edict.source/v1'];
 const IMPORT_PATTERN = /^use module (\S+) digest "sha256:[0-9a-f]{64}" as /;
 
 export const ropeSourceRoot = path.join(
-  path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'rope',
+  path.dirname(fileURLToPath(import.meta.url)), '..', 'rope', 'src',
 );
 
 /** Each module file, its package coordinate and the coordinates it imports. */
@@ -22,6 +22,7 @@ export const ropeModules = Object.freeze([
   Object.freeze({ file: 'Build.edict', coordinate: 'jedit.text.build@1' }),
   Object.freeze({ file: 'Closure.edict', coordinate: 'jedit.text.closure@1' }),
   Object.freeze({ file: 'Proposal.edict', coordinate: 'jedit.text.proposal@1' }),
+  Object.freeze({ file: 'Plan.edict', coordinate: 'jedit.text.plan@1' }),
 ]);
 
 export function sourceDigest(source) {

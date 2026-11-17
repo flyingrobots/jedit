@@ -8,11 +8,11 @@
 // conflict, never a silent choice.
 package jedit.text.proposal@1;
 
-use target echo.dpo@2 digest "sha256:73bf7e3c96124ffc793b893c32881018990213b4a956401ce72b1cadd5658682" as echo;
+use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
 use module jedit.text.codec@1 digest "sha256:b004264172fb301bb075184de6a62232df70dbaca0a2d9fd2b64f740d15e0f33" as codec;
-use module jedit.text.identity@1 digest "sha256:56104d1b27e4eeacf74f997c528c5d2704510b50be7d51b32fda7ae9cd5f036c" as ids;
+use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
 use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
-use module jedit.text.closure@1 digest "sha256:4c22e08a648a44feacb726cb4815f887cdfad45f2751fd338f86b1845da1bcd7" as closure;
+use module jedit.text.closure@1 digest "sha256:543d7a70824db9554fee2e77505c50161f42a4476aabbb67d0c736bb5b38404a" as closure;
 
 type Id = Bytes<exact=32>;
 type Pieces = { replacement: Bytes<max=16384>, rewritten: Bytes<max=25088> };

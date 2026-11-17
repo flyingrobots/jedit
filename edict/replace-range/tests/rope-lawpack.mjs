@@ -93,7 +93,13 @@ function footprintLaw(profile) {
   });
 }
 
+const GUIDE = 'Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>';
+const NODE_ROW = `Record<atomBytes:Bytes<max=4352>,atomType:Bytes<max=32>,nodeId:${ID},nodeType:${ID}>`;
 const types = Object.freeze({
+  Guide: GUIDE, NodeRow: NODE_ROW,
+  ClosureQuery: `Record<edgeTypes:List<${ID},max=3>,guide:${GUIDE},maxDepth:U64,maxNodes:U64,nodeId:${ID},warpId:${ID}>`,
+  Closure: `Record<edges:List<Record<edgeId:${ID},from:U64,node:U64,slot:U64>,max=256>,nodes:List<${NODE_ROW},max=256>,`
+    + `occurrences:List<Record<depth:U64,edge:U64,guide:${GUIDE},node:U64>,max=128>>`,
   NodeId: ID, Atom: 'Bytes<max=4352>', Replacement: `Bytes<max=${envelope.maxReplacementBytes}>`,
   Detail: 'String<max=256,canonical=raw-utf8>', Written: 'Record<>',
   AtomQuery: `Record<nodeId:${ID},typeId:${ID},warpId:${ID}>`,
@@ -110,6 +116,10 @@ const effects = Object.freeze([
     { missing: 'atomMissing', required: 'atomRequired', wrongType: 'atomTypeMismatch', tooLarge: 'atomByteBoundExceeded' }],
   ['outgoing', 'outgoing-edge-read', 'EdgeQuery', 'Edges', 'read',
     { sourceMissing: 'edgeSourceMissing', edgeBound: 'edgeBoundExceeded', scanBound: 'edgeScanBoundExceeded' }],
+  ['closure', 'closure-read', 'ClosureQuery', 'Closure', 'read', {
+    startMissing: 'closureStartMissing', nodeBound: 'closureNodeBoundExceeded', depthBound: 'closureDepthBoundExceeded',
+    scanBound: 'closureScanBoundExceeded', workBound: 'closureWorkBoundExceeded',
+    selectorInsufficient: 'closureSelectorInsufficient', storageMalformed: 'closureStorageMalformed' }],
   ['ensureNode', 'ensure-node', 'NodeWrite', 'Written', 'ensure', {}],
   ['ensureEdge', 'ensure-edge', 'EdgeWrite', 'Written', 'ensure', {}],
   ['replaceAtom', 'replace-atom', 'AtomReplace', 'Written', 'replace', {}],
@@ -117,12 +127,17 @@ const effects = Object.freeze([
 ]);
 
 const coordinate = (name) => `${LAWPACK}.${name}`;
-const RESOURCE_FAILURES = new Set(['missing', 'tooLarge', 'sourceMissing', 'edgeBound', 'scanBound']);
+const RESOURCE_FAILURES = new Set(['missing', 'tooLarge', 'sourceMissing', 'edgeBound', 'scanBound', 'startMissing',
+  'nodeBound', 'depthBound', 'workBound']);
+const DOMAIN_FAILURES = new Set(['selectorInsufficient']);
 
 export function ropeLawpack() {
   const profile = JSON.parse(readFileSync(FIXTURES, 'utf8')).profile;
   const pins = JSON.parse(readFileSync(path.join(ROOT, 'rope', 'echo-dpo-2-profile.json'), 'utf8'));
-  const failureClass = (name) => (RESOURCE_FAILURES.has(name) ? 'resourceFault' : 'integrityFault');
+  const failureClass = (name) => {
+    if (RESOURCE_FAILURES.has(name)) return 'resourceFault';
+    return DOMAIN_FAILURES.has(name) ? 'domainMappable' : 'integrityFault';
+  };
   const exportedEffects = effects.map(([name, , input, output, kind, failures]) => ({
     coordinate: coordinate(name), typeParameters: [], inputType: coordinate(input), outputType: coordinate(output),
     executionClass: 'runtime', effectKindHint: kind, footprintObligation: coordinate('replaceRangeFootprint'),
@@ -143,6 +158,7 @@ export function ropeLawpack() {
       dependencies: [], exportsCoordinate: 'jedit.text.exports/v2',
       exports: {
         types: Object.entries(types).map(([name, definition]) => ({ coordinate: coordinate(name), definition })),
+        // Closure types are written out, not by reference, as Echo's closure ABI requires.
         constants: Object.entries(envelope).map(([name, value]) => ({ coordinate: coordinate(name), type: 'U64', value })),
         pureFunctions: [],
         effects: exportedEffects,
@@ -180,7 +196,7 @@ export function ropeLawpack() {
             graphSchema: { $edictBytes: graphSchema(profile).toString('hex') },
             footprintLaw: { $edictBytes: footprintLaw(profile).toString('hex') },
             graphReads: { maxEdgeScans: 64, maxClosureNodes: envelope.maxClosureNodes,
-              maxClosureDepth: envelope.maxTreeHeight },
+              maxClosureDepth: envelope.maxTreeHeight, closureSelector: 'select' },
             maxInputBytes: 65536, maxResultBytes: 4096, maxAllocatedBytes: 4611686018427387904,
             budgetCeiling: { steps: 4611686018427387904, readBytes: 4194304, writeBytes: 4194304 },
             authorityProfile: 'jedit.text.authority/v2',

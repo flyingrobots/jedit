@@ -1,0 +1,143 @@
+// The pure ReplaceRange plan over one closure read: Head checks, the
+// validated arena, construction, character boundaries, the no-op check,
+// counters and the normalized proposal. Its `code` names the first failing
+// check in the documented precedence; the intent maps each code to its
+// typed obstruction.
+package jedit.text.plan@1;
+
+use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
+use module jedit.text.codec@1 digest "sha256:b004264172fb301bb075184de6a62232df70dbaca0a2d9fd2b64f740d15e0f33" as codec;
+use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
+use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
+use module jedit.text.build@1 digest "sha256:f373056bfcb62e1fa6aed1b252bd6bd493f5fe8f4f3d1364807b7974cb5c69a8" as build;
+use module jedit.text.closure@1 digest "sha256:543d7a70824db9554fee2e77505c50161f42a4476aabbb67d0c736bb5b38404a" as closure;
+use module jedit.text.proposal@1 digest "sha256:52947f27a847aa38692a1c06e2f5c59de5339a18f3694d247f213a80a29ec30a" as proposal;
+
+type Id = Bytes<exact=32>;
+type Request = { warp: Id, basis: Id, anchor: Id, start: U64, end: U64, replacement: build.Replacement };
+
+// Outcome codes, in check precedence.
+fn committed() -> U64 { return 0u64; }
+fn headMalformed() -> U64 { return 1u64; }
+fn rangeOutOfBounds() -> U64 { return 2u64; }
+fn identityMismatch() -> U64 { return 3u64; }
+fn malformedRope() -> U64 { return 4u64; }
+fn factMalformed() -> U64 { return 5u64; }
+fn resourceLimit() -> U64 { return 6u64; }
+fn closureInsufficient() -> U64 { return 7u64; }
+fn arithmeticOverflow() -> U64 { return 8u64; }
+fn boundaryInvalid() -> U64 { return 9u64; }
+fn noOp() -> U64 { return 10u64; }
+
+type Plan = {
+  code: U64, head: codec.HeadFact, rooted: Bool, rootId: Id, proposal: proposal.Proposal,
+};
+
+// The code of a fold fault.
+fn faultCode(fault: U64) -> U64 {
+  return if fault == rope.closureFault() || fault == rope.incompleteFault() then closureInsufficient()
+    else if fault == rope.overflowFault() then arithmeticOverflow()
+    else if fault == rope.capacityFault() then resourceLimit()
+    else if fault == rope.malformedFault() then malformedRope()
+    else if fault == rope.factFault() then factMalformed()
+    else if fault == rope.identityFault() || fault == 8u64 then identityMismatch()
+    else committed();
+}
+
+// ---- leaf bytes by closure row ----
+
+type Rows = { closure: closure.Closure, rows: build.Rows };
+fn rowStep(s: Rows) -> Rows {
+  let r = closure.rowOf(s.closure, listLen(s.rows));
+  let bytes = if r.nodeType == ids.leafType() then codec.leafFact(r.atomBytes).fact.bytes else b"";
+  return if listLen(s.rows) < listLen(s.closure.nodes) && listLen(s.rows) < 256u64
+    then { closure: s.closure, rows: listAppend(s.rows, bytes) } else s;
+}
+fn leafRows(c: closure.Closure) -> build.Rows { return fold({ closure: c, rows: [] }, rowStep, 256u64).rows; }
+
+fn bytesAt(rows: build.Rows, arena: rope.Arena, i: U64) -> build.LeafBytes {
+  let n = rope.node(arena, i);
+  return if n.source < listLen(rows) then listAt(rows, n.source) else b"";
+}
+
+// ---- construction ----
+
+type Built = { tree: rope.Built, pieces: proposal.Pieces };
+
+fn general(arena: rope.Arena, rows: build.Rows, q: Request) -> rope.Built {
+  let first = rope.find(arena, 0u64, q.start, false);
+  let firstBytes = bytesAt(rows, arena, first.leaf);
+  let prefixBreaks = if first.local <= len(firstBytes) then count(slice(firstBytes, 0u64, first.local), b"\n") else 0u64;
+  let last = rope.find(arena, 0u64, q.end, false);
+  let lastBytes = bytesAt(rows, arena, last.leaf);
+  let suffixBreaks = if last.local <= len(lastBytes) then count(slice(lastBytes, last.local, len(lastBytes)), b"\n") else 0u64;
+  let prefix = rope.cut(arena, 0u64, q.start, true, prefixBreaks);
+  let middle = build.fromBytes(prefix.arena, q.replacement);
+  let left = rope.join(middle.arena, prefix.root, middle.root);
+  let suffix = rope.cut(left.arena, 0u64, q.end, false, suffixBreaks);
+  let whole = rope.join(suffix.arena, left.root, suffix.root);
+  let fault = max(max(max(first.fault, last.fault), max(prefix.fault, middle.fault)), max(max(left.fault, suffix.fault), whole.fault));
+  return { arena: whole.arena, root: whole.root, fault };
+}
+
+fn construct(arena: rope.Arena, rows: build.Rows, q: Request) -> Built {
+  let located = build.locate(arena, 0u64, q.start, q.end);
+  let leaf = bytesAt(rows, arena, located.cur);
+  let bytes = build.rewritten(leaf, located.start, located.end, q.replacement);
+  let leafCase = rope.present(arena, 0u64) && !located.spanning && located.fault == rope.ok()
+    && rope.node(arena, located.cur).leaf && 0u64 < len(bytes) && len(bytes) <= 4096u64;
+  let pieces: proposal.Pieces = { replacement: q.replacement, rewritten: bytes };
+  let rewrite = build.rewrite(located, len(bytes), count(bytes, b"\n"));
+  let fresh = if rope.present(arena, 0u64) then general(arena, rows, q) else build.fromBytes(arena, q.replacement);
+  return { tree: if leafCase then rewrite else fresh, pieces };
+}
+
+// Whether an offset falls inside a code point of the basis text.
+fn splits(arena: rope.Arena, rows: build.Rows, offset: U64) -> Bool {
+  let found = rope.find(arena, 0u64, offset, true);
+  return rope.present(arena, 0u64) && !build.leafBoundary(bytesAt(rows, arena, found.leaf), found.local);
+}
+
+// ---- the plan ----
+
+fn headId(q: Request, atom: codec.Atom, rooted: Bool, root: Id) -> Id {
+  return if rooted then ids.rootedHeadId(q.warp, atom, root, q.anchor) else ids.emptyHeadId(q.warp, atom, q.anchor);
+}
+
+fn plan(c: closure.Closure, q: Request) -> Plan {
+  let headRow = closure.rowOf(c, if 0u64 < listLen(c.occurrences) then listAt(c.occurrences, 0u64).node else 4294967295u64);
+  let head = codec.headFact(headRow.atomBytes);
+  let rootEdge = closure.edgeAt(c, 0u64);
+  let rooted = rootEdge.from == 0u64 && rootEdge.slot == 0u64;
+  let rootRow = closure.rowOf(c, rootEdge.node);
+  let loaded = closure.load(c, q.warp);
+  let root = rope.node(loaded.arena, 0u64);
+  let identity = headId(q, headRow.atomBytes, rooted, rootRow.nodeId) == q.basis;
+  let shape = if rooted then root.byteLength == head.fact.byteLength
+      && isSome(checkedAdd(root.lineBreaks, 1u64)) && default(checkedAdd(root.lineBreaks, 1u64), 0u64) == head.fact.lineCount
+    else head.fact.byteLength == 0u64 && head.fact.lineCount == 1u64;
+  let rows = leafRows(c);
+  let built = construct(loaded.arena, rows, q);
+  let same = build.sameBytes(loaded.arena, rows, 0u64, q.start, q.end, q.replacement);
+  let tree = built.tree;
+  let top = rope.node(tree.arena, tree.root);
+  let lineCount = checkedAdd(if rope.present(tree.arena, tree.root) then top.lineBreaks else 0u64, 1u64);
+  let sequence = checkedAdd(head.fact.sequence, 1u64);
+  let p = proposal.propose(c, built.pieces, q.warp, tree.arena, tree.root);
+  let code = if !head.ok || headRow.atomType != ids.headAtomType() || headRow.nodeType != ids.headType() then headMalformed()
+    else if head.fact.byteLength < q.end then rangeOutOfBounds()
+    else if !identity then identityMismatch()
+    else if loaded.fault != rope.ok() then faultCode(loaded.fault)
+    else if !shape then malformedRope()
+    else if built.tree.fault != rope.ok() then faultCode(built.tree.fault)
+    else if same.fault != rope.ok() then faultCode(same.fault)
+    else if splits(loaded.arena, rows, q.start) || splits(loaded.arena, rows, q.end) then boundaryInvalid()
+    else if same.equal then noOp()
+    else if !isSome(lineCount) || !isSome(sequence) then arithmeticOverflow()
+    else faultCode(p.fault);
+  let next: codec.HeadFact = {
+    byteLength: if rope.present(tree.arena, tree.root) then top.byteLength else 0u64,
+    lineCount: default(lineCount, 0u64), sequence: default(sequence, 0u64),
+  };
+  return { code, head: next, rooted: rope.present(tree.arena, tree.root), rootId: p.rootId, proposal: p };
+}

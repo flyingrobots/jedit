@@ -14,6 +14,22 @@
     "exports": {
       "types": [
         {
+          "coordinate": "jedit.text@2.Guide",
+          "definition": "Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>"
+        },
+        {
+          "coordinate": "jedit.text@2.NodeRow",
+          "definition": "Record<atomBytes:Bytes<max=4352>,atomType:Bytes<max=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.ClosureQuery",
+          "definition": "Record<edgeTypes:List<Bytes<exact=32>,max=3>,guide:Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>,maxDepth:U64,maxNodes:U64,nodeId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.Closure",
+          "definition": "Record<edges:List<Record<edgeId:Bytes<exact=32>,from:U64,node:U64,slot:U64>,max=256>,nodes:List<Record<atomBytes:Bytes<max=4352>,atomType:Bytes<max=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>>,max=256>,occurrences:List<Record<depth:U64,edge:U64,guide:Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>,node:U64>,max=128>>"
+        },
+        {
           "coordinate": "jedit.text@2.NodeId",
           "definition": "Bytes<exact=32>"
         },
@@ -171,6 +187,47 @@
           "guardSupport": true
         },
         {
+          "coordinate": "jedit.text@2.closure",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.ClosureQuery",
+          "outputType": "jedit.text@2.Closure",
+          "executionClass": "runtime",
+          "effectKindHint": "read",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {
+            "startMissing": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "nodeBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "depthBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "scanBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "workBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "selectorInsufficient": {
+              "authorityClass": "domainMappable",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            },
+            "storageMalformed": {
+              "authorityClass": "integrityFault",
+              "payloadType": "jedit.text@2.ClosureQuery"
+            }
+          },
+          "guardSupport": true
+        },
+        {
           "coordinate": "jedit.text@2.ensureNode",
           "typeParameters": [],
           "inputType": "jedit.text@2.NodeWrite",
@@ -321,6 +378,7 @@
             "semanticEffects": [
               "jedit.text@2.readAtom",
               "jedit.text@2.outgoing",
+              "jedit.text@2.closure",
               "jedit.text@2.ensureNode",
               "jedit.text@2.ensureEdge",
               "jedit.text@2.replaceAtom",
@@ -360,6 +418,24 @@
               "sourceMissing": "edgeSourceMissing",
               "edgeBound": "edgeBoundExceeded",
               "scanBound": "edgeScanBoundExceeded"
+            }
+          },
+          "jedit.text@2.closure": {
+            "targetIntrinsic": "echo.dpo@2.closure-read",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "read",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {
+              "startMissing": "closureStartMissing",
+              "nodeBound": "closureNodeBoundExceeded",
+              "depthBound": "closureDepthBoundExceeded",
+              "scanBound": "closureScanBoundExceeded",
+              "workBound": "closureWorkBoundExceeded",
+              "selectorInsufficient": "closureSelectorInsufficient",
+              "storageMalformed": "closureStorageMalformed"
             }
           },
           "jedit.text@2.ensureNode": {
@@ -445,7 +521,8 @@
           "graphReads": {
             "maxEdgeScans": 64,
             "maxClosureNodes": 256,
-            "maxClosureDepth": 32
+            "maxClosureDepth": 32,
+            "closureSelector": "select"
           },
           "maxInputBytes": 65536,
           "maxResultBytes": 4096,
