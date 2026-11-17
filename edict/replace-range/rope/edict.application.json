@@ -5,8 +5,8 @@
     "src/ReplaceRange.edict",
     "src/Plan.edict",
     "src/Proposal.edict",
-    "src/Closure.edict",
     "src/Build.edict",
+    "src/Closure.edict",
     "src/Rope.edict",
     "src/Identity.edict",
     "src/Codec.edict",
@@ -26,9 +26,18 @@
     "pureIntrinsics": {
       "catalog": "generated/resources/resource.target-intrinsics-2.cbor",
       "required": [
-        { "coordinate": "echo.dpo@2.contentAddress", "contractVersion": "echo.content-address/v1" },
-        { "coordinate": "echo.dpo@2.contentEdgeId", "contractVersion": "echo.content-address/v1" },
-        { "coordinate": "echo.dpo@2.slotEdgeId", "contractVersion": "echo.content-address/v1" }
+        {
+          "coordinate": "echo.dpo@2.contentAddress",
+          "contractVersion": "echo.content-address/v1"
+        },
+        {
+          "coordinate": "echo.dpo@2.contentEdgeId",
+          "contractVersion": "echo.content-address/v1"
+        },
+        {
+          "coordinate": "echo.dpo@2.slotEdgeId",
+          "contractVersion": "echo.content-address/v1"
+        }
       ]
     }
   },

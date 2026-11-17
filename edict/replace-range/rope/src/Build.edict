@@ -8,11 +8,18 @@
 // is a rewritten leaf.
 package jedit.text.build@1;
 
-use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
+use module jedit.text.codec@1 digest "sha256:319a0656b75a485bb989e6d5f8fca2f04dc57d82379182cf13d12dcf5768075d" as codec;
+use module jedit.text.rope@1 digest "sha256:23bfc95766a101a8c002f1310387fde46fccc9629cda2d77bfd5b01f4eb7452c" as rope;
+use module jedit.text.closure@1 digest "sha256:87b71ae7a79d87609b66110103ec2a42297fd354b6a7c8e6fed019709d8d1419" as closure;
 
 type Replacement = Bytes<max=16384>;
 type LeafBytes = Bytes<max=4352>;
-type Rows = List<LeafBytes, max=256>;
+
+// A stored leaf's bytes, decoded from its closure row when needed rather than
+// copied into a list.
+fn rowBytes(c: closure.Closure, row: U64) -> LeafBytes {
+  return codec.leafFact(closure.rowOf(c, row).atomBytes).fact.bytes;
+}
 
 fn replacementPiece() -> U64 { return 0u64; }
 fn rewrittenPiece() -> U64 { return 1u64; }
@@ -149,7 +156,7 @@ fn rewrite(found: Locate, length: U64, breaks: U64) -> rope.Built {
 // basis tree.
 
 type Compare = {
-  arena: rope.Arena, rows: Rows, bytes: Replacement, root: U64,
+  arena: rope.Arena, closure: closure.Closure, bytes: Replacement, root: U64,
   start: U64, pos: U64, end: U64, equal: Bool, fault: U64,
 };
 
@@ -165,19 +172,19 @@ fn compareChunk(s: Compare, leaf: LeafBytes, local: U64) -> Compare {
     && offset <= unwrap(ours) && unwrap(ours) <= len(s.bytes)
     && slice(leaf, local, unwrap(theirs)) == slice(s.bytes, offset, unwrap(ours));
   return if 0u64 < chunk && isSome(next)
-    then { arena: s.arena, rows: s.rows, bytes: s.bytes, root: s.root, start: s.start, pos: unwrap(next), end: s.end,
+    then { arena: s.arena, closure: s.closure, bytes: s.bytes, root: s.root, start: s.start, pos: unwrap(next), end: s.end,
       equal: s.equal && same, fault: s.fault }
-    else { arena: s.arena, rows: s.rows, bytes: s.bytes, root: s.root, start: s.start, pos: s.end, end: s.end,
+    else { arena: s.arena, closure: s.closure, bytes: s.bytes, root: s.root, start: s.start, pos: s.end, end: s.end,
       equal: false, fault: rope.closureFault() };
 }
 
 fn compareStep(s: Compare) -> Compare {
   let found = rope.find(s.arena, s.root, s.pos, true);
   let n = rope.node(s.arena, found.leaf);
-  let leaf = if n.source < listLen(s.rows) then listAt(s.rows, n.source) else b"";
+  let leaf = rowBytes(s.closure, n.source);
   return if s.fault != rope.ok() || !(s.pos < s.end) || !s.equal then s
     else if found.fault != rope.ok() || !n.stored
-      then { arena: s.arena, rows: s.rows, bytes: s.bytes, root: s.root, start: s.start, pos: s.end, end: s.end,
+      then { arena: s.arena, closure: s.closure, bytes: s.bytes, root: s.root, start: s.start, pos: s.end, end: s.end,
         equal: false, fault: max(found.fault, rope.closureFault()) }
     else compareChunk(s, leaf, found.local);
 }
@@ -186,8 +193,8 @@ type NoOp = { equal: Bool, fault: U64 };
 
 // Whether the replacement equals the bytes it replaces. A range longer than
 // 64 stored leaves is a closure fault.
-fn sameBytes(arena: rope.Arena, rows: Rows, root: U64, start: U64, end: U64, bytes: Replacement) -> NoOp {
-  let initial: Compare = { arena, rows, bytes, root, start, pos: start, end, equal: true, fault: rope.ok() };
+fn sameBytes(arena: rope.Arena, c: closure.Closure, root: U64, start: U64, end: U64, bytes: Replacement) -> NoOp {
+  let initial: Compare = { arena, closure: c, bytes, root, start, pos: start, end, equal: true, fault: rope.ok() };
   let final = fold(initial, compareStep, 64u64);
   return if start <= end && end - start == len(bytes)
     then (if start == end then { equal: true, fault: rope.ok() } else { equal: final.equal && final.pos == end, fault: if final.pos == end then final.fault else rope.closureFault() })

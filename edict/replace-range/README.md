@@ -163,6 +163,15 @@ growth was denied". The modules pin Echo main's `echo.dpo@2` profile
 atom (BLAKE3 over `echo.bridge.attachment-value.v1`). Source has no way to
 compute that digest yet, so the effect intent cannot bump `Buffer.version`.
 
+The arena is split into a read-only stored list (at most 256 closure nodes)
+and two small fresh lists (16 leaves and 128 branches). Folds append only
+to the fresh lists. Leaf bytes are decoded from closure rows when needed.
+Fresh ids are computed over the fresh lists only. The proposal lists the
+arena indexes to emit, deduplicated by id, and the intent builds each write
+inside its loop. A ContentAddressV1 id commits to the node type, the atom and
+the full edge set, so equal ids mean equal content; the separate
+same-id-different-atom check would need a BLAKE3 collision and was removed.
+
 Built through `rope/edict.application.json` with Amblicit `738d3da7`, the
 whole program parses, resolves and type-checks. It then fails the budget
 check under the v1 schedule: 2,236,089,839,033 static steps and

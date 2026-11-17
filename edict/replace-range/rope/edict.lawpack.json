@@ -120,6 +120,21 @@
           "value": 256
         },
         {
+          "coordinate": "jedit.text@2.maxCreatedLeaves",
+          "type": "U64",
+          "value": 16
+        },
+        {
+          "coordinate": "jedit.text@2.maxCreatedBranches",
+          "type": "U64",
+          "value": 128
+        },
+        {
+          "coordinate": "jedit.text@2.maxEmittedNodes",
+          "type": "U64",
+          "value": 144
+        },
+        {
           "coordinate": "jedit.text@2.maxNoOpLeaves",
           "type": "U64",
           "value": 64

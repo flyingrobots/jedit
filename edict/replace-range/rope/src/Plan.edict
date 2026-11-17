@@ -8,10 +8,10 @@ package jedit.text.plan@1;
 use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
 use module jedit.text.codec@1 digest "sha256:319a0656b75a485bb989e6d5f8fca2f04dc57d82379182cf13d12dcf5768075d" as codec;
 use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
-use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
-use module jedit.text.build@1 digest "sha256:f373056bfcb62e1fa6aed1b252bd6bd493f5fe8f4f3d1364807b7974cb5c69a8" as build;
-use module jedit.text.closure@1 digest "sha256:31456473aca5406b63af90a8dd3942a5dd0ab52cb1c4ebcc169c37f395e29802" as closure;
-use module jedit.text.proposal@1 digest "sha256:329deca1dde2886ddcfbf0e614071eb5963c4646358686f6efea24c0cde4ca6b" as proposal;
+use module jedit.text.rope@1 digest "sha256:23bfc95766a101a8c002f1310387fde46fccc9629cda2d77bfd5b01f4eb7452c" as rope;
+use module jedit.text.build@1 digest "sha256:77c1d335b977825ea9f775cedb406770677ff60113b8fed25edfaab3d2472a1f" as build;
+use module jedit.text.closure@1 digest "sha256:87b71ae7a79d87609b66110103ec2a42297fd354b6a7c8e6fed019709d8d1419" as closure;
+use module jedit.text.proposal@1 digest "sha256:14f6b41bde76c2eef9767d6887b274dfa962700b1db796cd4a21cc468be2c845" as proposal;
 
 type Id = Bytes<exact=32>;
 // `anchors` counts the basis Head's anchor edges; exactly one is lawful.
@@ -41,36 +41,26 @@ fn faultCode(fault: U64) -> U64 {
     else if fault == rope.capacityFault() then resourceLimit()
     else if fault == rope.malformedFault() then malformedRope()
     else if fault == rope.factFault() then factMalformed()
-    else if fault == rope.identityFault() || fault == 8u64 then identityMismatch()
+    else if fault == rope.identityFault() then identityMismatch()
     else committed();
 }
 
 // ---- leaf bytes by closure row ----
 
-type Rows = { closure: closure.Closure, rows: build.Rows };
-fn rowStep(s: Rows) -> Rows {
-  let r = closure.rowOf(s.closure, listLen(s.rows));
-  let bytes = if r.nodeType == ids.leafType() then codec.leafFact(r.atomBytes).fact.bytes else b"";
-  return if listLen(s.rows) < listLen(s.closure.nodes) && listLen(s.rows) < 256u64
-    then { closure: s.closure, rows: listAppend(s.rows, bytes) } else s;
-}
-fn leafRows(c: closure.Closure) -> build.Rows { return fold({ closure: c, rows: [] }, rowStep, 256u64).rows; }
-
-fn bytesAt(rows: build.Rows, arena: rope.Arena, i: U64) -> build.LeafBytes {
-  let n = rope.node(arena, i);
-  return if n.source < listLen(rows) then listAt(rows, n.source) else b"";
+fn bytesAt(c: closure.Closure, arena: rope.Arena, i: U64) -> build.LeafBytes {
+  return build.rowBytes(c, rope.node(arena, i).source);
 }
 
 // ---- construction ----
 
 type Built = { tree: rope.Built, pieces: proposal.Pieces };
 
-fn general(arena: rope.Arena, rows: build.Rows, q: Request) -> rope.Built {
+fn general(arena: rope.Arena, c: closure.Closure, q: Request) -> rope.Built {
   let first = rope.find(arena, 0u64, q.start, false);
-  let firstBytes = bytesAt(rows, arena, first.leaf);
+  let firstBytes = bytesAt(c, arena, first.leaf);
   let prefixBreaks = if first.local <= len(firstBytes) then count(slice(firstBytes, 0u64, first.local), b"\n") else 0u64;
   let last = rope.find(arena, 0u64, q.end, false);
-  let lastBytes = bytesAt(rows, arena, last.leaf);
+  let lastBytes = bytesAt(c, arena, last.leaf);
   let suffixBreaks = if last.local <= len(lastBytes) then count(slice(lastBytes, last.local, len(lastBytes)), b"\n") else 0u64;
   let prefix = rope.cut(arena, 0u64, q.start, true, prefixBreaks);
   let middle = build.fromBytes(prefix.arena, q.replacement);
@@ -81,22 +71,22 @@ fn general(arena: rope.Arena, rows: build.Rows, q: Request) -> rope.Built {
   return { arena: whole.arena, root: whole.root, fault };
 }
 
-fn construct(arena: rope.Arena, rows: build.Rows, q: Request) -> Built {
+fn construct(arena: rope.Arena, c: closure.Closure, q: Request) -> Built {
   let located = build.locate(arena, 0u64, q.start, q.end);
-  let leaf = bytesAt(rows, arena, located.cur);
+  let leaf = bytesAt(c, arena, located.cur);
   let bytes = build.rewritten(leaf, located.start, located.end, q.replacement);
   let leafCase = rope.present(arena, 0u64) && !located.spanning && located.fault == rope.ok()
     && rope.node(arena, located.cur).leaf && 0u64 < len(bytes) && len(bytes) <= 4096u64;
   let pieces: proposal.Pieces = { replacement: q.replacement, rewritten: bytes };
   let rewrite = build.rewrite(located, len(bytes), count(bytes, b"\n"));
-  let fresh = if rope.present(arena, 0u64) then general(arena, rows, q) else build.fromBytes(arena, q.replacement);
+  let fresh = if rope.present(arena, 0u64) then general(arena, c, q) else build.fromBytes(arena, q.replacement);
   return { tree: if leafCase then rewrite else fresh, pieces };
 }
 
 // Whether an offset falls inside a code point of the basis text.
-fn splits(arena: rope.Arena, rows: build.Rows, offset: U64) -> Bool {
+fn splits(arena: rope.Arena, c: closure.Closure, offset: U64) -> Bool {
   let found = rope.find(arena, 0u64, offset, true);
-  return rope.present(arena, 0u64) && !build.leafBoundary(bytesAt(rows, arena, found.leaf), found.local);
+  return rope.present(arena, 0u64) && !build.leafBoundary(bytesAt(c, arena, found.leaf), found.local);
 }
 
 // ---- the plan ----
@@ -117,9 +107,8 @@ fn plan(c: closure.Closure, q: Request) -> Plan {
   let shape = if rooted then root.byteLength == head.fact.byteLength
       && isSome(checkedAdd(root.lineBreaks, 1u64)) && default(checkedAdd(root.lineBreaks, 1u64), 0u64) == head.fact.lineCount
     else head.fact.byteLength == 0u64 && head.fact.lineCount == 1u64;
-  let rows = leafRows(c);
-  let built = construct(loaded.arena, rows, q);
-  let same = build.sameBytes(loaded.arena, rows, 0u64, q.start, q.end, q.replacement);
+  let built = construct(loaded.arena, c, q);
+  let same = build.sameBytes(loaded.arena, c, 0u64, q.start, q.end, q.replacement);
   let tree = built.tree;
   let top = rope.node(tree.arena, tree.root);
   let lineCount = checkedAdd(if rope.present(tree.arena, tree.root) then top.lineBreaks else 0u64, 1u64);
@@ -132,7 +121,7 @@ fn plan(c: closure.Closure, q: Request) -> Plan {
     else if !shape then malformedRope()
     else if built.tree.fault != rope.ok() then faultCode(built.tree.fault)
     else if same.fault != rope.ok() then faultCode(same.fault)
-    else if splits(loaded.arena, rows, q.start) || splits(loaded.arena, rows, q.end) then boundaryInvalid()
+    else if splits(loaded.arena, c, q.start) || splits(loaded.arena, c, q.end) then boundaryInvalid()
     else if same.equal then noOp()
     else if !isSome(lineCount) || !isSome(sequence) then arithmeticOverflow()
     else faultCode(p.fault);

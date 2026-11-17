@@ -13,11 +13,12 @@
 // it until echo#1011 lands, so this program does not yet emit it.
 package jedit.text.replace_range@2;
 
-use lawpack jedit.text@2 digest "sha256:9f7a556b1ad3c708c38bcc440e265021220c608d019e561565c3ce70c1e10fed" as text;
+use lawpack jedit.text@2 digest "sha256:70284264fe6458bb373ddb5576b93b7339535a0d9e7504c18c55e4e05f317c93" as text;
 use module jedit.text.codec@1 digest "sha256:319a0656b75a485bb989e6d5f8fca2f04dc57d82379182cf13d12dcf5768075d" as codec;
 use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
-use module jedit.text.closure@1 digest "sha256:31456473aca5406b63af90a8dd3942a5dd0ab52cb1c4ebcc169c37f395e29802" as closure;
-use module jedit.text.plan@1 digest "sha256:a0cea1165f04473ef4e799f9facd3bb4f0441209d8d159f398438bcb697e0e7b" as plan;
+use module jedit.text.closure@1 digest "sha256:87b71ae7a79d87609b66110103ec2a42297fd354b6a7c8e6fed019709d8d1419" as closure;
+use module jedit.text.proposal@1 digest "sha256:14f6b41bde76c2eef9767d6887b274dfa962700b1db796cd4a21cc468be2c845" as proposal;
+use module jedit.text.plan@1 digest "sha256:70d1864663f83bca282552eab7feb64b8f847e78436e9c547b54f12a04c3cee2" as plan;
 
 type Input = {
   warpId: text.NodeId, bufferId: text.NodeId, basisHeadId: text.NodeId,
@@ -91,11 +92,15 @@ intent replaceRange(input: Input) returns Output
   require p.code != plan.noOp() else text.NoOp;
   require p.code == plan.committed() else text.MalformedRope;
 
-  for node in p.proposal.nodes bounded 256 {
+  for index in p.proposal.emitted bounded 144 {
+    let node: text.NodeWrite = proposal.nodeWrite(p.proposal.context, index);
     let ensured: text.Written = text.ensureNode(node);
-  }
-  for edge in p.proposal.edges bounded 512 {
-    let ensured: text.Written = text.ensureEdge(edge);
+    if proposal.isBranch(p.proposal.context, index) {
+      let leftEdge: text.EdgeWrite = proposal.childWrite(p.proposal.context, index, false);
+      let leftEnsured: text.Written = text.ensureEdge(leftEdge);
+      let rightEdge: text.EdgeWrite = proposal.childWrite(p.proposal.context, index, true);
+      let rightEnsured: text.Written = text.ensureEdge(rightEdge);
+    }
   }
   let headAtom = codec.headAtom(p.head);
   let headId = if p.rooted then ids.rootedHeadId(input.warpId, headAtom, p.rootId, anchor)

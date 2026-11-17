@@ -22,6 +22,7 @@ const REFERENCE_STEPS = Number.MAX_SAFE_INTEGER;
 export const envelope = Object.freeze({
   maxTreeHeight: 32, maxLeafBytes: 4096, maxReplacementBytes: 16384, maxClosureNodes: 256,
   maxClosureOccurrences: 128, maxClosureEdges: 256, maxArenaNodes: 512, maxFreshNodes: 256,
+  maxCreatedLeaves: 16, maxCreatedBranches: 128, maxEmittedNodes: 144,
   maxNoOpLeaves: 64, maxEffects: 1024,
 });
 

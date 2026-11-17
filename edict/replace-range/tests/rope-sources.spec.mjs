@@ -65,10 +65,12 @@ const CLOSURE_EDGE_TYPES = 3;
 test('every fold and list bound in the rope source is an envelope constant', async () => {
   const { envelope } = await import('./rope-lawpack.mjs');
   const height = envelope.maxTreeHeight;
-  const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves, envelope.maxFreshNodes,
+  const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves, envelope.maxFreshNodes, envelope.maxCreatedLeaves,
+    envelope.maxCreatedBranches, envelope.maxEmittedNodes,
     envelope.maxArenaNodes]);
   const allowedLists = new Set([height, envelope.maxArenaNodes, envelope.maxFreshNodes, envelope.maxClosureNodes, envelope.maxClosureOccurrences,
-    envelope.maxClosureEdges, BRANCH_EDGES, CLOSURE_EDGE_TYPES, 256]);
+    envelope.maxClosureEdges, BRANCH_EDGES, CLOSURE_EDGE_TYPES, envelope.maxCreatedLeaves,
+    envelope.maxCreatedBranches, envelope.maxEmittedNodes, 256]);
   for (const { file } of ropeModules) {
     const source = checkedIn(file);
     for (const [, bound] of source.matchAll(/fold\([^;]*?, (\d+)u64\)/g)) {
