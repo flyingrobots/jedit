@@ -15,7 +15,7 @@
 package jedit.text.closure@1;
 
 use target echo.dpo@2 digest "sha256:73bf7e3c96124ffc793b893c32881018990213b4a956401ce72b1cadd5658682" as echo;
-use module jedit.text.codec@1 digest "sha256:bc16cf30f6ddf65563796d87985aec65388e90967bf4245f0d1605f6647df90f" as codec;
+use module jedit.text.codec@1 digest "sha256:b004264172fb301bb075184de6a62232df70dbaca0a2d9fd2b64f740d15e0f33" as codec;
 use module jedit.text.identity@1 digest "sha256:56104d1b27e4eeacf74f997c528c5d2704510b50be7d51b32fda7ae9cd5f036c" as ids;
 use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
 

@@ -99,7 +99,7 @@ const types = Object.freeze({
   AtomQuery: `Record<nodeId:${ID},typeId:${ID},warpId:${ID}>`,
   EdgeQuery: `Record<edgeType:${ID},nodeId:${ID},warpId:${ID}>`,
   Edges: `List<Record<edgeId:${ID},toId:${ID}>,max=2>`,
-  NodeWrite: `Record<atomBytes:Bytes<max=4352>,atomType:${ID},nodeId:${ID},nodeType:${ID},warpId:${ID}>`,
+  NodeWrite: `Record<atomBytes:Bytes<max=25344>,atomType:${ID},nodeId:${ID},nodeType:${ID},warpId:${ID}>`,
   AtomReplace: `Record<atomBytes:Bytes<max=4352>,atomType:${ID},expectedAtomDigest:${ID},nodeId:${ID},warpId:${ID}>`,
   EdgeWrite: `Record<edgeId:${ID},edgeType:${ID},fromId:${ID},toId:${ID},warpId:${ID}>`,
   EdgeReplace: `Record<edgeId:${ID},expectedToId:${ID},toId:${ID},warpId:${ID}>`,

@@ -88,6 +88,12 @@ flat-text source above. They are not yet part of the locked package chain.
   are edge rows 2k and 2k + 1. Loading decodes and types every row,
   identity-checks every node whose outgoing edges are known, and then checks
   extents, line breaks, heights and balance on every expanded branch.
+- `Proposal.edict` computes ContentAddressV1 ids for every arena node in
+  arena order, and emits the normalized proposal over the reachable fresh
+  nodes only. A repeated id with the same atom is emitted once; with a
+  different atom it is a conflict. Slicing never narrows a byte bound, so a
+  fresh atom keeps its largest piece's bound (25,344 bytes). The lawpack's
+  node write admits that bound.
 - The codec parsers are total, reporting `ok`, so the selector and the fold
   steps can use them. The `decode*` functions are the failing forms.
 

@@ -47,7 +47,7 @@
         },
         {
           "coordinate": "jedit.text@2.NodeWrite",
-          "definition": "Record<atomBytes:Bytes<max=4352>,atomType:Bytes<exact=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+          "definition": "Record<atomBytes:Bytes<max=25344>,atomType:Bytes<exact=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>,warpId:Bytes<exact=32>>"
         },
         {
           "coordinate": "jedit.text@2.AtomReplace",

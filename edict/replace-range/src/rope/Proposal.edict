@@ -1,0 +1,124 @@
+// ContentAddressV1 ids for every arena node, and the normalized proposal of
+// the reachable fresh nodes and their edges.
+//
+// Ids are computed in arena order: a fresh node's children always precede
+// it, and a stored node keeps its row id. Emission follows the reachable
+// fresh nodes only. Repeated text yields repeated ids: an id already emitted
+// with the same atom is emitted once; the same id with a different atom is a
+// conflict, never a silent choice.
+package jedit.text.proposal@1;
+
+use target echo.dpo@2 digest "sha256:73bf7e3c96124ffc793b893c32881018990213b4a956401ce72b1cadd5658682" as echo;
+use module jedit.text.codec@1 digest "sha256:b004264172fb301bb075184de6a62232df70dbaca0a2d9fd2b64f740d15e0f33" as codec;
+use module jedit.text.identity@1 digest "sha256:56104d1b27e4eeacf74f997c528c5d2704510b50be7d51b32fda7ae9cd5f036c" as ids;
+use module jedit.text.rope@1 digest "sha256:d8802e436676d63a5d6bfa5659b766803a17d1762a4f05f97fb311daefc32f07" as rope;
+use module jedit.text.closure@1 digest "sha256:4c22e08a648a44feacb726cb4815f887cdfad45f2751fd338f86b1845da1bcd7" as closure;
+
+type Id = Bytes<exact=32>;
+type Pieces = { replacement: Bytes<max=16384>, rewritten: Bytes<max=25088> };
+type Outgoing = { edgeType: Id, to: Id };
+
+// A fresh node's atom.
+fn leafBytes(c: closure.Closure, pieces: Pieces, n: rope.Node) -> Bytes<max=25088> {
+  let row = closure.rowOf(c, n.source);
+  let stored = codec.leafFact(row.atomBytes).fact.bytes;
+  let piece = if n.source == 0u64 then pieces.replacement else pieces.rewritten;
+  return if n.row && n.from <= n.to && n.to <= len(stored) then slice(stored, n.from, n.to)
+    else if !n.row && n.from <= n.to && n.to <= len(piece) then slice(piece, n.from, n.to)
+    else b"";
+}
+// Slicing never narrows a byte bound, so a fresh atom keeps the bound of the
+// largest piece; Echo's ensure-node admits that bound.
+type FreshAtom = Bytes<max=25344>;
+fn atomOf(c: closure.Closure, pieces: Pieces, n: rope.Node) -> FreshAtom {
+  let bytes = leafBytes(c, pieces, n);
+  return if n.leaf then codec.pieceAtom(bytes, n.lineBreaks)
+    else codec.branchAtom({ byteLength: n.byteLength, lineBreaks: n.lineBreaks, height: n.height });
+}
+
+// ---- ids in arena order ----
+
+type Ids = { closure: closure.Closure, pieces: Pieces, warp: Id, arena: rope.Arena, ids: List<Id, max=512> };
+
+fn idAt(list: List<Id, max=512>, i: U64) -> Id { return if i < listLen(list) then listAt(list, i) else ids.leafType(); }
+
+fn idStep(s: Ids) -> Ids {
+  let p = listLen(s.ids);
+  let n = rope.node(s.arena, p);
+  let atom = atomOf(s.closure, s.pieces, n);
+  let edges: List<Outgoing, max=2> = [{ edgeType: ids.leftEdge(), to: idAt(s.ids, n.left) },
+    { edgeType: ids.rightEdge(), to: idAt(s.ids, n.right) }];
+  let id = if n.stored then closure.rowOf(s.closure, n.source).nodeId
+    else if n.leaf then echo.contentAddress(s.warp, ids.leafType(), ids.leafAtomType(), atom, [])
+    else echo.contentAddress(s.warp, ids.branchType(), ids.branchAtomType(), atom, edges);
+  return if p < listLen(s.arena) && listLen(s.ids) < 512u64
+    then { closure: s.closure, pieces: s.pieces, warp: s.warp, arena: s.arena, ids: listAppend(s.ids, id) }
+    else s;
+}
+
+fn arenaIds(c: closure.Closure, pieces: Pieces, warp: Id, arena: rope.Arena) -> List<Id, max=512> {
+  return fold({ closure: c, pieces, warp, arena, ids: [] }, idStep, 512u64).ids;
+}
+
+// ---- the normalized proposal ----
+
+type NodeWrite = { atomBytes: FreshAtom, atomType: Id, nodeId: Id, nodeType: Id, warpId: Id };
+type EdgeWrite = { edgeId: Id, edgeType: Id, fromId: Id, toId: Id, warpId: Id };
+type Emit = {
+  closure: closure.Closure, pieces: Pieces, warp: Id, arena: rope.Arena, ids: List<Id, max=512>,
+  order: List<U64, max=256>, next: U64,
+  nodes: List<NodeWrite, max=256>, edges: List<EdgeWrite, max=512>, fault: U64,
+};
+
+fn conflictFault() -> U64 { return 8u64; }
+
+// Whether `write` repeats an earlier node write: 1 same, 2 conflicting, 0 new.
+type Seen = { writes: List<NodeWrite, max=256>, write: NodeWrite, next: U64, verdict: U64 };
+fn seenStep(s: Seen) -> Seen {
+  let earlier = if s.next < listLen(s.writes) then listAt(s.writes, s.next) else s.write;
+  let verdict = if !(s.next < listLen(s.writes)) || earlier.nodeId != s.write.nodeId || s.verdict != 0u64 then s.verdict
+    else if earlier.atomBytes == s.write.atomBytes && earlier.nodeType == s.write.nodeType then 1u64 else 2u64;
+  return if s.next < 256u64 then { writes: s.writes, write: s.write, next: s.next + 1u64, verdict } else s;
+}
+fn seen(writes: List<NodeWrite, max=256>, write: NodeWrite) -> U64 {
+  return fold({ writes, write, next: 0u64, verdict: 0u64 }, seenStep, 256u64).verdict;
+}
+
+fn edgeWrite(warp: Id, from: Id, edgeType: Id, to: Id) -> EdgeWrite {
+  return { edgeId: ids.edgeId(warp, from, edgeType, to), edgeType, fromId: from, toId: to, warpId: warp };
+}
+
+fn push(list: List<EdgeWrite, max=512>, item: EdgeWrite) -> List<EdgeWrite, max=512> {
+  return if listLen(list) < 512u64 then listAppend(list, item) else list;
+}
+
+fn emitStep(s: Emit) -> Emit {
+  let p = if s.next < listLen(s.order) then listAt(s.order, s.next) else rope.absent();
+  let n = rope.node(s.arena, p);
+  let atom = atomOf(s.closure, s.pieces, n);
+  let id = idAt(s.ids, p);
+  let write: NodeWrite = { atomBytes: atom,
+    atomType: if n.leaf then ids.leafAtomType() else ids.branchAtomType(), nodeId: id,
+    nodeType: if n.leaf then ids.leafType() else ids.branchType(), warpId: s.warp };
+  let verdict = seen(s.nodes, write);
+  let nodes = if verdict == 0u64 && listLen(s.nodes) < 256u64 then listAppend(s.nodes, write) else s.nodes;
+  let branchNew = verdict == 0u64 && !n.leaf;
+  let withLeft = if branchNew then push(s.edges, edgeWrite(s.warp, id, ids.leftEdge(), idAt(s.ids, n.left))) else s.edges;
+  let edges = if branchNew then push(withLeft, edgeWrite(s.warp, id, ids.rightEdge(), idAt(s.ids, n.right))) else withLeft;
+  let fault = if verdict == 2u64 then conflictFault() else s.fault;
+  return if s.fault == rope.ok() && s.next < listLen(s.order) && s.next < 256u64
+    then { closure: s.closure, pieces: s.pieces, warp: s.warp, arena: s.arena, ids: s.ids, order: s.order,
+      next: s.next + 1u64, nodes, edges, fault }
+    else s;
+}
+
+type Proposal = { nodes: List<NodeWrite, max=256>, edges: List<EdgeWrite, max=512>, rootId: Id, fault: U64 };
+
+fn propose(c: closure.Closure, pieces: Pieces, warp: Id, arena: rope.Arena, root: U64) -> Proposal {
+  let all = arenaIds(c, pieces, warp, arena);
+  let fresh = rope.freshNodes(arena, root);
+  let initial: Emit = { closure: c, pieces, warp, arena, ids: all, order: fresh.order, next: 0u64,
+    nodes: [], edges: [], fault: fresh.fault };
+  let final = fold(initial, emitStep, 256u64);
+  return { nodes: final.nodes, edges: final.edges, rootId: idAt(all, root), fault: final.fault };
+}
