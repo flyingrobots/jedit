@@ -71,6 +71,11 @@ flat-text source above. They are not yet part of the locked package chain.
 - `Rope.edict` holds the arena form of `rope-build.mts`: branch, the two
   rotations, and joinRight, joinLeft and join as bounded folds. The folds use
   a 32-entry path stack and 66 steps, sized for `text.maxTreeHeight = 32`.
+  It also holds `find` (the leaf holding an offset), `cut` (prefix and suffix
+  by path copy, joining the siblings they pass), fresh leaves, and
+  `freshNodes`. `freshNodes` is a breadth-first walk that lists only the
+  fresh nodes reachable from the new root, so nodes a rotation discarded are
+  never emitted.
 
 `tests/rope-modules.mjs` lists the modules in dependency order and pins each
 `use module` import to its dependency's source digest.
