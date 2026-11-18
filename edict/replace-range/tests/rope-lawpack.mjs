@@ -40,7 +40,7 @@ const obstructions = Object.freeze([
   ['RangeOrderInvalid', 'domainMappable'], ['ReplacementNotUtf8', 'domainMappable'],
   ['RangeOutOfBounds', 'domainMappable'], ['ResourceLimitExceeded', 'resourceFault'],
   ['ContentIdentityMismatch', 'integrityFault'], ['MalformedRope', 'integrityFault'],
-  ['ClosureInsufficient', 'integrityFault'], ['Utf8BoundaryInvalid', 'domainMappable'], ['NoOp', 'domainMappable'],
+  ['ClosureInsufficient', 'domainMappable'], ['Utf8BoundaryInvalid', 'domainMappable'], ['NoOp', 'domainMappable'],
   ['ArithmeticOverflow', 'integrityFault'],
 ]);
 

@@ -339,7 +339,7 @@
         },
         {
           "coordinate": "jedit.text@2.ClosureInsufficient",
-          "authorityClass": "integrityFault",
+          "authorityClass": "domainMappable",
           "payloadSchema": "jedit.text@2.Detail"
         },
         {

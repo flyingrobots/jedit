@@ -12,7 +12,7 @@
 // attachment-value digest of those exact bytes.
 package jedit.text.replace_range@2;
 
-use lawpack jedit.text@2 digest "sha256:b08bb04a43ba936046702cdaa2390c46d3ab1571c8b3a4f4cb703a7ab34f374b" as text;
+use lawpack jedit.text@2 digest "sha256:554124ca417e66173fe5a7888b5d8f71a2ced1e5ecacd0ecdac92dbbff0df1ee" as text;
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
 use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
 use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
@@ -37,15 +37,15 @@ intent replaceRange(input: Input) returns Output
   let bufferAtom: text.Atom = text.readAtom({ nodeId: input.bufferId, typeId: ids.bufferAtomType(), warpId: input.warpId })
     else {
       missing(query) => text.FactMissing,
-      required(query) => text.FactMissing,
+      required(query) => text.FactMalformed,
       wrongType(query) => text.FactMalformed,
-      tooLarge(query) => text.FactMalformed,
+      tooLarge(query) => text.ResourceLimitExceeded,
     };
   let buffer = codec.decodeBuffer(bufferAtom) else text.FactMalformed;
   let canonical: text.Edges = text.outgoing({ edgeType: ids.canonicalHeadEdge(), nodeId: input.bufferId, warpId: input.warpId })
     else {
       sourceMissing(query) => text.FactMissing,
-      edgeBound(query) => text.BasisNotCanonical,
+      edgeBound(query) => text.ResourceLimitExceeded,
       scanBound(query) => text.ResourceLimitExceeded,
     };
   let current = if listLen(canonical) == 1u64 && 0u64 < listLen(canonical) then listAt(canonical, 0u64).toId else ids.leafType();
@@ -56,7 +56,7 @@ intent replaceRange(input: Input) returns Output
   let anchors: text.Edges = text.outgoing({ edgeType: ids.anchorEdge(), nodeId: input.basisHeadId, warpId: input.warpId })
     else {
       sourceMissing(query) => text.FactMissing,
-      edgeBound(query) => text.MalformedRope,
+      edgeBound(query) => text.ResourceLimitExceeded,
       scanBound(query) => text.ResourceLimitExceeded,
     };
   let anchor = if 0u64 < listLen(anchors) then listAt(anchors, 0u64).toId else ids.leafType();
