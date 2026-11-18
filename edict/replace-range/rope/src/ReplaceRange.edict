@@ -6,19 +6,19 @@
 // 4. The pure plan: Head checks, validated arena, construction, boundaries,
 //    no-op, counters and the normalized proposal.
 // 5. Ensure every fresh node and edge, the new Head with its root and anchor,
-//    and retarget canonicalHead, all in one atomic proposal.
+//    retarget canonicalHead and bump Buffer.version, all in one atomic proposal.
 //
-// Boundary: the Buffer version bump needs ReplaceAtom's expectedAtomDigest,
-// Echo's attachment-value digest of the current atom. Source cannot compute
-// it until echo#1011 lands, so this program does not yet emit it.
+// The Buffer version bump replaces the atom it read, guarded by Echo's
+// attachment-value digest of those exact bytes.
 package jedit.text.replace_range@2;
 
-use lawpack jedit.text@2 digest "sha256:70284264fe6458bb373ddb5576b93b7339535a0d9e7504c18c55e4e05f317c93" as text;
+use lawpack jedit.text@2 digest "sha256:b08bb04a43ba936046702cdaa2390c46d3ab1571c8b3a4f4cb703a7ab34f374b" as text;
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
 use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
-use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
-use module jedit.text.closure@1 digest "sha256:23cb14a2eff98b37a5bb978c63d5ede3bdf5608f3ca37d84cec4b4f774552d15" as closure;
-use module jedit.text.proposal@1 digest "sha256:28e492c2fe0dccc315ae100771d7ed3812caad743974c5fbf159c5aaab2878a2" as proposal;
-use module jedit.text.plan@1 digest "sha256:81759f23eb33103e0cfe91a3fe2331cdcc6e30c876fc914c5a53dabb5d9e7a47" as plan;
+use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
+use module jedit.text.closure@1 digest "sha256:b871b39335b77d1e469b12fbc155407081ca2cfb46f7ec4efb9d1ce8456159cd" as closure;
+use module jedit.text.proposal@1 digest "sha256:6f3c4af84e1c2248f066cd93ea1d66aeaa725e70ce23fca1f3db3309282e2087" as proposal;
+use module jedit.text.plan@1 digest "sha256:245b497c2f99aa12d6f744a3e4b823a172acc821eb58a981f5dd7665e0a28c44" as plan;
 
 type Input = {
   warpId: text.NodeId, bufferId: text.NodeId, basisHeadId: text.NodeId,
@@ -116,6 +116,14 @@ intent replaceRange(input: Input) returns Output
     edgeType: ids.anchorEdge(), fromId: headId, toId: anchor, warpId: input.warpId });
   let retargeted: text.Written = text.replaceEdge({ edgeId: ids.canonicalHeadSlot(input.warpId, input.bufferId),
     expectedToId: input.basisHeadId, toId: headId, warpId: input.warpId });
+
+  let version = checkedAdd(buffer.version, 1u64);
+  require isSome(version) else text.ArithmeticOverflow;
+  let bumped = codec.bufferAtom({ version: default(version, 0u64), encodedKey: buffer.encodedKey });
+  let expectedAtomDigest = echo.attachmentValueDigest(ids.bufferAtomType(), bufferAtom);
+  let bump: text.AtomReplace = { atomBytes: bumped, atomType: ids.bufferAtomType(), expectedAtomDigest,
+    nodeId: input.bufferId, warpId: input.warpId };
+  let replaced: text.Written = text.replaceAtom(bump);
 
   let byteLength = p.head.byteLength;
   let lineCount = p.head.lineCount;

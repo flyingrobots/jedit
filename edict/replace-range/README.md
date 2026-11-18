@@ -106,8 +106,9 @@ flat-text source above. They are not yet part of the locked package chain.
   reads the Head's anchor, and makes one closure read. It then maps the
   plan's outcome code to its typed obstruction. On success it ensures every
   fresh node and edge in bounded `for` loops, ensures the new Head with its
-  root and anchor edges, and retargets canonicalHead. It does not yet emit
-  the Buffer version bump; see below.
+  root and anchor edges, retargets canonicalHead, and bumps `Buffer.version`
+  with a `ReplaceAtom` guarded by Echo's attachment-value digest of the atom
+  it read (`echo.dpo@2.attachmentValueDigest`, echo#1011).
 - The codec parsers are total, reporting `ok`, so the selector and the fold
   steps can use them. The `decode*` functions are the failing forms.
 
@@ -155,12 +156,7 @@ Target IR on its own.
 
 Against Echo main `93684efd`'s provider, the whole plan compiles to Core and
 Target IR, and the provider lowerer then fails with "provider guest resource
-growth was denied". The modules pin Echo main's `echo.dpo@2` profile
-(`d17fbd0b…`), now that PR #990 has merged.
-
-`ReplaceAtom` needs Echo's attachment-value digest of the current Buffer
-atom (BLAKE3 over `echo.bridge.attachment-value.v1`). Source has no way to
-compute that digest yet, so the effect intent cannot bump `Buffer.version`.
+growth was denied". The modules pin Echo main `1e0228f2`'s `echo.dpo@2` profile (`7cadb97e…`).
 
 The arena is split into a read-only stored list (at most 256 closure nodes)
 and two small fresh lists (16 leaves and 128 branches). Folds append only

@@ -37,6 +37,10 @@
         {
           "coordinate": "echo.dpo@2.slotEdgeId",
           "contractVersion": "echo.content-address/v1"
+        },
+        {
+          "coordinate": "echo.dpo@2.attachmentValueDigest",
+          "contractVersion": "echo.content-address/v1"
         }
       ]
     }

@@ -7,25 +7,25 @@
       "path": "manifest.cbor",
       "kind": "manifest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:70284264fe6458bb373ddb5576b93b7339535a0d9e7504c18c55e4e05f317c93"
+      "digest": "sha256:b08bb04a43ba936046702cdaa2390c46d3ab1571c8b3a4f4cb703a7ab34f374b"
     },
     {
       "path": "manifest.sha256",
       "kind": "manifestDigest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:70284264fe6458bb373ddb5576b93b7339535a0d9e7504c18c55e4e05f317c93"
+      "digest": "sha256:b08bb04a43ba936046702cdaa2390c46d3ab1571c8b3a4f4cb703a7ab34f374b"
     },
     {
       "path": "exports.cbor",
       "kind": "exports",
       "coordinate": "jedit.text.exports/v2",
-      "digest": "sha256:7088caa0e15e45cdf9bea78d27ccaa40315eea8e06116620d8ef84485c289019"
+      "digest": "sha256:64eae98e37a1e9a8eab6bc8bccb5e7ec83a0bb8a41ac627be693bb1f7350e9f3"
     },
     {
       "path": "exports.sha256",
       "kind": "exportsDigest",
       "coordinate": "jedit.text.exports/v2",
-      "digest": "sha256:7088caa0e15e45cdf9bea78d27ccaa40315eea8e06116620d8ef84485c289019"
+      "digest": "sha256:64eae98e37a1e9a8eab6bc8bccb5e7ec83a0bb8a41ac627be693bb1f7350e9f3"
     },
     {
       "path": "compatibility.cbor",
@@ -43,13 +43,13 @@
       "path": "echo-operation-configuration.cbor",
       "kind": "localResource",
       "coordinate": "echo.operation-lowering-configuration/v1",
-      "digest": "sha256:1e56cd508de3807cb11eae0ced25cc40842c761da7750d652d13e8712284990b"
+      "digest": "sha256:ae66ff031143ad1ca38ef8e10a23b61754d6ebb68eaa3e2fcb6a35904f0c4215"
     },
     {
       "path": "echo-operation-configuration.sha256",
       "kind": "localResourceDigest",
       "coordinate": "echo.operation-lowering-configuration/v1",
-      "digest": "sha256:1e56cd508de3807cb11eae0ced25cc40842c761da7750d652d13e8712284990b"
+      "digest": "sha256:ae66ff031143ad1ca38ef8e10a23b61754d6ebb68eaa3e2fcb6a35904f0c4215"
     },
     {
       "path": "fixtures.cbor",
@@ -79,13 +79,13 @@
       "path": "adapter.cbor",
       "kind": "adapter",
       "coordinate": "jedit.text.echo-adapter/v2",
-      "digest": "sha256:a8e556d8b043f21ea4e5eddae9f4aec65633002e4826c38d2809e1e6f4694119"
+      "digest": "sha256:4e1647fb86ff3da4c3ce521c45c9c6fc316386652e0791f8c92c0f81e6bf999f"
     },
     {
       "path": "adapter.sha256",
       "kind": "adapterDigest",
       "coordinate": "jedit.text.echo-adapter/v2",
-      "digest": "sha256:a8e556d8b043f21ea4e5eddae9f4aec65633002e4826c38d2809e1e6f4694119"
+      "digest": "sha256:4e1647fb86ff3da4c3ce521c45c9c6fc316386652e0791f8c92c0f81e6bf999f"
     }
   ]
 }

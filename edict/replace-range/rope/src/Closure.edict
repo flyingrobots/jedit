@@ -21,9 +21,9 @@
 // fixture's read set and above by the envelope.
 package jedit.text.closure@1;
 
-use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
 use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
-use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
+use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
 use module jedit.text.rope@1 digest "sha256:0b1d298e609f70ebaca17d420d6c9eee3986c9e4d5cc260ceed09771701dd4f8" as rope;
 
 type NodeRow = { atomBytes: Bytes<max=4352>, atomType: Bytes<max=32>, nodeId: Bytes<exact=32>, nodeType: Bytes<exact=32> };

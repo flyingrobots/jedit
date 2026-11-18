@@ -91,3 +91,10 @@ test('every rope module targets the echo.dpo@2 profile the lawpack adapter pins'
     }
   }
 });
+
+test('the intent bumps Buffer.version against the digest of the atom it read', () => {
+  const intent = checkedIn('ReplaceRange.edict');
+  assert.match(intent, /echo\.attachmentValueDigest\(ids\.bufferAtomType\(\), bufferAtom\)/);
+  assert.match(intent, /text\.replaceAtom\(/);
+  assert.match(intent, /version: \w+/);
+});

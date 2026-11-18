@@ -3,7 +3,7 @@
 // application recipe. The type ids are BLAKE3 over "type:" and the label.
 package jedit.text.identity@1;
 
-use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
 
 type Id = Bytes<exact=32>;
 
