@@ -8,10 +8,10 @@ package jedit.text.plan@1;
 use target echo.dpo@2 digest "sha256:d17fbd0baf7bfddd9a6c9667e676db2ab45bae104e77550760340bc8f0736003" as echo;
 use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
 use module jedit.text.identity@1 digest "sha256:cc3aa4421ff45024f9f17a1d54ac1abdd51ec3facfa27ae464be7b3498ef2f36" as ids;
-use module jedit.text.rope@1 digest "sha256:23bfc95766a101a8c002f1310387fde46fccc9629cda2d77bfd5b01f4eb7452c" as rope;
-use module jedit.text.build@1 digest "sha256:1e417171455d68dcadea42e7369ec6fcc8021faa46029043366ffa445477f528" as build;
-use module jedit.text.closure@1 digest "sha256:0f0c6e713a970e6d622679e6c809388bc6d88c3e86b4b3343ade77006167b76b" as closure;
-use module jedit.text.proposal@1 digest "sha256:2bc15d007db96dea1b1f4b9991cfc7c75e4045558e01b5e0826ca0af56c278ac" as proposal;
+use module jedit.text.rope@1 digest "sha256:0b1d298e609f70ebaca17d420d6c9eee3986c9e4d5cc260ceed09771701dd4f8" as rope;
+use module jedit.text.build@1 digest "sha256:60a64e856fbe344a8eb8d8296b177f5fa27d938466e98e887e2fac231711a57e" as build;
+use module jedit.text.closure@1 digest "sha256:23cb14a2eff98b37a5bb978c63d5ede3bdf5608f3ca37d84cec4b4f774552d15" as closure;
+use module jedit.text.proposal@1 digest "sha256:28e492c2fe0dccc315ae100771d7ed3812caad743974c5fbf159c5aaab2878a2" as proposal;
 
 type Id = Bytes<exact=32>;
 // `anchors` counts the basis Head's anchor edges; exactly one is lawful.

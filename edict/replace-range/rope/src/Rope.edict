@@ -24,7 +24,14 @@ type Branch = { left: U64, right: U64, byteLength: U64, lineBreaks: U64, height:
 // The read-only stored closure plus two small fresh lists. Index space:
 // stored [0, 256), fresh leaves [256, 272), fresh branches [272, 400).
 // Folds append only to the small fresh lists, never to the stored list.
-type Arena = { stored: List<Node, max=256>, leaves: List<Node, max=16>, branches: List<Branch, max=128> };
+type Arena = { stored: List<Stored, max=256>, leaves: List<FreshLeaf, max=16>, branches: List<Branch, max=128> };
+// A stored closure node, decoded once: its children are arena positions and
+// `row` is its closure row.
+type Stored = { leaf: Bool, expanded: Bool, byteLength: U64, lineBreaks: U64, height: U64, left: U64, right: U64, row: U64 };
+// A fresh leaf holds source[from, to) of a closure row (`row`) or a piece.
+type FreshLeaf = { row: Bool, source: U64, from: U64, to: U64, byteLength: U64, lineBreaks: U64 };
+// The lean view the folds read: no atom bytes and no leaf source.
+type View = { leaf: Bool, open: Bool, stored: Bool, byteLength: U64, lineBreaks: U64, height: U64, left: U64, right: U64 };
 
 // Fault codes carried in fold state.
 fn ok() -> U64 { return 0u64; }
@@ -43,29 +50,54 @@ fn emptyNode() -> Node {
   return { stored: false, expanded: false, leaf: true, byteLength: 0u64, lineBreaks: 0u64, height: 0u64,
     left: 4294967295u64, right: 4294967295u64, row: false, source: 0u64, from: 0u64, to: 0u64 };
 }
-fn branchNode(b: Branch) -> Node {
-  return { stored: false, expanded: true, leaf: false, byteLength: b.byteLength, lineBreaks: b.lineBreaks,
-    height: b.height, left: b.left, right: b.right, row: false, source: 0u64, from: 0u64, to: 0u64 };
+fn emptyView() -> View {
+  return { leaf: true, open: false, stored: false, byteLength: 0u64, lineBreaks: 0u64, height: 0u64,
+    left: 4294967295u64, right: 4294967295u64 };
 }
-fn emptyArena(stored: List<Node, max=256>) -> Arena { return { stored, leaves: [], branches: [] }; }
+fn emptyArena(stored: List<Stored, max=256>) -> Arena { return { stored, leaves: [], branches: [] }; }
 
-fn node(arena: Arena, i: U64) -> Node {
-  return if i < listLen(arena.stored) then listAt(arena.stored, i)
-    else if 256u64 <= i && i - 256u64 < listLen(arena.leaves) then listAt(arena.leaves, i - 256u64)
-    else if 272u64 <= i && i - 272u64 < listLen(arena.branches) then branchNode(listAt(arena.branches, i - 272u64))
-    else emptyNode();
+fn storedView(n: Stored) -> View {
+  return { leaf: n.leaf, open: !n.leaf && n.expanded, stored: true, byteLength: n.byteLength, lineBreaks: n.lineBreaks,
+    height: n.height, left: n.left, right: n.right };
 }
-fn height(arena: Arena, i: U64) -> U64 { return node(arena, i).height; }
-fn byteLength(arena: Arena, i: U64) -> U64 { return node(arena, i).byteLength; }
+fn leafView(n: FreshLeaf) -> View {
+  return { leaf: true, open: false, stored: false, byteLength: n.byteLength, lineBreaks: n.lineBreaks, height: 1u64,
+    left: 4294967295u64, right: 4294967295u64 };
+}
+fn branchView(b: Branch) -> View {
+  return { leaf: false, open: true, stored: false, byteLength: b.byteLength, lineBreaks: b.lineBreaks, height: b.height,
+    left: b.left, right: b.right };
+}
+
+// The lean view of node i; the empty view when i names no node.
+fn view(arena: Arena, i: U64) -> View {
+  return if i < listLen(arena.stored) then storedView(listAt(arena.stored, i))
+    else if 256u64 <= i && i - 256u64 < listLen(arena.leaves) then leafView(listAt(arena.leaves, i - 256u64))
+    else if 272u64 <= i && i - 272u64 < listLen(arena.branches) then branchView(listAt(arena.branches, i - 272u64))
+    else emptyView();
+}
+
+// The full record of node i, with its leaf source, for byte-level callers.
+fn node(arena: Arena, i: U64) -> Node {
+  let v = view(arena, i);
+  let s = if i < listLen(arena.stored) then listAt(arena.stored, i)
+    else { leaf: true, expanded: false, byteLength: 0u64, lineBreaks: 0u64, height: 0u64, left: 0u64, right: 0u64, row: 0u64 };
+  let f = if 256u64 <= i && i - 256u64 < listLen(arena.leaves) then listAt(arena.leaves, i - 256u64)
+    else { row: false, source: 0u64, from: 0u64, to: 0u64, byteLength: 0u64, lineBreaks: 0u64 };
+  let stored = i < listLen(arena.stored);
+  return { stored, expanded: v.open || (stored && s.expanded), leaf: v.leaf, byteLength: v.byteLength,
+    lineBreaks: v.lineBreaks, height: v.height, left: v.left, right: v.right,
+    row: stored || f.row, source: if stored then s.row else f.source,
+    from: if stored then 0u64 else f.from, to: if stored then v.byteLength else f.to };
+}
+fn height(arena: Arena, i: U64) -> U64 { return view(arena, i).height; }
+fn byteLength(arena: Arena, i: U64) -> U64 { return view(arena, i).byteLength; }
 fn present(arena: Arena, i: U64) -> Bool {
   return i < listLen(arena.stored) || (256u64 <= i && i - 256u64 < listLen(arena.leaves))
     || (272u64 <= i && i - 272u64 < listLen(arena.branches));
 }
 // Whether i's children are known: a fresh branch, or a stored branch the closure expanded.
-fn open(arena: Arena, i: U64) -> Bool {
-  let n = node(arena, i);
-  return present(arena, i) && !n.leaf && (n.expanded || !n.stored);
-}
+fn open(arena: Arena, i: U64) -> Bool { return view(arena, i).open; }
 
 // Whether a is at most one more than b.
 fn notTaller(a: U64, b: U64) -> Bool { return a <= b || (1u64 <= a && a - 1u64 <= b); }
@@ -77,8 +109,8 @@ fn faulted(arena: Arena, fault: U64) -> Built { return { arena, root: absent(), 
 // A fresh branch over two ropes. Line breaks are summed here and recomputed
 // for every fresh branch once fresh leaves carry theirs.
 fn branch(arena: Arena, l: U64, r: U64) -> Built {
-  let ln = node(arena, l);
-  let rn = node(arena, r);
+  let ln = view(arena, l);
+  let rn = view(arena, r);
   let length = checkedAdd(ln.byteLength, rn.byteLength);
   let breaks = checkedAdd(ln.lineBreaks, rn.lineBreaks);
   let taller = max(ln.height, rn.height);
@@ -98,15 +130,15 @@ fn branch(arena: Arena, l: U64, r: U64) -> Built {
 fn branchOn(b: Built, l: U64, r: U64) -> Built { return if b.fault == ok() then branch(b.arena, l, r) else b; }
 
 fn rotateLeft(b: Built) -> Built {
-  let n = node(b.arena, b.root);
-  let rn = node(b.arena, n.right);
+  let n = view(b.arena, b.root);
+  let rn = view(b.arena, n.right);
   let inner = if b.fault == ok() && open(b.arena, b.root) && open(b.arena, n.right)
     then branch(b.arena, n.left, rn.left) else faulted(b.arena, max(b.fault, closureFault()));
   return branchOn(inner, inner.root, rn.right);
 }
 fn rotateRight(b: Built) -> Built {
-  let n = node(b.arena, b.root);
-  let ln = node(b.arena, n.left);
+  let n = view(b.arena, b.root);
+  let ln = view(b.arena, n.left);
   let inner = if b.fault == ok() && open(b.arena, b.root) && open(b.arena, n.left)
     then branch(b.arena, ln.right, n.right) else faulted(b.arena, max(b.fault, closureFault()));
   let outer = branchOn(inner, ln.left, inner.root);
@@ -125,17 +157,22 @@ fn joinState(s: Join, b: Built, remaining: U64, rebuilding: Bool, done: Bool) ->
     rebuilding, done: done || b.fault != ok(), carry: b.root, fault: b.fault };
 }
 
+// Branch(left, rotated) over the rotated subtree's arena.
+fn rightThenBranch(rotated: Built, left: U64) -> Built { return branchOn(rotated, left, rotated.root); }
+// Branch(rotated, right) over the rotated subtree's arena.
+fn leftThenBranch(rotated: Built, right: U64) -> Built { return branchOn(rotated, rotated.root, right); }
+
 // The base of joinRight at tall node cur, whose children are left and inner.
 fn rightBase(arena: Arena, left: U64, inner: U64, short: U64) -> Built {
   let joined = branch(arena, inner, short);
   return if joined.fault != ok() then joined
     else if notTaller(height(joined.arena, joined.root), height(joined.arena, left))
       then branch(joined.arena, left, joined.root)
-      else rotateLeft(branchOn(rotateRight(joined), left, rotateRight(joined).root));
+      else rotateLeft(rightThenBranch(rotateRight(joined), left));
 }
 
 fn rightDown(s: Join) -> Join {
-  let n = node(s.arena, s.cur);
+  let n = view(s.arena, s.cur);
   let hs = height(s.arena, s.short);
   return if !open(s.arena, s.cur) then joinState(s, faulted(s.arena, closureFault()), 0u64, true, true)
     else if hs < 255u64 && height(s.arena, n.right) <= hs + 1u64
@@ -166,11 +203,11 @@ fn leftBase(arena: Arena, inner: U64, right: U64, short: U64) -> Built {
   return if joined.fault != ok() then joined
     else if notTaller(height(joined.arena, joined.root), height(joined.arena, right))
       then branch(joined.arena, joined.root, right)
-      else rotateRight(branchOn(rotateLeft(joined), rotateLeft(joined).root, right));
+      else rotateRight(leftThenBranch(rotateLeft(joined), right));
 }
 
 fn leftDown(s: Join) -> Join {
-  let n = node(s.arena, s.cur);
+  let n = view(s.arena, s.cur);
   let hs = height(s.arena, s.short);
   return if !open(s.arena, s.cur) then joinState(s, faulted(s.arena, closureFault()), 0u64, true, true)
     else if hs < 255u64 && height(s.arena, n.left) <= hs + 1u64
@@ -223,7 +260,7 @@ type Find = { arena: Arena, cur: U64, offset: U64, after: Bool, done: Bool, faul
 type Found = { leaf: U64, local: U64, fault: U64 };
 
 fn findStep(s: Find) -> Find {
-  let n = node(s.arena, s.cur);
+  let n = view(s.arena, s.cur);
   let leftLength = byteLength(s.arena, n.left);
   let goLeft = if s.after then s.offset < leftLength else s.offset <= leftLength;
   return if s.done then s
@@ -260,23 +297,22 @@ fn cutLeaf(arena: Arena, n: Node, offset: U64, keepLeft: Bool, breaks: U64) -> B
   let rest = checkedSub(n.byteLength, offset);
   return if isSome(split) && isSome(rest)
     then appendLeaf(arena, {
-      stored: false, expanded: false, leaf: true,
-      byteLength: if keepLeft then offset else unwrap(rest), lineBreaks: breaks, height: 1u64,
-      left: absent(), right: absent(), row: n.row, source: n.source,
+      row: n.row, source: n.source,
       from: if keepLeft then n.from else unwrap(split), to: if keepLeft then unwrap(split) else n.to,
+      byteLength: if keepLeft then offset else unwrap(rest), lineBreaks: breaks,
     })
     else faulted(arena, overflowFault());
 }
 
 fn cutDown(s: Cut) -> Cut {
-  let n = node(s.arena, s.cur);
+  let n = view(s.arena, s.cur);
   let leftLength = byteLength(s.arena, n.left);
   let goLeft = if s.keepLeft then s.offset <= leftLength else s.offset < leftLength;
   let edge = if s.keepLeft then s.offset == 0u64 else s.offset == n.byteLength;
   let whole = if s.keepLeft then s.offset == n.byteLength else s.offset == 0u64;
   return if edge then cutState(s, { arena: s.arena, root: absent(), fault: ok() }, listLen(s.path), false)
     else if whole then cutState(s, { arena: s.arena, root: s.cur, fault: ok() }, listLen(s.path), false)
-    else if n.leaf then cutState(s, cutLeaf(s.arena, n, s.offset, s.keepLeft, s.cutBreaks), listLen(s.path), false)
+    else if n.leaf then cutState(s, cutLeaf(s.arena, node(s.arena, s.cur), s.offset, s.keepLeft, s.cutBreaks), listLen(s.path), false)
     else if !open(s.arena, s.cur) then cutState(s, faulted(s.arena, closureFault()), 0u64, true)
     else if !(listLen(s.path) < 32u64) then cutState(s, faulted(s.arena, capacityFault()), 0u64, true)
     else if goLeft
@@ -293,7 +329,7 @@ fn cutDown(s: Cut) -> Cut {
 // A prefix joins each left sibling it passed on the way right; a suffix joins
 // each right sibling it passed on the way left.
 fn cutPop(s: Cut, frame: Frame, remaining: U64) -> Cut {
-  let n = node(s.arena, frame.node);
+  let n = view(s.arena, frame.node);
   let joins = if s.keepLeft then frame.wentRight else !frame.wentRight;
   let built = if !joins then { arena: s.arena, root: s.carry, fault: ok() }
     else if s.keepLeft then join(s.arena, n.left, s.carry) else join(s.arena, s.carry, n.right);
@@ -321,7 +357,7 @@ fn cut(arena: Arena, root: U64, offset: U64, keepLeft: Bool, cutBreaks: U64) -> 
 // ---- Fresh leaves ----
 
 // A fresh leaf holding piece[from, to) with the given line breaks.
-fn appendLeaf(arena: Arena, leaf: Node) -> Built {
+fn appendLeaf(arena: Arena, leaf: FreshLeaf) -> Built {
   let used = listLen(arena.leaves);
   return if used < 16u64 && listLen(arena.leaves) < 16u64
     then { arena: { stored: arena.stored, leaves: listAppend(arena.leaves, leaf), branches: arena.branches },
@@ -331,10 +367,7 @@ fn appendLeaf(arena: Arena, leaf: Node) -> Built {
 
 fn freshLeaf(arena: Arena, piece: U64, from: U64, to: U64, breaks: U64) -> Built {
   return if from <= to
-    then appendLeaf(arena, {
-      stored: false, expanded: false, leaf: true, byteLength: to - from, lineBreaks: breaks, height: 1u64,
-      left: absent(), right: absent(), row: false, source: piece, from, to,
-    })
+    then appendLeaf(arena, { row: false, source: piece, from, to, byteLength: to - from, lineBreaks: breaks })
     else faulted(arena, overflowFault());
 }
 
@@ -354,7 +387,7 @@ fn enqueue(queue: List<U64, max=512>, item: U64) -> List<U64, max=512> {
 
 fn walkStep(s: Walk) -> Walk {
   let visit = if s.next < listLen(s.queue) then listAt(s.queue, s.next) else absent();
-  let n = node(s.arena, visit);
+  let n = view(s.arena, visit);
   let next = if s.next < 512u64 then s.next + 1u64 else s.next;
   return if s.fault != ok() || !(s.next < listLen(s.queue)) then s
     else if n.stored || !present(s.arena, visit) then { arena: s.arena, queue: s.queue, next, order: s.order, fault: s.fault }
