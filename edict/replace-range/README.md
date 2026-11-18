@@ -123,6 +123,14 @@ v1-schedule reference ceiling, not the envelope: the envelope budget will be
 measured under v2 once amblicit#330 lands. The closure-read binding is not yet in the lawpack. `rope/vendor/jedit-text-2/` is the public
 compiler's lawpack build output.
 
+`tests/runtime-cases.mjs` prepares the 40-row runtime runner. It turns each
+retained row, and each schema-2 addition, into a runtime case: the basis
+graph with resolved type ids, the intent's exact input, and the row to
+satisfy. A node that ordinary admission refuses is marked as a raw-store
+witness. The Rust consumer, which installs a case, invokes the locked
+package and reports an observation for the row judge, waits for a package
+that Echo admits.
+
 `tests/rope-modules.mjs` lists the modules in dependency order and pins each
 `use module` import to its dependency's source digest.
 `tests/rope-sources.spec.mjs` checks that the generated tables and every pin
