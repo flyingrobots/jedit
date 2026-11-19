@@ -205,6 +205,12 @@ Scope of "equal subtrees have equal ids": equal under `ContentAddressV1`
 within one warp instance. Ids from different identity profiles or different
 warps are not comparable.
 
+Stated assumption: equal ids mean equal content, because ContentAddressV1
+relies on BLAKE3 collision resistance. The authored proposal therefore
+merges repeated ids without comparing atoms; a different atom under one id
+would need a collision. Echo's identity law makes the same assumption. No test
+can fail first here, because a correct program has no reachable failure.
+
 Edict source computes ids from the inputs the bridge uses (edict#260). Both
 implementations must match published, independent identity vectors, including
 empty and non-empty heads.
@@ -332,6 +338,83 @@ are chosen from a measurement fixture over generated trees, including sizes
 just above split thresholds (4,097, 8,193, and 8,194 bytes, not only powers of
 two), and recorded with their cost model before the representation gate; raising a cap without that
 model is out of scope. Larger edits are a separate operation family (#382).
+
+### Intermediate v1 envelope (#296 decision, 2026-11-18)
+
+The first executable envelope is **tree height at most 14 and at most 4,201
+inserted bytes per edit**. It is the only measured option that keeps all 40
+retained oracle outcomes and fits all three of Echo's limits on one Action. It
+applies to every edit; leaf-local edits get no larger allowance, because the
+operation cannot tell them apart before it reads the closure.
+
+| Echo limit | What it counts | Per edit (L fresh leaves, B fresh branches) | Code |
+| --- | --- | --- | --- |
+| 128 patch operations | one Action batch's derived `WarpOp`s | 2L + 4B + 6 | `ACTION_BATCH_OPERATION_LIMIT_V1`, warp-core `echo_operation.rs:99`, checked at `:6903-6905`; derivation `edict_effects/derive/checks.rs:516-542` |
+| 256 writes | resolved write slots, range keys included | 2L + 6B + 9 | footprint law `max_writes`, Echo `authored-operation-effects.md` (Footprint law) |
+| 1,024 effects | emitted effect intents | L + 3B + 5 | per-operation effect cap, Echo `GeneratedRules.md` (Buffered compiled mutation intents) |
+
+These formulas assume every fresh node is new; an Ensure that Echo resolves as
+already present adds nothing. The worst cases that chose the envelope are
+**sampled, not proven**: the normative reconstruction over perfect and
+Fibonacci AVL trees at sampled offsets. At height 14 and 4,201 inserted bytes
+the sampled worst case is 122 patch operations, 179 writes and 90 effects.
+
+Height conditions:
+
+- The **input** tree's root height must be at most 14. It is checked after
+  closure validation, so a malformed height claim stays `MalformedRope`.
+- The **output** tree's root height must be at most 14. An accepted edit
+  that would raise the height to 15 is refused, so every published tree stays
+  inside the envelope for the next edit.
+- Construction may hold intermediate trees one level taller, so its path
+  stacks are sized for height 15.
+
+Anything outside the envelope, including a published edit that would exceed
+128 patch operations or 256 writes, is `ResourceLimitExceeded` with no
+partial publication. The schema-2 additions that insert more than 4,201
+bytes (`equal-content-new-leaves`, `constructor-8193-bytes`,
+`constructor-8194-bytes`) now expect that refusal at the envelope check. The
+retained 40 rows are unchanged. Taller trees and large files remain open
+work (#382). This envelope does not support GiB-scale files.
+
+### Flat cut bound (#296)
+
+`rope/src/Flat.edict` runs a prefix or suffix and every join it needs in one
+fold, one transition per round. The nested form (`Rope.edict`'s `cut`, a
+join fold inside each cut round) stays for comparison. For an input tree of
+height h the flat fold's literal bound is F(h) = 2h + 4(h + 1), which is 88
+for h = 14. Every transition is a counted round:
+
+| Transition | Rounds | Counted in |
+| --- | --- | --- |
+| Descent: one level per round, then one terminal round (leaf cut, empty side or whole node) | at most h | 2h |
+| Pop: one frame per round, skipped, finished as a trivial join, or starting a join; then one round that finds no frame and finishes | at most h | 2h |
+| Join descent: one spine level per round, then one base round | d + 1 for a join that descends d levels | 4(h + 1) |
+| Join rebuild: one spine level per round, then one round that finishes the frame | d + 1 | 4(h + 1) |
+
+Derivation sketch, not a proof. Lemma 1: a join is at most one level taller
+than its taller input, because it descends the taller tree's spine to a node
+within one level of the shorter tree, and each rebuild level adds at most one
+level and rotates when it would add two. Lemma 2: a prefix or suffix of a tree
+of height c has height at most c + 1, because it is a chain of joins of
+subtrees no taller than c − 1 with a carry, and by Lemma 1 each join's result
+is at most one level above the taller of the two. In a cut, the carry before
+each join is no taller than the sibling's parent plus one, so a join descends
+at most the height difference between its inputs. Those differences
+telescope over the path, so the descents of all joins in one cut total at most
+about h, and the joins number at most h. That gives at most 2h + 2 for the sum
+of (d + 1), well inside 4(h + 1).
+
+`tests/flat-cut.spec.mjs` challenges this, without proving it. It checks, over
+perfect, Fibonacci and randomly grown AVL trees up to height 14 at sampled
+offsets, that the flat machine (`tests/flat-cut-model.mts`) reproduces
+`rope-build.mts`'s prefix and suffix exactly and finishes within F(h). It also
+challenges both lemmas. The sampled worst case at h = 14 is 42 rounds. A fold
+that ends before its machine finishes returns an incomplete fault, which the
+plan refuses as `ResourceLimitExceeded` before anything is published.
+
+The whole operation runs two flat cuts, plus two top-level joins of 2 · 15 + 2
+rounds each, and no fold nested inside another construction fold.
 
 Three failures stay distinct, and none accuses valid data of corruption:
 
@@ -828,6 +911,15 @@ whose identity the edit must keep. Three carry rows
 schema 1 called the inconsistent branch a malformed fact, while schema 2 decodes
 it and rejects the broken rope invariant as MalformedRope. Each such departure
 carries a written decision in the artifact.
+
+A row's recorded `readSet` is a lower bound on the observed footprint, not
+an exact match (#296 ruling, 2026-11-17). One closure read has to over-read
+the join spines, because how deep a join descends depends on the height of a
+prefix or suffix built below it. The observed reads must include every
+recorded node and edge range. They must also stay within the closure
+envelope: at most the Buffer plus `text.maxClosureNodes` nodes, at a closure
+depth of at most `text.maxTreeHeight` plus the Head. Exact equality would
+fail a correct program, and an unbounded superset would hide over-reading.
 
 Obstructed rows are decided by the first failing check in this order: Buffer
 presence, Buffer decode, basis, range order, replacement validity, envelope,

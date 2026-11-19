@@ -13,6 +13,10 @@ export const OUTCOMES = Object.freeze(['FactMissing', 'FactMalformed', 'BasisNot
 
 /** Every obstructed row's typed outcome and deciding check. No row may expect a resource refusal. */
 export const EXPECTED_OBSTRUCTIONS = new Map([
+  // #296 intermediate v1 envelope: more than 4,201 inserted bytes is refused at the envelope check.
+  ['equal-content-new-leaves', ['ResourceLimitExceeded', 'envelope']],
+  ['constructor-8193-bytes', ['ResourceLimitExceeded', 'envelope']],
+  ['constructor-8194-bytes', ['ResourceLimitExceeded', 'envelope']],
   ['reversed-range', ['RangeOrderInvalid', 'range-order']],
   ['out-of-bounds-range', ['RangeOutOfBounds', 'range-bounds']],
   ['start-inside-codepoint', ['Utf8BoundaryInvalid', 'character-boundary']],

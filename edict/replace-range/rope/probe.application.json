@@ -1,0 +1,20 @@
+{
+  "schema": "edict.application/v1",
+  "coordinate": "jedit.text.basis_read@1",
+  "sources": [
+    "probe/BasisRead.edict"
+  ],
+  "lawpacks": [
+    {
+      "manifest": "vendor/jedit-text-2-basis-read/manifest.cbor",
+      "exports": "vendor/jedit-text-2-basis-read/exports.cbor",
+      "adapter": "vendor/jedit-text-2-basis-read/adapter.cbor",
+      "targetConfiguration": "vendor/jedit-text-2-basis-read/echo-operation-configuration.cbor"
+    }
+  ],
+  "target": {
+    "profile": "echo.dpo@2",
+    "providerPackage": ".build/echo-provider"
+  },
+  "outputDirectory": ".build/basis-read"
+}

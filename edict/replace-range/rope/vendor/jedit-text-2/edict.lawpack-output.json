@@ -1,0 +1,91 @@
+{
+  "schema": "edict.lawpack-output/v1",
+  "lawpackId": "jedit.text",
+  "lawpackVersion": "2",
+  "artifacts": [
+    {
+      "path": "manifest.cbor",
+      "kind": "manifest",
+      "coordinate": "edict.lawpack/v1",
+      "digest": "sha256:726c52efd0707571fc8b63719f08ea5ae552215341dff451a28734a2b3e5f3ca"
+    },
+    {
+      "path": "manifest.sha256",
+      "kind": "manifestDigest",
+      "coordinate": "edict.lawpack/v1",
+      "digest": "sha256:726c52efd0707571fc8b63719f08ea5ae552215341dff451a28734a2b3e5f3ca"
+    },
+    {
+      "path": "exports.cbor",
+      "kind": "exports",
+      "coordinate": "jedit.text.exports/v2",
+      "digest": "sha256:cded025e90664f04f5a9b34b5f22c20fe602219aebc865413bbf89e2c0c40a11"
+    },
+    {
+      "path": "exports.sha256",
+      "kind": "exportsDigest",
+      "coordinate": "jedit.text.exports/v2",
+      "digest": "sha256:cded025e90664f04f5a9b34b5f22c20fe602219aebc865413bbf89e2c0c40a11"
+    },
+    {
+      "path": "compatibility.cbor",
+      "kind": "localResource",
+      "coordinate": "jedit.text.compatibility/v2",
+      "digest": "sha256:f7cfa521608ceaea84ae5dde193ae689a6482539d02656172df6967de5f7aed3"
+    },
+    {
+      "path": "compatibility.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "jedit.text.compatibility/v2",
+      "digest": "sha256:f7cfa521608ceaea84ae5dde193ae689a6482539d02656172df6967de5f7aed3"
+    },
+    {
+      "path": "echo-operation-configuration.cbor",
+      "kind": "localResource",
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:99a746543ed1412ef887d2aa977d2b791e1c9f7bb596e1e990c72bf11fa488a3"
+    },
+    {
+      "path": "echo-operation-configuration.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:99a746543ed1412ef887d2aa977d2b791e1c9f7bb596e1e990c72bf11fa488a3"
+    },
+    {
+      "path": "fixtures.cbor",
+      "kind": "localResource",
+      "coordinate": "jedit.text.ReplaceRange.schema-2-fixtures/v1",
+      "digest": "sha256:9e92be82fccd4f3e8f64e314b5f583997241500d61c692d3b7a8b2f5b1b06fce"
+    },
+    {
+      "path": "fixtures.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "jedit.text.ReplaceRange.schema-2-fixtures/v1",
+      "digest": "sha256:9e92be82fccd4f3e8f64e314b5f583997241500d61c692d3b7a8b2f5b1b06fce"
+    },
+    {
+      "path": "verifier-rules.cbor",
+      "kind": "localResource",
+      "coordinate": "jedit.text.verifier-rules/v2",
+      "digest": "sha256:f5d183fd57dabe8bf4579fa27dcb3adaee4ed1e1fdbc816569d73bfe9131f38e"
+    },
+    {
+      "path": "verifier-rules.sha256",
+      "kind": "localResourceDigest",
+      "coordinate": "jedit.text.verifier-rules/v2",
+      "digest": "sha256:f5d183fd57dabe8bf4579fa27dcb3adaee4ed1e1fdbc816569d73bfe9131f38e"
+    },
+    {
+      "path": "adapter.cbor",
+      "kind": "adapter",
+      "coordinate": "jedit.text.echo-adapter/v2",
+      "digest": "sha256:1d55696178ddd3879e9703b55350ecf970d34d5517bdc7f4470908789f5ce503"
+    },
+    {
+      "path": "adapter.sha256",
+      "kind": "adapterDigest",
+      "coordinate": "jedit.text.echo-adapter/v2",
+      "digest": "sha256:1d55696178ddd3879e9703b55350ecf970d34d5517bdc7f4470908789f5ce503"
+    }
+  ]
+}

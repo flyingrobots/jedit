@@ -11,6 +11,8 @@ import { concatBytes, labelId } from './content-address-v1.mts';
 export const U64_MAX = 0xffff_ffff_ffff_ffffn;
 export const U8_MAX = 0xffn;
 export const MAX_LEAF_BYTES = 4096;
+/** Intermediate v1 envelope (#296): inserted bytes per edit. */
+export const MAX_INSERTED_BYTES = 4201;
 export const MAX_STRING_BYTES = 4096;
 export const DIGEST_BYTES = 32;
 

@@ -1,0 +1,36 @@
+package jedit.text.basis_read@1;
+
+use lawpack jedit.text@2 digest "sha256:b5e1ce403b2ab9232a9fa3b4eb8de891c099cb97a0d38add498762ff8701d71a" as text;
+
+// Runtime-consumer witness: the first DL-0159 step alone. Reads the Buffer
+// atom and its canonicalHead and returns the head it names. It exercises the
+// rope runtime consumer while the full operation awaits admission.
+
+// Type ids from the schema-2 profile; source modules are not yet admitted in
+// effect programs (echo#1009), so they are repeated here.
+fn bufferAtomType() -> text.NodeId { return b"\x12\x7b\xc5\x9c\xb6\x2a\xe8\x14\x08\x0c\x3d\x68\x64\xc9\x11\xf7\xb9\x54\x47\x0e\x3f\xc2\xe5\x5a\x51\x92\x5c\x32\x04\x6f\x54\x12"; }
+fn canonicalHeadEdge() -> text.NodeId { return b"\x88\x8e\x7a\x21\xb6\x19\x91\x78\x6e\x03\xce\x12\x61\x75\xab\x09\x7a\x91\x46\x18\x3a\xfb\xb4\x54\xe2\xde\x12\xc6\xc6\x3a\xb7\x75"; }
+
+type Input = { warpId: text.NodeId, bufferId: text.NodeId, basisHeadId: text.NodeId };
+
+intent basisRead(input: Input) returns text.NodeId
+  profile text.replaceRange
+  basis input.basisHeadId
+  budget <= text.replaceRangeBudget
+{
+  let bufferAtom: text.Atom = text.readAtom({ nodeId: input.bufferId, typeId: bufferAtomType(), warpId: input.warpId })
+    else {
+      missing(query) => text.FactMissing,
+      required(query) => text.FactMalformed,
+      wrongType(query) => text.FactMalformed,
+      tooLarge(query) => text.FactMalformed,
+    };
+  let canonical: text.Edges = text.outgoing({ edgeType: canonicalHeadEdge(), nodeId: input.bufferId, warpId: input.warpId })
+    else {
+      sourceMissing(query) => text.FactMissing,
+      edgeBound(query) => text.ResourceLimitExceeded,
+      scanBound(query) => text.ResourceLimitExceeded,
+    };
+  let head = if 0u64 < listLen(canonical) then listAt(canonical, 0u64).toId else input.bufferId;
+  return head;
+}

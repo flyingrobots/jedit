@@ -1,0 +1,15 @@
+# Runtime consumer smoke fixture
+
+`link-executable-operation-package.hex` is Echo main `0d1f74a0`'s retained public
+package `crates/warp-core/tests/fixtures/edict-effect-graph-read/link-executable-operation-package.hex`,
+copied byte for byte. Its `echo:operation-package:v1` identity is
+`31c092bec1c0b3a061232e01ab0fa2943469f22324f5e240f2d30d6fb1dbe4c1`. The consumer's smoke test
+runs it to prove the admission, invocation, frame and derivation path before
+a ReplaceRange package is admitted.
+
+`basis-read-executable-operation-package.hex` is the public build of
+`rope/probe/BasisRead.edict` (Amblicit `8d5b02b1`, Echo main `0d1f74a0`'s
+provider package), identity
+`130226c227600e0f61ead413d65bdea7bcbc43b3efe153d05f8c4644c8fb00c7`.
+`middle-ascii-insert.case.json` is that row's runtime case, written by
+`tests/runtime-cases.mjs` from the #404 fixtures.
