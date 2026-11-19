@@ -7,6 +7,7 @@
     "src/Proposal.edict",
     "src/Build.edict",
     "src/Closure.edict",
+    "src/Flat.edict",
     "src/Rope.edict",
     "src/Identity.edict",
     "src/Codec.edict",

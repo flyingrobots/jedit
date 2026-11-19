@@ -75,6 +75,11 @@ flat-text source above. They are not yet part of the locked package chain.
   `freshNodes`. `freshNodes` is a breadth-first walk that lists only the
   fresh nodes reachable from the new root, so nodes a rotation discarded are
   never emitted.
+- `Flat.edict` is the flat prefix/suffix candidate: the cut and every join
+  it needs in one 88-round fold, one transition per round
+  (`tests/flat-cut-model.mts` is its executable model, and
+  `tests/flat-cut.spec.mjs` challenges its bound and the two height lemmas).
+  The plan uses it; `Rope.edict`'s nested `cut` stays for comparison.
 - `Build.edict` holds the byte-level parts: `fromBytes` (up to 16,384
   replacement bytes in at most four levels), `locate` and the leaf rewrite
   with its path copy, and the equal-length no-op comparison. Leaf bytes stay

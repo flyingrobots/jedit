@@ -1,0 +1,148 @@
+package jedit.text.flat@1;
+
+use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
+
+// The flat prefix/suffix candidate: the cut and every join it needs run in one
+// fold, one transition per round, instead of a join fold nested in each cut
+// round. tests/flat-cut-model.mts is its executable model and the challenge
+// tests compare it with rope-build.mts.
+//
+// Phases: 0 descend (one level, or the terminal leaf/edge/whole step), 1 pop
+// (one frame: skip it, finish a trivial join, or start a join; with no frame
+// left, done), 2 join descent (one spine level, or the join's base), 3 join
+// rebuild (one spine level; with none left, finish the frame), 4 done.
+// The bound for input height h is F(h) = 2h + 4(h + 1); for h = 14 it is 88.
+// A fold that ends before phase 4 is an unfinished cut, never a result.
+
+type Flat = {
+  arena: rope.Arena, phase: U64, path: List<rope.Frame, max=15>, remaining: U64, cur: U64, offset: U64,
+  keepLeft: Bool, cutBreaks: U64, carry: U64,
+  spine: List<U64, max=15>, jremaining: U64, jcur: U64, jshort: U64, leftTaller: Bool, fault: U64,
+};
+
+fn descendPhase() -> U64 { return 0u64; }
+fn popPhase() -> U64 { return 1u64; }
+fn joinDownPhase() -> U64 { return 2u64; }
+fn joinUpPhase() -> U64 { return 3u64; }
+fn donePhase() -> U64 { return 4u64; }
+
+// The state after a construction, in `phase`; a construction fault ends the cut.
+fn after(s: Flat, b: rope.Built, phase: U64, remaining: U64) -> Flat {
+  return { arena: b.arena, phase: if b.fault == rope.ok() then phase else donePhase(), path: s.path, remaining,
+    cur: s.cur, offset: s.offset, keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, carry: b.root,
+    spine: s.spine, jremaining: s.jremaining, jcur: s.jcur, jshort: s.jshort, leftTaller: s.leftTaller,
+    fault: b.fault };
+}
+fn stop(s: Flat, fault: U64) -> Flat {
+  return { arena: s.arena, phase: donePhase(), path: s.path, remaining: s.remaining, cur: s.cur, offset: s.offset,
+    keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, carry: s.carry, spine: s.spine, jremaining: s.jremaining,
+    jcur: s.jcur, jshort: s.jshort, leftTaller: s.leftTaller, fault };
+}
+fn kept(arena: rope.Arena, root: U64) -> rope.Built { return { arena, root, fault: rope.ok() }; }
+
+// ---- descent ----
+
+fn descendStep(s: Flat) -> Flat {
+  let n = rope.view(s.arena, s.cur);
+  let leftLength = rope.byteLength(s.arena, n.left);
+  let goLeft = if s.keepLeft then s.offset <= leftLength else s.offset < leftLength;
+  let edge = if s.keepLeft then s.offset == 0u64 else s.offset == n.byteLength;
+  let whole = if s.keepLeft then s.offset == n.byteLength else s.offset == 0u64;
+  return if edge then after(s, kept(s.arena, rope.absent()), popPhase(), listLen(s.path))
+    else if whole then after(s, kept(s.arena, s.cur), popPhase(), listLen(s.path))
+    else if n.leaf then after(s, rope.cutLeaf(s.arena, rope.node(s.arena, s.cur), s.offset, s.keepLeft, s.cutBreaks),
+      popPhase(), listLen(s.path))
+    else if !n.open then stop(s, rope.closureFault())
+    else if !(listLen(s.path) < 15u64) then stop(s, rope.capacityFault())
+    else if goLeft then descended(s, listAppend(s.path, { node: s.cur, wentRight: false }), n.left, s.offset)
+    else if leftLength <= s.offset
+      then descended(s, listAppend(s.path, { node: s.cur, wentRight: true }), n.right, s.offset - leftLength)
+    else stop(s, rope.closureFault());
+}
+fn descended(s: Flat, path: List<rope.Frame, max=15>, cur: U64, offset: U64) -> Flat {
+  return { arena: s.arena, phase: descendPhase(), path, remaining: s.remaining, cur, offset, keepLeft: s.keepLeft,
+    cutBreaks: s.cutBreaks, carry: s.carry, spine: s.spine, jremaining: s.jremaining, jcur: s.jcur,
+    jshort: s.jshort, leftTaller: s.leftTaller, fault: s.fault };
+}
+
+// ---- pops: one frame per round ----
+
+fn popStep(s: Flat) -> Flat {
+  let frame = if 1u64 <= s.remaining && s.remaining - 1u64 < listLen(s.path)
+    then listAt(s.path, s.remaining - 1u64) else { node: rope.absent(), wentRight: false };
+  let n = rope.view(s.arena, frame.node);
+  let joins = if s.keepLeft then frame.wentRight else !frame.wentRight;
+  let below = if 1u64 <= s.remaining then s.remaining - 1u64 else 0u64;
+  return if s.remaining == 0u64 then after(s, kept(s.arena, s.carry), donePhase(), 0u64)
+    else if !joins then after(s, kept(s.arena, s.carry), popPhase(), below)
+    else if s.keepLeft then startJoin(s, n.left, s.carry, below)
+    else startJoin(s, s.carry, n.right, below);
+}
+
+// Finishes a trivial join in this round, or sets up a join descent.
+fn startJoin(s: Flat, l: U64, r: U64, below: U64) -> Flat {
+  let hl = rope.height(s.arena, l);
+  let hr = rope.height(s.arena, r);
+  let leftTaller = hr < hl;
+  return if !rope.present(s.arena, l) then after(s, kept(s.arena, r), popPhase(), below)
+    else if !rope.present(s.arena, r) then after(s, kept(s.arena, l), popPhase(), below)
+    else if rope.notTaller(hl, hr) && rope.notTaller(hr, hl) then after(s, rope.branch(s.arena, l, r), popPhase(), below)
+    else { arena: s.arena, phase: joinDownPhase(), path: s.path, remaining: s.remaining, cur: s.cur,
+      offset: s.offset, keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, carry: s.carry, spine: [], jremaining: 0u64,
+      jcur: if leftTaller then l else r, jshort: if leftTaller then r else l, leftTaller, fault: s.fault };
+}
+
+// ---- join descent and rebuild ----
+
+fn joinDownStep(s: Flat) -> Flat {
+  let n = rope.view(s.arena, s.jcur);
+  let outer = if s.leftTaller then n.left else n.right;
+  let inner = if s.leftTaller then n.right else n.left;
+  let base = if s.leftTaller then rope.rightBase(s.arena, outer, inner, s.jshort)
+    else rope.leftBase(s.arena, inner, outer, s.jshort);
+  return if !n.open then stop(s, rope.closureFault())
+    else if rope.notTaller(rope.height(s.arena, inner), rope.height(s.arena, s.jshort))
+      then rebuilding(after(s, base, joinUpPhase(), s.remaining), listLen(s.spine))
+    else if listLen(s.spine) < 15u64
+      then { arena: s.arena, phase: joinDownPhase(), path: s.path, remaining: s.remaining, cur: s.cur,
+        offset: s.offset, keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, carry: s.carry,
+        spine: listAppend(s.spine, outer), jremaining: 0u64, jcur: inner, jshort: s.jshort,
+        leftTaller: s.leftTaller, fault: s.fault }
+    else stop(s, rope.capacityFault());
+}
+fn rebuilding(s: Flat, jremaining: U64) -> Flat {
+  return { arena: s.arena, phase: s.phase, path: s.path, remaining: s.remaining, cur: s.cur, offset: s.offset,
+    keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, carry: s.carry, spine: s.spine, jremaining, jcur: s.jcur,
+    jshort: s.jshort, leftTaller: s.leftTaller, fault: s.fault };
+}
+
+fn joinUpStep(s: Flat) -> Flat {
+  let sibling = if 1u64 <= s.jremaining && s.jremaining - 1u64 < listLen(s.spine)
+    then listAt(s.spine, s.jremaining - 1u64) else rope.absent();
+  let result = if s.leftTaller then rope.branch(s.arena, sibling, s.carry) else rope.branch(s.arena, s.carry, sibling);
+  let fits = rope.notTaller(rope.height(s.arena, s.carry), rope.height(s.arena, sibling));
+  let rebuilt = if fits || result.fault != rope.ok() then result
+    else if s.leftTaller then rope.rotateLeft(result) else rope.rotateRight(result);
+  let below = if 1u64 <= s.remaining then s.remaining - 1u64 else 0u64;
+  return if 1u64 <= s.jremaining then rebuilding(after(s, rebuilt, joinUpPhase(), s.remaining), s.jremaining - 1u64)
+    else after(s, kept(s.arena, s.carry), popPhase(), below);
+}
+
+fn flatStep(s: Flat) -> Flat {
+  return if s.phase == donePhase() then s
+    else if s.phase == descendPhase() then descendStep(s)
+    else if s.phase == popPhase() then popStep(s)
+    else if s.phase == joinDownPhase() then joinDownStep(s)
+    else joinUpStep(s);
+}
+
+// prefix(root, offset) when keepLeft, otherwise suffix(root, offset), in 88 rounds.
+fn cut(arena: rope.Arena, root: U64, offset: U64, keepLeft: Bool, cutBreaks: U64) -> rope.Built {
+  let start: Flat = { arena, phase: descendPhase(), path: [], remaining: 0u64, cur: root, offset, keepLeft,
+    cutBreaks, carry: rope.absent(), spine: [], jremaining: 0u64, jcur: rope.absent(), jshort: rope.absent(),
+    leftTaller: false, fault: rope.ok() };
+  let final = fold(start, flatStep, 88u64);
+  return if !rope.present(arena, root) then kept(arena, rope.absent())
+    else { arena: final.arena, root: final.carry,
+      fault: if final.phase != donePhase() then rope.incompleteFault() else final.fault };
+}

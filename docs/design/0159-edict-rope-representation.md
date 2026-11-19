@@ -377,6 +377,45 @@ bytes (`equal-content-new-leaves`, `constructor-8193-bytes`,
 retained 40 rows are unchanged. Taller trees and large files remain open
 work (#382). This envelope does not support GiB-scale files.
 
+### Flat cut bound (#296)
+
+`rope/src/Flat.edict` runs a prefix or suffix and every join it needs in one
+fold, one transition per round. The nested form (`Rope.edict`'s `cut`, a
+join fold inside each cut round) stays for comparison. For an input tree of
+height h the flat fold's literal bound is F(h) = 2h + 4(h + 1), which is 88
+for h = 14. Every transition is a counted round:
+
+| Transition | Rounds | Counted in |
+| --- | --- | --- |
+| Descent: one level per round, then one terminal round (leaf cut, empty side or whole node) | at most h | 2h |
+| Pop: one frame per round, skipped, finished as a trivial join, or starting a join; then one round that finds no frame and finishes | at most h | 2h |
+| Join descent: one spine level per round, then one base round | d + 1 for a join that descends d levels | 4(h + 1) |
+| Join rebuild: one spine level per round, then one round that finishes the frame | d + 1 | 4(h + 1) |
+
+Derivation sketch, not a proof. Lemma 1: a join is at most one level taller
+than its taller input, because it descends the taller tree's spine to a node
+within one level of the shorter tree, and each rebuild level adds at most one
+level and rotates when it would add two. Lemma 2: a prefix or suffix of a tree
+of height c has height at most c + 1, because it is a chain of joins of
+subtrees no taller than c − 1 with a carry, and by Lemma 1 each join's result
+is at most one level above the taller of the two. In a cut, the carry before
+each join is no taller than the sibling's parent plus one, so a join descends
+at most the height difference between its inputs. Those differences
+telescope over the path, so the descents of all joins in one cut total at most
+about h, and the joins number at most h. That gives at most 2h + 2 for the sum
+of (d + 1), well inside 4(h + 1).
+
+`tests/flat-cut.spec.mjs` challenges this, without proving it. It checks, over
+perfect, Fibonacci and randomly grown AVL trees up to height 14 at sampled
+offsets, that the flat machine (`tests/flat-cut-model.mts`) reproduces
+`rope-build.mts`'s prefix and suffix exactly and finishes within F(h). It also
+challenges both lemmas. The sampled worst case at h = 14 is 42 rounds. A fold
+that ends before its machine finishes returns an incomplete fault, which the
+plan refuses as `ResourceLimitExceeded` before anything is published.
+
+The whole operation runs two flat cuts, plus two top-level joins of 2 · 15 + 2
+rounds each, and no fold nested inside another construction fold.
+
 Three failures stay distinct, and none accuses valid data of corruption:
 
 | Failure | Meaning |

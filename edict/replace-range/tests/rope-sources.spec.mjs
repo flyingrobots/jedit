@@ -67,6 +67,8 @@ test('every fold and list bound in the rope source is an envelope constant', asy
   const { envelope } = await import('./rope-lawpack.mjs');
   const height = envelope.maxWorkHeight;
   const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves, envelope.maxFreshNodes, envelope.maxCreatedLeaves,
+    // The flat cut's F(h) = 2h + 4(h + 1) at the envelope height.
+    2 * envelope.maxTreeHeight + 4 * (envelope.maxTreeHeight + 1),
     envelope.maxCreatedBranches, envelope.maxEmittedNodes,
     envelope.maxArenaNodes]);
   const allowedLists = new Set([height, envelope.maxArenaNodes, envelope.maxFreshNodes, envelope.maxClosureNodes, envelope.maxClosureOccurrences,

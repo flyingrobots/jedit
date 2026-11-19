@@ -6,7 +6,7 @@ use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c646
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
 use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
 use module jedit.text.proposal@1 digest "sha256:2758d99a7b84fc67ef262649a6cfdda9186f3ef72296908a54d81983918ed347" as proposal;
-use module jedit.text.plan@1 digest "sha256:09f915d760e64153646f6bb8995bbce63d56141558968fcad818d197c7aaf47d" as plan;
+use module jedit.text.plan@1 digest "sha256:111a12780aaa57d92d0898b87f66d45965e9c5e5f1c0401c495120cd5068397b" as plan;
 
 // The authored persistent-rope ReplaceRange (DL-0159, #296).
 //

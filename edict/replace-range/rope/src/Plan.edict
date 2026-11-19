@@ -4,6 +4,7 @@ use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f
 use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
 use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
+use module jedit.text.flat@1 digest "sha256:b129fcb93d473ceb7c3bc0248fa6131512f773f2bb74bfc2678b719f05c6bcf9" as flat;
 use module jedit.text.build@1 digest "sha256:d23be858e5445144c089f3357162e0900eee8043b3fb4f9868937bb7b1538fb9" as build;
 use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
 use module jedit.text.proposal@1 digest "sha256:2758d99a7b84fc67ef262649a6cfdda9186f3ef72296908a54d81983918ed347" as proposal;
@@ -66,10 +67,10 @@ fn general(arena: rope.Arena, c: closure.Closure, q: Request) -> rope.Built {
   let last = rope.find(arena, 0u64, q.end, false);
   let lastBytes = bytesAt(c, arena, last.leaf);
   let suffixBreaks = if last.local <= len(lastBytes) then count(slice(lastBytes, last.local, len(lastBytes)), b"\n") else 0u64;
-  let prefix = rope.cut(arena, 0u64, q.start, true, prefixBreaks);
+  let prefix = flat.cut(arena, 0u64, q.start, true, prefixBreaks);
   let middle = build.fromBytes(prefix.arena, q.replacement);
   let left = rope.join(middle.arena, prefix.root, middle.root);
-  let suffix = rope.cut(left.arena, 0u64, q.end, false, suffixBreaks);
+  let suffix = flat.cut(left.arena, 0u64, q.end, false, suffixBreaks);
   let whole = rope.join(suffix.arena, left.root, suffix.root);
   let fault = max(max(max(first.fault, last.fault), max(prefix.fault, middle.fault)), max(max(left.fault, suffix.fault), whole.fault));
   return { arena: whole.arena, root: whole.root, fault };
