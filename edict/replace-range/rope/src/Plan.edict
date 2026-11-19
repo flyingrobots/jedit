@@ -1,17 +1,18 @@
+package jedit.text.plan@1;
+
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
+use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
+use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
+use module jedit.text.build@1 digest "sha256:390681fd81a67589a7fbe3b7ba31faaf580b7d2b32b000244bed3b06ca2fb1ab" as build;
+use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
+use module jedit.text.proposal@1 digest "sha256:25b4c18c4a452907d340f5b6d53c264b3b6692dcfb9993ef34f9ae38810bb6e6" as proposal;
+
 // The pure ReplaceRange plan over one closure read: Head checks, the
 // validated arena, construction, character boundaries, the no-op check,
 // counters and the normalized proposal. Its `code` names the first failing
 // check in the documented precedence; the intent maps each code to its
 // typed obstruction.
-package jedit.text.plan@1;
-
-use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
-use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
-use module jedit.text.rope@1 digest "sha256:0b1d298e609f70ebaca17d420d6c9eee3986c9e4d5cc260ceed09771701dd4f8" as rope;
-use module jedit.text.build@1 digest "sha256:bdc26d861dd7103ee4d1e39713cdc05e5fa912e9c9c3ecdaf855fb378a28aac6" as build;
-use module jedit.text.closure@1 digest "sha256:b871b39335b77d1e469b12fbc155407081ca2cfb46f7ec4efb9d1ce8456159cd" as closure;
-use module jedit.text.proposal@1 digest "sha256:6f3c4af84e1c2248f066cd93ea1d66aeaa725e70ce23fca1f3db3309282e2087" as proposal;
 
 type Id = Bytes<exact=32>;
 // `anchors` counts the basis Head's anchor edges; exactly one is lawful.

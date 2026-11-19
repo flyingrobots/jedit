@@ -51,10 +51,11 @@ test('every identity type id is the fixture profile id for its label', () => {
   assert.deepEqual(new Map([...ids].sort()), new Map([...expected].sort()));
 });
 
-test('the jedit.text@2 lawpack is exactly the generated document', async () => {
-  const { ropeLawpackText } = await import('./rope-lawpack.mjs');
-  assert.equal(readFileSync(path.join(ropeSourceRoot, '..', '..', 'rope', 'edict.lawpack.json'), 'utf8'),
-    ropeLawpackText());
+test('the jedit.text@2 lawpacks are exactly the generated documents', async () => {
+  const { basisReadLawpackText, ropeLawpackText } = await import('./rope-lawpack.mjs');
+  const rope = (file) => readFileSync(path.join(ropeSourceRoot, '..', file), 'utf8');
+  assert.equal(rope('edict.lawpack.json'), ropeLawpackText());
+  assert.equal(rope('basis-read.lawpack.json'), basisReadLawpackText());
 });
 
 // A branch's outgoing edge set (left and right) is a schema fact, not an envelope limit.
@@ -97,4 +98,34 @@ test('the intent bumps Buffer.version against the digest of the atom it read', (
   assert.match(intent, /echo\.attachmentValueDigest\(ids\.bufferAtomType\(\), bufferAtom\)/);
   assert.match(intent, /text\.replaceAtom\(/);
   assert.match(intent, /version: \w+/);
+});
+
+const lawpackDocument = () => JSON.parse(readFileSync(path.join(ropeSourceRoot, '..', 'edict.lawpack.json'), 'utf8'));
+
+test('every declared read failure carries the authority class of the Echo failure it maps to', async () => {
+  const { decode } = await import('cbor-x');
+  const pins = JSON.parse(readFileSync(path.join(ropeSourceRoot, '..', 'echo-dpo-2-profile.json'), 'utf8'));
+  const catalog = decode(Buffer.from(pins.intrinsicCatalogHex, 'hex'));
+  const { lawpack } = lawpackDocument();
+  const adapter = lawpack.targetAdapters[0];
+  for (const effect of lawpack.exports.effects) {
+    const binding = adapter.effectImplementations[effect.coordinate];
+    const echoFailures = catalog.intrinsics[binding.targetIntrinsic].effectFailures ?? {};
+    for (const [name, declared] of Object.entries(effect.effectFailures)) {
+      const echoName = binding.failureMappings[name];
+      assert.equal(declared.authorityClass, echoFailures[echoName].authorityClass, `${effect.coordinate}.${name}`);
+    }
+  }
+});
+
+test('every authored failure arm maps to an obstruction of the failure\'s authority class', () => {
+  const { lawpack } = lawpackDocument();
+  const obstructionClass = new Map(lawpack.exports.obstructions.map((item) => [item.coordinate.split('.').pop(), item.authorityClass]));
+  const intent = checkedIn('ReplaceRange.edict');
+  for (const [, effect, arms] of intent.matchAll(/text\.(\w+)\([^;]*?\)\s*else\s*\{([^}]*)\}/gs)) {
+    const failures = lawpack.exports.effects.find((item) => item.coordinate.endsWith(`.${effect}`)).effectFailures;
+    for (const [, failure, obstruction] of arms.matchAll(/(\w+)\(\w+\) => text\.(\w+)/g)) {
+      assert.equal(obstructionClass.get(obstruction), failures[failure].authorityClass, `${effect}.${failure} => ${obstruction}`);
+    }
+  }
 });

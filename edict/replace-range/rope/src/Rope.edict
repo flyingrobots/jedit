@@ -1,3 +1,5 @@
+package jedit.text.rope@1;
+
 // The persistent rope's reconstruction law over a bounded arena, following
 // tests/support/replace-range-schema-2/rope-build.mts exactly: prefix and
 // suffix by path copy, and AVL concatenation (join without a middle key).
@@ -9,7 +11,6 @@
 // node's children always precede it. Every walk is a fold with a literal
 // bound sized for text.maxTreeHeight = 32: a path stack of 32 and 66 steps.
 // A fold cannot fail, so faults travel in the state and the callers map them.
-package jedit.text.rope@1;
 
 type Node = {
   stored: Bool, expanded: Bool, leaf: Bool,

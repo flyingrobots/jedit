@@ -1,12 +1,13 @@
+package jedit.text.codec@1;
+
+use module jedit.text.octets@1 digest "sha256:b527845d58c702e621778cc7f570d45b8d199046f1e53a9b3e530d83a70d63b2" as octets;
+
 // Canonical CBOR for the schema-2 text facts (`edict.canonical-cbor/v1`).
 //
 // Each atom is a definite-length map keyed by field name, keys in canonical
 // order (shorter first, then bytewise), every integer in its shortest form.
 // Decoding is exact: a well-typed atom in any other spelling, with another
 // field set or with trailing bytes is Malformed.
-package jedit.text.codec@1;
-
-use module jedit.text.octets@1 digest "sha256:c7c413d8dacc28d07d06d0e69f9718ff7970b13f5b350322f484898936f25aca" as octets;
 
 failure Malformed;
 

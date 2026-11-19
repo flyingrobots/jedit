@@ -1,16 +1,17 @@
+package jedit.text.proposal@1;
+
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
+use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
+use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
+use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
+
 // ContentAddressV1 ids for the fresh nodes, and the normalized proposal of
 // the reachable fresh nodes and their edges.
 //
 // A stored node keeps its row id; fresh ids are computed over the two small
 // fresh lists. Emission follows the reachable fresh nodes only. Repeated text
 // yields repeated ids, and each id is emitted once.
-package jedit.text.proposal@1;
-
-use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
-use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
-use module jedit.text.rope@1 digest "sha256:0b1d298e609f70ebaca17d420d6c9eee3986c9e4d5cc260ceed09771701dd4f8" as rope;
-use module jedit.text.closure@1 digest "sha256:b871b39335b77d1e469b12fbc155407081ca2cfb46f7ec4efb9d1ce8456159cd" as closure;
 
 type Id = Bytes<exact=32>;
 type Pieces = { replacement: Bytes<max=16384>, rewritten: Bytes<max=25088> };

@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { decode } from 'cbor-x';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURES = path.join(ROOT, '..', '..', 'contracts', 'jedit', 'acceptance', 'replace-range-schema-2',
@@ -141,32 +142,30 @@ const effects = Object.freeze([
 ]);
 
 const coordinate = (name) => `${LAWPACK}.${name}`;
-const RESOURCE_FAILURES = new Set(['missing', 'tooLarge', 'sourceMissing', 'edgeBound', 'scanBound', 'startMissing',
-  'nodeBound', 'depthBound', 'workBound']);
-const DOMAIN_FAILURES = new Set(['selectorInsufficient']);
 
-export function ropeLawpack() {
+/** The lawpack; `closure: false` drops the closure read for the basis-read witness. */
+export function ropeLawpack({ closure = true, outputDirectory = 'vendor/jedit-text-2' } = {}) {
   const profile = JSON.parse(readFileSync(FIXTURES, 'utf8')).profile;
   const pins = JSON.parse(readFileSync(path.join(ROOT, 'rope', 'echo-dpo-2-profile.json'), 'utf8'));
-  const failureClass = (name) => {
-    if (RESOURCE_FAILURES.has(name)) return 'resourceFault';
-    return DOMAIN_FAILURES.has(name) ? 'domainMappable' : 'integrityFault';
-  };
-  const exportedEffects = effects.map(([name, , input, output, kind, failures]) => ({
+  // Each failure takes the authority class Echo's catalog fixes for the failure it maps to.
+  const catalog = decode(Buffer.from(pins.intrinsicCatalogHex, 'hex'));
+  const echoClass = (intrinsic, failure) => catalog.intrinsics[`echo.dpo@2.${intrinsic}`].effectFailures[failure].authorityClass;
+  const bound = effects.filter(([name]) => closure || name !== 'closure');
+  const exportedEffects = bound.map(([name, intrinsic, input, output, kind, failures]) => ({
     coordinate: coordinate(name), typeParameters: [], inputType: coordinate(input), outputType: coordinate(output),
     executionClass: 'runtime', effectKindHint: kind, footprintObligation: coordinate('replaceRangeFootprint'),
     costObligation: coordinate('replaceRangeBudget'),
-    effectFailures: Object.fromEntries(Object.keys(failures).map((failure) => [failure,
-      { authorityClass: failureClass(failure), payloadType: coordinate(input) }])),
+    effectFailures: Object.fromEntries(Object.entries(failures).map(([failure, echoFailure]) => [failure,
+      { authorityClass: echoClass(intrinsic, echoFailure), payloadType: coordinate(input) }])),
     guardSupport: true,
   }));
-  const implementations = Object.fromEntries(effects.map(([name, intrinsic, , , kind, failures]) => [coordinate(name), {
+  const implementations = Object.fromEntries(bound.map(([name, intrinsic, , , kind, failures]) => [coordinate(name), {
     targetIntrinsic: `echo.dpo@2.${intrinsic}`, targetConfiguration: { local: 'echo-config' }, writeClass: kind,
     footprintObligation: coordinate('replaceRangeFootprint'), costObligation: coordinate('replaceRangeBudget'),
     failureMappings: failures,
   }]));
   return {
-    schema: 'edict.lawpack-build/v1', outputDirectory: 'vendor/jedit-text-2', dependencyBundles: [],
+    schema: 'edict.lawpack-build/v1', outputDirectory, dependencyBundles: [],
     lawpack: {
       schema: 'edict.lawpack-authoring/v1', id: 'jedit.text', version: '2', acceptedCoreAbi: ['edict.core/v1'],
       dependencies: [], exportsCoordinate: 'jedit.text.exports/v2',
@@ -190,7 +189,7 @@ export function ropeLawpack() {
         coordinate: 'jedit.text.echo-adapter/v2', output: 'adapter.cbor',
         acceptedTargetProfile: pins.profile, acceptedTargetIr: pins.targetIr,
         operationProfiles: { [coordinate('replaceRange')]: {
-          core: 'continuum.profile.graph-effects/v1', semanticEffects: effects.map(([name]) => coordinate(name)),
+          core: 'continuum.profile.graph-effects/v1', semanticEffects: bound.map(([name]) => coordinate(name)),
           budgetObligation: coordinate('replaceRangeBudget'), targetConfiguration: { local: 'echo-config' },
         } },
         effectImplementations: implementations,
@@ -209,8 +208,10 @@ export function ropeLawpack() {
             identityLaw: 1, intrinsicCatalog: { $edictBytes: pins.intrinsicCatalogHex },
             graphSchema: { $edictBytes: graphSchema(profile).toString('hex') },
             footprintLaw: { $edictBytes: footprintLaw(profile).toString('hex') },
-            graphReads: { maxEdgeScans: 64, maxClosureNodes: envelope.maxClosureNodes,
-              maxClosureDepth: envelope.maxTreeHeight, closureSelector: 'select' },
+            graphReads: closure
+              ? { maxEdgeScans: 64, maxClosureNodes: envelope.maxClosureNodes,
+                maxClosureDepth: envelope.maxTreeHeight, closureSelector: 'select' }
+              : { maxEdgeScans: 64, maxClosureNodes: 0, maxClosureDepth: 0 },
             maxInputBytes: 65536, maxResultBytes: 4096, maxAllocatedBytes: EFFECT_ALLOCATION_CEILING,
             budgetCeiling: { steps: REFERENCE_STEPS, readBytes: 4194304, writeBytes: 4194304 },
             authorityProfile: 'jedit.text.authority/v2',
@@ -226,6 +227,11 @@ export function ropeLawpack() {
   };
 }
 
-export function ropeLawpackText() {
-  return `${JSON.stringify(ropeLawpack(), null, 2)}\n`;
+export function ropeLawpackText(options) {
+  return `${JSON.stringify(ropeLawpack(options), null, 2)}\n`;
+}
+
+/** The basis-read witness's lawpack: the same exports without the closure read. */
+export function basisReadLawpackText() {
+  return ropeLawpackText({ closure: false, outputDirectory: 'vendor/jedit-text-2-basis-read' });
 }

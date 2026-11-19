@@ -170,7 +170,7 @@
               "payloadType": "jedit.text@2.AtomQuery"
             },
             "tooLarge": {
-              "authorityClass": "resourceFault",
+              "authorityClass": "integrityFault",
               "payloadType": "jedit.text@2.AtomQuery"
             }
           },

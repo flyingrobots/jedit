@@ -1,9 +1,10 @@
-// Schema-2 type identities and ContentAddressV1 ids for the text facts.
-// Every id is computed by Echo's generic identity law, never an
-// application recipe. The type ids are BLAKE3 over "type:" and the label.
 package jedit.text.identity@1;
 
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
+
+// Schema-2 type identities and ContentAddressV1 ids for the text facts.
+// Every id is computed by Echo's generic identity law, never an
+// application recipe. The type ids are BLAKE3 over "type:" and the label.
 
 type Id = Bytes<exact=32>;
 

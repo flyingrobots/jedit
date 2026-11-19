@@ -1,3 +1,13 @@
+package jedit.text.replace_range@2;
+
+use lawpack jedit.text@2 digest "sha256:caa3687352cc0de8175e4780c863e60d1165c0161e4974a20de89e65d584aaf5" as text;
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
+use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
+use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
+use module jedit.text.proposal@1 digest "sha256:25b4c18c4a452907d340f5b6d53c264b3b6692dcfb9993ef34f9ae38810bb6e6" as proposal;
+use module jedit.text.plan@1 digest "sha256:d57c6d80db5911c21ce0e52b8c3fdc089878f72ba53a45cf20d809832e6b07c0" as plan;
+
 // The authored persistent-rope ReplaceRange (DL-0159, #296).
 //
 // 1. Read the Buffer and its canonicalHead; require the invocation basis.
@@ -10,15 +20,6 @@
 //
 // The Buffer version bump replaces the atom it read, guarded by Echo's
 // attachment-value digest of those exact bytes.
-package jedit.text.replace_range@2;
-
-use lawpack jedit.text@2 digest "sha256:554124ca417e66173fe5a7888b5d8f71a2ced1e5ecacd0ecdac92dbbff0df1ee" as text;
-use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:10a1ffafc935e66900597a11fc5ad0a32d045d839acaa3c6f67ab11a18478744" as codec;
-use module jedit.text.identity@1 digest "sha256:95b57d129a1ffd66fde24f6ea21352f43abf493543bdc8ee3192e70042a48366" as ids;
-use module jedit.text.closure@1 digest "sha256:b871b39335b77d1e469b12fbc155407081ca2cfb46f7ec4efb9d1ce8456159cd" as closure;
-use module jedit.text.proposal@1 digest "sha256:6f3c4af84e1c2248f066cd93ea1d66aeaa725e70ce23fca1f3db3309282e2087" as proposal;
-use module jedit.text.plan@1 digest "sha256:245b497c2f99aa12d6f744a3e4b823a172acc821eb58a981f5dd7665e0a28c44" as plan;
 
 type Input = {
   warpId: text.NodeId, bufferId: text.NodeId, basisHeadId: text.NodeId,
@@ -39,7 +40,7 @@ intent replaceRange(input: Input) returns Output
       missing(query) => text.FactMissing,
       required(query) => text.FactMalformed,
       wrongType(query) => text.FactMalformed,
-      tooLarge(query) => text.ResourceLimitExceeded,
+      tooLarge(query) => text.FactMalformed,
     };
   let buffer = codec.decodeBuffer(bufferAtom) else text.FactMalformed;
   let canonical: text.Edges = text.outgoing({ edgeType: ids.canonicalHeadEdge(), nodeId: input.bufferId, warpId: input.warpId })

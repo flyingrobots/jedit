@@ -7,25 +7,25 @@
       "path": "manifest.cbor",
       "kind": "manifest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:554124ca417e66173fe5a7888b5d8f71a2ced1e5ecacd0ecdac92dbbff0df1ee"
+      "digest": "sha256:caa3687352cc0de8175e4780c863e60d1165c0161e4974a20de89e65d584aaf5"
     },
     {
       "path": "manifest.sha256",
       "kind": "manifestDigest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:554124ca417e66173fe5a7888b5d8f71a2ced1e5ecacd0ecdac92dbbff0df1ee"
+      "digest": "sha256:caa3687352cc0de8175e4780c863e60d1165c0161e4974a20de89e65d584aaf5"
     },
     {
       "path": "exports.cbor",
       "kind": "exports",
       "coordinate": "jedit.text.exports/v2",
-      "digest": "sha256:e115cb41f138babc270a201f6786a5c75fb71f41026c4dc2fd18131be8bda770"
+      "digest": "sha256:c37ca7161f9430eea19aa4cf5d6b2ed1ff0c5f885b06479452a028bd554336d3"
     },
     {
       "path": "exports.sha256",
       "kind": "exportsDigest",
       "coordinate": "jedit.text.exports/v2",
-      "digest": "sha256:e115cb41f138babc270a201f6786a5c75fb71f41026c4dc2fd18131be8bda770"
+      "digest": "sha256:c37ca7161f9430eea19aa4cf5d6b2ed1ff0c5f885b06479452a028bd554336d3"
     },
     {
       "path": "compatibility.cbor",

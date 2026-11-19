@@ -131,6 +131,18 @@ witness. The Rust consumer, which installs a case, invokes the locked
 package and reports an observation for the row judge, waits for a package
 that Echo admits.
 
+`rope/probe/BasisRead.edict` is a basis-read witness: the first DL-0159 step
+alone, built with `rope/probe.application.json` and the closure-free lawpack
+`rope/basis-read.lawpack.json`. Echo main `0d1f74a0`'s provider accepts it.
+Echo's runtime admission still refuses the same package as an invalid
+authored-effect program, so it has not executed. Comments sit after the
+`use` lines in every source, because a comment before them breaks Echo's
+source-alias check (echo#1022).
+
+`rope/runtime/` is the test-only runtime consumer on Echo's public
+`EffectPackageHost` (`trusted_runtime` only). Its smoke test runs Echo's
+retained public link package end to end.
+
 `tests/rope-modules.mjs` lists the modules in dependency order and pins each
 `use module` import to its dependency's source digest.
 `tests/rope-sources.spec.mjs` checks that the generated tables and every pin
