@@ -1,10 +1,10 @@
 package jedit.text.proposal@1;
 
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
-use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
-use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
+use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
+use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
 
 // ContentAddressV1 ids for the fresh nodes, and the normalized proposal of
 // the reachable fresh nodes and their edges.
@@ -14,11 +14,11 @@ use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7
 // yields repeated ids, and each id is emitted once.
 
 type Id = Bytes<exact=32>;
-type Pieces = { replacement: Bytes<max=16384>, rewritten: Bytes<max=25088> };
+type Pieces = { replacement: Bytes<max=4201>, rewritten: Bytes<max=12905> };
 type Outgoing = { edgeType: Id, to: Id };
 
 // A fresh node's atom.
-fn leafBytes(c: closure.Closure, pieces: Pieces, n: rope.Node) -> Bytes<max=25088> {
+fn leafBytes(c: closure.Closure, pieces: Pieces, n: rope.Node) -> Bytes<max=12905> {
   let row = closure.rowOf(c, n.source);
   let stored = codec.leafFact(row.atomBytes).fact.bytes;
   let piece = if n.source == 0u64 then pieces.replacement else pieces.rewritten;
@@ -28,7 +28,7 @@ fn leafBytes(c: closure.Closure, pieces: Pieces, n: rope.Node) -> Bytes<max=2508
 }
 // Slicing never narrows a byte bound, so a fresh atom keeps the bound of the
 // largest piece; Echo's ensure-node admits that bound.
-type FreshAtom = Bytes<max=25344>;
+type FreshAtom = Bytes<max=12941>;
 fn atomOf(c: closure.Closure, pieces: Pieces, n: rope.Node) -> FreshAtom {
   let bytes = leafBytes(c, pieces, n);
   return if n.leaf then codec.pieceAtom(bytes, n.lineBreaks)
@@ -137,4 +137,35 @@ fn propose(c: closure.Closure, pieces: Pieces, warp: Id, arena: rope.Arena, root
   let fresh = rope.freshNodes(arena, root);
   let final = fold({ context, order: fresh.order, next: 0u64, emitted: [], emittedIds: [], fault: fresh.fault }, emitStep, 144u64);
   return { context, emitted: final.emitted, rootId: idOf(c, arena, context.ids, root), fault: final.fault };
+}
+
+// ---- Echo limits on one published edit ----
+//
+// Patch operations (2L + 4B + 6, warp-core edict_effects/derive/checks.rs:516-542)
+// and resolved writes (2L + 6B + 9, the footprint-law slot model) of the
+// emitted fresh leaves L and branches B, with the new Head, the canonicalHead
+// retarget and the Buffer replace.
+
+type Count = { context: Context, emitted: List<U64, max=144>, next: U64, leaves: U64, branches: U64 };
+fn countStep(s: Count) -> Count {
+  let index = if s.next < listLen(s.emitted) then listAt(s.emitted, s.next) else rope.absent();
+  let leaf = rope.view(s.context.arena, index).leaf;
+  return if s.next < listLen(s.emitted) && s.next < 144u64 && s.leaves < 144u64 && s.branches < 144u64
+    then { context: s.context, emitted: s.emitted, next: s.next + 1u64,
+      leaves: if leaf then s.leaves + 1u64 else s.leaves, branches: if leaf then s.branches else s.branches + 1u64 }
+    else s;
+}
+
+// A sum that saturates at U64::MAX, which no limit admits.
+fn add(a: U64, b: U64) -> U64 { return default(checkedAdd(a, b), 18446744073709551615u64); }
+
+// Whether the edit fits 128 patch operations and 256 writes.
+fn fitsEcho(p: Proposal) -> Bool {
+  let counted = fold({ context: p.context, emitted: p.emitted, next: 0u64, leaves: 0u64, branches: 0u64 }, countStep, 144u64);
+  let leaves = add(counted.leaves, counted.leaves);
+  let twoBranches = add(counted.branches, counted.branches);
+  let fourBranches = add(twoBranches, twoBranches);
+  let operations = add(add(leaves, fourBranches), 6u64);
+  let writes = add(add(add(leaves, fourBranches), twoBranches), 9u64);
+  return operations <= 128u64 && writes <= 256u64;
 }

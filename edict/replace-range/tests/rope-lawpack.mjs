@@ -23,7 +23,7 @@ const REFERENCE_STEPS = Number.MAX_SAFE_INTEGER;
 
 /** The v1 envelope. Fold and list bounds in src/rope are literals equal to these. */
 export const envelope = Object.freeze({
-  maxTreeHeight: 32, maxLeafBytes: 4096, maxReplacementBytes: 16384, maxClosureNodes: 256,
+  maxTreeHeight: 14, maxWorkHeight: 15, maxLeafBytes: 4096, maxReplacementBytes: 4201, maxClosureNodes: 256,
   maxClosureOccurrences: 128, maxClosureEdges: 256, maxArenaNodes: 512, maxFreshNodes: 256,
   maxCreatedLeaves: 16, maxCreatedBranches: 128, maxEmittedNodes: 144,
   maxNoOpLeaves: 64, maxEffects: 1024,
@@ -122,7 +122,7 @@ const types = Object.freeze({
   AtomQuery: `Record<nodeId:${ID},typeId:${ID},warpId:${ID}>`,
   EdgeQuery: `Record<edgeType:${ID},nodeId:${ID},warpId:${ID}>`,
   Edges: `List<Record<edgeId:${ID},toId:${ID}>,max=2>`,
-  NodeWrite: `Record<atomBytes:Bytes<max=25344>,atomType:${ID},nodeId:${ID},nodeType:${ID},warpId:${ID}>`,
+  NodeWrite: `Record<atomBytes:Bytes<max=12941>,atomType:${ID},nodeId:${ID},nodeType:${ID},warpId:${ID}>`,
   AtomReplace: `Record<atomBytes:Bytes<max=4400>,atomType:${ID},expectedAtomDigest:${ID},nodeId:${ID},warpId:${ID}>`,
   EdgeWrite: `Record<edgeId:${ID},edgeType:${ID},fromId:${ID},toId:${ID},warpId:${ID}>`,
   EdgeReplace: `Record<edgeId:${ID},expectedToId:${ID},toId:${ID},warpId:${ID}>`,
@@ -212,7 +212,7 @@ export function ropeLawpack({ closure = true, outputDirectory = 'vendor/jedit-te
             footprintLaw: { $edictBytes: footprintLaw(profile).toString('hex') },
             graphReads: closure
               ? { maxEdgeScans: 64, maxClosureNodes: envelope.maxClosureNodes,
-                maxClosureDepth: envelope.maxTreeHeight, closureSelector: 'select' }
+                maxClosureDepth: envelope.maxTreeHeight + 1, closureSelector: 'select' }
               : { maxEdgeScans: 64, maxClosureNodes: 0, maxClosureDepth: 0 },
             maxInputBytes: 65536, maxResultBytes: 4096, maxAllocatedBytes: EFFECT_ALLOCATION_CEILING,
             budgetCeiling: { steps: REFERENCE_STEPS, readBytes: 4194304, writeBytes: 4194304 },

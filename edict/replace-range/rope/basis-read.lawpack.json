@@ -39,7 +39,7 @@
         },
         {
           "coordinate": "jedit.text@2.Replacement",
-          "definition": "Bytes<max=16384>"
+          "definition": "Bytes<max=4201>"
         },
         {
           "coordinate": "jedit.text@2.Detail",
@@ -63,7 +63,7 @@
         },
         {
           "coordinate": "jedit.text@2.NodeWrite",
-          "definition": "Record<atomBytes:Bytes<max=25344>,atomType:Bytes<exact=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+          "definition": "Record<atomBytes:Bytes<max=12941>,atomType:Bytes<exact=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>,warpId:Bytes<exact=32>>"
         },
         {
           "coordinate": "jedit.text@2.AtomReplace",
@@ -82,7 +82,12 @@
         {
           "coordinate": "jedit.text@2.maxTreeHeight",
           "type": "U64",
-          "value": 32
+          "value": 14
+        },
+        {
+          "coordinate": "jedit.text@2.maxWorkHeight",
+          "type": "U64",
+          "value": 15
         },
         {
           "coordinate": "jedit.text@2.maxLeafBytes",
@@ -92,7 +97,7 @@
         {
           "coordinate": "jedit.text@2.maxReplacementBytes",
           "type": "U64",
-          "value": 16384
+          "value": 4201
         },
         {
           "coordinate": "jedit.text@2.maxClosureNodes",

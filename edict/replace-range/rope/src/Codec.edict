@@ -48,7 +48,7 @@ fn leafAtom(bytes: Bytes<max=4096>, lineBreaks: U64) -> Atom {
   return b"\xa2\x65bytes" + header(64u64, len(bytes)) + bytes + b"\x6alineBreaks" + uint(lineBreaks);
 }
 // A fresh leaf's atom over a piece slice; the slice keeps its piece's bound.
-fn pieceAtom(bytes: Bytes<max=25088>, lineBreaks: U64) -> Bytes<max=25344> {
+fn pieceAtom(bytes: Bytes<max=12905>, lineBreaks: U64) -> Bytes<max=12941> {
   return b"\xa2\x65bytes" + header(64u64, len(bytes)) + bytes + b"\x6alineBreaks" + uint(lineBreaks);
 }
 fn branchAtom(fact: BranchFact) -> Atom {

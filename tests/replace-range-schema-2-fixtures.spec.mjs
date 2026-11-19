@@ -214,7 +214,7 @@ test('effects, write set and Buffer update are checked field by field against th
     (copy) => { committed(copy).effects.find((effect) => effect.kind === 'ReplaceAtom').atomHex = 'a0'; },
     (copy) => { committed(copy).writeSet.nodes = []; },
     (copy) => { committed(copy).readSet.nodes.push('ff'.repeat(32)); },
-    (copy) => { row(copy, 'constructor-8193-bytes').text.leafSizes = [4097, 4096]; },
+    (copy) => { row(copy, 'constructor-4097-bytes').text.leafSizes = [4097]; },
   ];
   for (const mutate of mutations) assert.throws(() => checkCommitted(mutated(mutate), oracle), /committed/);
 });
@@ -405,4 +405,21 @@ test('a read set beyond the closure envelope does not satisfy its row', () => {
   const deep = { ...exact, closureDepth: ropeReadBounds.maxClosureDepth + 1 };
   assert.match(unmetReasons(entry, wide).join(), /exceeds the closure envelope/);
   assert.match(unmetReasons(entry, deep).join(), /exceeds the closure envelope/);
+});
+
+// Intermediate v1 envelope (#296 decision): at most 4,201 inserted bytes.
+const MAX_INSERTED_BYTES = 4201;
+
+test('an addition inserting more than the envelope expects a classified envelope refusal', () => {
+  const over = artifact.additions.filter((entry) => entry.invocation.replacementHex.length / 2 > MAX_INSERTED_BYTES);
+  assert.deepEqual(over.map((entry) => entry.id).sort(),
+    ['constructor-8193-bytes', 'constructor-8194-bytes', 'equal-content-new-leaves']);
+  for (const entry of over) {
+    assert.equal(entry.expected.typedOutcome, 'ResourceLimitExceeded', entry.id);
+    assert.equal(entry.expected.decidingCheck, 'envelope', entry.id);
+    assert.deepEqual(entry.expected.effects, [], entry.id);
+  }
+  for (const entry of artifact.rows) {
+    assert.notEqual(entry.expected.typedOutcome, 'ResourceLimitExceeded', `${entry.id} is retained and inside the envelope`);
+  }
 });

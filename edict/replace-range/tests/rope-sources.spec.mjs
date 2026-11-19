@@ -65,7 +65,7 @@ const CLOSURE_EDGE_TYPES = 3;
 
 test('every fold and list bound in the rope source is an envelope constant', async () => {
   const { envelope } = await import('./rope-lawpack.mjs');
-  const height = envelope.maxTreeHeight;
+  const height = envelope.maxWorkHeight;
   const allowedFolds = new Set([height + 1, 2 * height + 2, envelope.maxNoOpLeaves, envelope.maxFreshNodes, envelope.maxCreatedLeaves,
     envelope.maxCreatedBranches, envelope.maxEmittedNodes,
     envelope.maxArenaNodes]);

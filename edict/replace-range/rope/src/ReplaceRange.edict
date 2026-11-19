@@ -1,12 +1,12 @@
 package jedit.text.replace_range@2;
 
-use lawpack jedit.text@2 digest "sha256:171c9401d7ee088bbb348623736995bbee031573856029e606f2bb3cf747af50" as text;
+use lawpack jedit.text@2 digest "sha256:726c52efd0707571fc8b63719f08ea5ae552215341dff451a28734a2b3e5f3ca" as text;
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
-use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
-use module jedit.text.proposal@1 digest "sha256:25b4c18c4a452907d340f5b6d53c264b3b6692dcfb9993ef34f9ae38810bb6e6" as proposal;
-use module jedit.text.plan@1 digest "sha256:d57c6d80db5911c21ce0e52b8c3fdc089878f72ba53a45cf20d809832e6b07c0" as plan;
+use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
+use module jedit.text.proposal@1 digest "sha256:2758d99a7b84fc67ef262649a6cfdda9186f3ef72296908a54d81983918ed347" as proposal;
+use module jedit.text.plan@1 digest "sha256:09f915d760e64153646f6bb8995bbce63d56141558968fcad818d197c7aaf47d" as plan;
 
 // The authored persistent-rope ReplaceRange (DL-0159, #296).
 //
@@ -65,7 +65,7 @@ intent replaceRange(input: Input) returns Output
   let edgeTypes: List<text.NodeId, max=3> = [ids.rootEdge(), ids.leftEdge(), ids.rightEdge()];
   let read: text.Closure = text.closure({
     edgeTypes, guide: closure.headGuide(input.startByte, input.endByte, range),
-    maxDepth: 33u64, maxNodes: 256u64, nodeId: input.basisHeadId, warpId: input.warpId,
+    maxDepth: 15u64, maxNodes: 256u64, nodeId: input.basisHeadId, warpId: input.warpId,
   })
     else {
       startMissing(query) => text.FactMissing,

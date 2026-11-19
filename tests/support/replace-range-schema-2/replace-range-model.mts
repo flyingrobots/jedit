@@ -12,7 +12,7 @@ import { byteLength, fromBytes, isCharBoundary, lineBreaks, NewBranch, NewLeaf, 
 import type { Rope } from './rope-build.mts';
 import { isUtf8, RopeReader } from './rope-reader.mts';
 import type { StoredNode } from './rope-reader.mts';
-import { atomTypeId, decodeFact, edgeTypeId, FactDecodeError, MAX_LEAF_BYTES, nodeTypeId, textField, uintField,
+import { atomTypeId, decodeFact, edgeTypeId, FactDecodeError, MAX_INSERTED_BYTES, MAX_LEAF_BYTES, nodeTypeId, textField, uintField,
   U64_MAX, WARP_ID } from './schema-2-facts.mts';
 import type { EdgeKind, FactFields, FactKind } from './schema-2-facts.mts';
 
@@ -132,6 +132,9 @@ export class ReplaceRangeModel {
     }
     if (start > end) throw new Obstruction('RangeOrderInvalid', 'range-order', `${start} > ${end}`);
     if (!isUtf8(replacement)) throw new Obstruction('ReplacementNotUtf8', 'replacement', 'replacement bytes');
+    if (replacement.length > MAX_INSERTED_BYTES) {
+      throw new Obstruction('ResourceLimitExceeded', 'envelope', `${replacement.length} inserted bytes exceed the v1 envelope`);
+    }
     const head = this.view.node(basisHeadId);
     if (head === undefined) throw new Obstruction('FactMissing', 'head-decode', `no Head ${hex(basisHeadId)}`);
     const headFields = decodeAt(head, 'Head', 'head-decode');

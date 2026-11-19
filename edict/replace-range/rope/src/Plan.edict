@@ -1,12 +1,12 @@
 package jedit.text.plan@1;
 
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
-use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
-use module jedit.text.build@1 digest "sha256:390681fd81a67589a7fbe3b7ba31faaf580b7d2b32b000244bed3b06ca2fb1ab" as build;
-use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
-use module jedit.text.proposal@1 digest "sha256:25b4c18c4a452907d340f5b6d53c264b3b6692dcfb9993ef34f9ae38810bb6e6" as proposal;
+use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
+use module jedit.text.build@1 digest "sha256:d23be858e5445144c089f3357162e0900eee8043b3fb4f9868937bb7b1538fb9" as build;
+use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
+use module jedit.text.proposal@1 digest "sha256:2758d99a7b84fc67ef262649a6cfdda9186f3ef72296908a54d81983918ed347" as proposal;
 
 // The pure ReplaceRange plan over one closure read: Head checks, the
 // validated arena, construction, character boundaries, the no-op check,
@@ -36,8 +36,11 @@ type Plan = {
 };
 
 // The code of a fold fault.
+// A loop that ends before its algorithm finishes is an envelope refusal, never
+// a completed edit.
 fn faultCode(fault: U64) -> U64 {
-  return if fault == rope.closureFault() || fault == rope.incompleteFault() then closureInsufficient()
+  return if fault == rope.incompleteFault() then resourceLimit()
+    else if fault == rope.closureFault() then closureInsufficient()
     else if fault == rope.overflowFault() then arithmeticOverflow()
     else if fault == rope.capacityFault() then resourceLimit()
     else if fault == rope.malformedFault() then malformedRope()
@@ -120,12 +123,16 @@ fn plan(c: closure.Closure, q: Request) -> Plan {
     else if !identity then identityMismatch()
     else if loaded.fault != rope.ok() then faultCode(loaded.fault)
     else if !shape then malformedRope()
+    else if rooted && 14u64 < root.height then resourceLimit()
     else if built.tree.fault != rope.ok() then faultCode(built.tree.fault)
     else if same.fault != rope.ok() then faultCode(same.fault)
     else if splits(loaded.arena, c, q.start) || splits(loaded.arena, c, q.end) then boundaryInvalid()
     else if same.equal then noOp()
     else if !isSome(lineCount) || !isSome(sequence) then arithmeticOverflow()
-    else faultCode(p.fault);
+    else if p.fault != rope.ok() then faultCode(p.fault)
+    else if rope.present(tree.arena, tree.root) && 14u64 < top.height then resourceLimit()
+    else if !proposal.fitsEcho(p) then resourceLimit()
+    else committed();
   let next: codec.HeadFact = {
     byteLength: if rope.present(tree.arena, tree.root) then top.byteLength else 0u64,
     lineCount: default(lineCount, 0u64), sequence: default(sequence, 0u64),

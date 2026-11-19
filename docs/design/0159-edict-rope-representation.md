@@ -339,6 +339,44 @@ just above split thresholds (4,097, 8,193, and 8,194 bytes, not only powers of
 two), and recorded with their cost model before the representation gate; raising a cap without that
 model is out of scope. Larger edits are a separate operation family (#382).
 
+### Intermediate v1 envelope (#296 decision, 2026-11-18)
+
+The first executable envelope is **tree height at most 14 and at most 4,201
+inserted bytes per edit**. It is the only measured option that keeps all 40
+retained oracle outcomes and fits all three of Echo's limits on one Action. It
+applies to every edit; leaf-local edits get no larger allowance, because the
+operation cannot tell them apart before it reads the closure.
+
+| Echo limit | What it counts | Per edit (L fresh leaves, B fresh branches) | Code |
+| --- | --- | --- | --- |
+| 128 patch operations | one Action batch's derived `WarpOp`s | 2L + 4B + 6 | `ACTION_BATCH_OPERATION_LIMIT_V1`, warp-core `echo_operation.rs:99`, checked at `:6903-6905`; derivation `edict_effects/derive/checks.rs:516-542` |
+| 256 writes | resolved write slots, range keys included | 2L + 6B + 9 | footprint law `max_writes`, Echo `authored-operation-effects.md` (Footprint law) |
+| 1,024 effects | emitted effect intents | L + 3B + 5 | per-operation effect cap, Echo `GeneratedRules.md` (Buffered compiled mutation intents) |
+
+These formulas assume every fresh node is new; an Ensure that Echo resolves as
+already present adds nothing. The worst cases that chose the envelope are
+**sampled, not proven**: the normative reconstruction over perfect and
+Fibonacci AVL trees at sampled offsets. At height 14 and 4,201 inserted bytes
+the sampled worst case is 122 patch operations, 179 writes and 90 effects.
+
+Height conditions:
+
+- The **input** tree's root height must be at most 14. It is checked after
+  closure validation, so a malformed height claim stays `MalformedRope`.
+- The **output** tree's root height must be at most 14. An accepted edit
+  that would raise the height to 15 is refused, so every published tree stays
+  inside the envelope for the next edit.
+- Construction may hold intermediate trees one level taller, so its path
+  stacks are sized for height 15.
+
+Anything outside the envelope, including a published edit that would exceed
+128 patch operations or 256 writes, is `ResourceLimitExceeded` with no
+partial publication. The schema-2 additions that insert more than 4,201
+bytes (`equal-content-new-leaves`, `constructor-8193-bytes`,
+`constructor-8194-bytes`) now expect that refusal at the envelope check. The
+retained 40 rows are unchanged. Taller trees and large files remain open
+work (#382). This envelope does not support GiB-scale files.
+
 Three failures stay distinct, and none accuses valid data of corruption:
 
 | Failure | Meaning |

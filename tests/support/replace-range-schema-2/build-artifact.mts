@@ -74,8 +74,8 @@ function profile(): Json {
     pending: {
       worldlineRoot: 'echo#927 owns the worldline-root-to-Buffer layout; reachability starts at the Buffer',
       closureSelector: 'echo#926 owns the bounded closure read; reads here are the model\'s, not a selector\'s',
-      envelope: 'v1 resource envelope unmeasured; the model does not evaluate the envelope check, rows record their '
-        + 'needs, and a refusal outside the envelope is a gap',
+      envelope: 'intermediate v1 envelope (#296): the model refuses more than 4,201 inserted bytes at the envelope '
+        + 'check; tree height at most 14 is enforced by the authored operation and exercised by no row here',
     },
   };
 }

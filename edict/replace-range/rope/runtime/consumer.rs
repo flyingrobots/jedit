@@ -112,7 +112,7 @@ fn the_consumer_runs_an_admitted_public_effect_package_end_to_end() {
 }
 
 const WITNESS_PACKAGE: &str = include_str!("fixtures/basis-read-executable-operation-package.hex");
-const WITNESS_PIN: &str = "9e12fee17830a87763b0eb90463aa9ef4199fb6e9f794ccb7097a22d7b176683";
+const WITNESS_PIN: &str = "130226c227600e0f61ead413d65bdea7bcbc43b3efe153d05f8c4644c8fb00c7";
 const MIDDLE_ASCII_INSERT: &str = include_str!("fixtures/middle-ascii-insert.case.json");
 /// The jedit.text@2 reference step ceiling and the Echo effect allocation ceiling.
 const REFERENCE_STEPS: u64 = 9_007_199_254_740_991;

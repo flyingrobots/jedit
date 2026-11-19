@@ -1,8 +1,8 @@
 package jedit.text.build@1;
 
-use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
-use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
-use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7c178e772c3c47c4b5084b7c1a36f73a" as closure;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
+use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
+use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
 
 // Byte-level construction for the persistent ReplaceRange, following
 // tests/support/replace-range-schema-2/rope-build.mts and
@@ -13,7 +13,7 @@ use module jedit.text.closure@1 digest "sha256:ad874ea28fee3b713e13c21b50b68b3f7
 // row's decoded atom; a fresh leaf names a piece: 0 is the replacement and 1
 // is a rewritten leaf.
 
-type Replacement = Bytes<max=16384>;
+type Replacement = Bytes<max=4201>;
 type LeafBytes = Bytes<max=4352>;
 
 // A stored leaf's bytes, decoded from its closure row when needed rather than
@@ -62,26 +62,12 @@ fn fb2(arena: rope.Arena, bytes: Replacement, from: U64, to: U64) -> rope.Built 
   return if small(from, to) then leafOf(arena, bytes, from, to)
     else if left.fault == rope.ok() then rope.branchOn(right, left.root, right.root) else left;
 }
-fn fb3(arena: rope.Arena, bytes: Replacement, from: U64, to: U64) -> rope.Built {
-  let mid = middle(bytes, from, to);
-  let left = fb2(arena, bytes, from, mid);
-  let right = fb2(left.arena, bytes, mid, to);
-  return if small(from, to) then leafOf(arena, bytes, from, to)
-    else if left.fault == rope.ok() then rope.branchOn(right, left.root, right.root) else left;
-}
-fn fb4(arena: rope.Arena, bytes: Replacement, from: U64, to: U64) -> rope.Built {
-  let mid = middle(bytes, from, to);
-  let left = fb3(arena, bytes, from, mid);
-  let right = fb3(left.arena, bytes, mid, to);
-  return if small(from, to) then leafOf(arena, bytes, from, to)
-    else if left.fault == rope.ok() then rope.branchOn(right, left.root, right.root) else left;
-}
 
-// fromBytes(replacement): empty is the empty rope; at most 16,384 bytes need
-// at most four levels.
+// fromBytes(replacement): empty is the empty rope; at most 4,201 bytes need
+// at most two levels.
 fn fromBytes(arena: rope.Arena, bytes: Replacement) -> rope.Built {
   return if len(bytes) == 0u64 then { arena, root: rope.absent(), fault: rope.ok() }
-    else fb4(arena, bytes, 0u64, len(bytes));
+    else fb2(arena, bytes, 0u64, len(bytes));
 }
 
 // ---- locate and the leaf rewrite ----
@@ -91,11 +77,11 @@ fn fromBytes(arena: rope.Arena, bytes: Replacement) -> rope.Built {
 // path-copies its ancestors.
 
 type Locate = {
-  arena: rope.Arena, path: List<rope.Frame, max=32>, cur: U64, start: U64, end: U64,
+  arena: rope.Arena, path: List<rope.Frame, max=15>, cur: U64, start: U64, end: U64,
   spanning: Bool, done: Bool, fault: U64,
 };
 
-fn locateState(s: Locate, cur: U64, start: U64, end: U64, path: List<rope.Frame, max=32>) -> Locate {
+fn locateState(s: Locate, cur: U64, start: U64, end: U64, path: List<rope.Frame, max=15>) -> Locate {
   return { arena: s.arena, path, cur, start, end, spanning: false, done: false, fault: s.fault };
 }
 fn locateStop(s: Locate, spanning: Bool, fault: U64) -> Locate {
@@ -108,7 +94,7 @@ fn locateStep(s: Locate) -> Locate {
   return if s.done then s
     else if n.leaf then locateStop(s, false, s.fault)
     else if !rope.open(s.arena, s.cur) then locateStop(s, false, rope.closureFault())
-    else if !(listLen(s.path) < 32u64) then locateStop(s, false, rope.capacityFault())
+    else if !(listLen(s.path) < 15u64) then locateStop(s, false, rope.capacityFault())
     else if s.end <= leftLength
       then locateState(s, n.left, s.start, s.end, listAppend(s.path, { node: s.cur, wentRight: false }))
     else if leftLength <= s.start && leftLength <= s.end
@@ -120,16 +106,16 @@ fn locateStep(s: Locate) -> Locate {
 fn locate(arena: rope.Arena, root: U64, start: U64, end: U64) -> Locate {
   let initial: Locate = { arena, path: [], cur: root, start, end, spanning: false,
     done: !rope.present(arena, root), fault: rope.ok() };
-  let final = fold(initial, locateStep, 33u64);
+  let final = fold(initial, locateStep, 16u64);
   return if final.done then final else locateStop(final, false, rope.incompleteFault());
 }
 
 // The rewritten leaf's bytes: leaf[0, start) + replacement + leaf[end, len).
-fn rewritten(leaf: LeafBytes, start: U64, end: U64, bytes: Replacement) -> Bytes<max=25088> {
+fn rewritten(leaf: LeafBytes, start: U64, end: U64, bytes: Replacement) -> Bytes<max=12905> {
   return if start <= end && start <= len(leaf) && end <= len(leaf) then slice(leaf, 0u64, start) + bytes + slice(leaf, end, len(leaf)) else b"";
 }
 
-type Copy = { arena: rope.Arena, path: List<rope.Frame, max=32>, remaining: U64, carry: U64, fault: U64 };
+type Copy = { arena: rope.Arena, path: List<rope.Frame, max=15>, remaining: U64, carry: U64, fault: U64 };
 
 fn copyStep(s: Copy) -> Copy {
   let frame = if 1u64 <= s.remaining && s.remaining - 1u64 < listLen(s.path)
@@ -146,7 +132,7 @@ fn copyStep(s: Copy) -> Copy {
 fn rewrite(found: Locate, length: U64, breaks: U64) -> rope.Built {
   let leaf = rope.freshLeaf(found.arena, rewrittenPiece(), 0u64, length, breaks);
   let final = fold({ arena: leaf.arena, path: found.path, remaining: listLen(found.path), carry: leaf.root,
-    fault: leaf.fault }, copyStep, 33u64);
+    fault: leaf.fault }, copyStep, 16u64);
   return { arena: final.arena, root: final.carry, fault: if final.remaining == 0u64 then final.fault else rope.incompleteFault() };
 }
 

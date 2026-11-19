@@ -9,7 +9,8 @@ package jedit.text.rope@1;
 // the closure read; an unexpanded stored branch has no known children, and
 // asking for them is a closure fault. Fresh nodes are appended, so a fresh
 // node's children always precede it. Every walk is a fold with a literal
-// bound sized for text.maxTreeHeight = 32: a path stack of 32 and 66 steps.
+// bound sized for a working height of 15 (text.maxTreeHeight = 14, plus the one
+// level a join may add): a path stack of 15 and 2 * 15 + 2 = 32 steps.
 // A fold cannot fail, so faults travel in the state and the callers map them.
 
 type Node = {
@@ -149,7 +150,7 @@ fn rotateRight(b: Built) -> Built {
 // ---- joinRight: the left rope is more than one level taller ----
 
 type Join = {
-  arena: Arena, path: List<U64, max=32>, remaining: U64, cur: U64, short: U64,
+  arena: Arena, path: List<U64, max=15>, remaining: U64, cur: U64, short: U64,
   rebuilding: Bool, done: Bool, carry: U64, fault: U64,
 };
 
@@ -178,7 +179,7 @@ fn rightDown(s: Join) -> Join {
   return if !open(s.arena, s.cur) then joinState(s, faulted(s.arena, closureFault()), 0u64, true, true)
     else if hs < 255u64 && height(s.arena, n.right) <= hs + 1u64
       then joinState(s, rightBase(s.arena, n.left, n.right, s.short), listLen(s.path), true, false)
-    else if listLen(s.path) < 32u64
+    else if listLen(s.path) < 15u64
       then { arena: s.arena, path: listAppend(s.path, n.left), remaining: 0u64, cur: n.right, short: s.short,
         rebuilding: false, done: false, carry: s.carry, fault: s.fault }
       else joinState(s, faulted(s.arena, capacityFault()), 0u64, true, true);
@@ -213,7 +214,7 @@ fn leftDown(s: Join) -> Join {
   return if !open(s.arena, s.cur) then joinState(s, faulted(s.arena, closureFault()), 0u64, true, true)
     else if hs < 255u64 && height(s.arena, n.left) <= hs + 1u64
       then joinState(s, leftBase(s.arena, n.left, n.right, s.short), listLen(s.path), true, false)
-    else if listLen(s.path) < 32u64
+    else if listLen(s.path) < 15u64
       then { arena: s.arena, path: listAppend(s.path, n.right), remaining: 0u64, cur: n.left, short: s.short,
         rebuilding: false, done: false, carry: s.carry, fault: s.fault }
       else joinState(s, faulted(s.arena, capacityFault()), 0u64, true, true);
@@ -245,8 +246,8 @@ fn join(arena: Arena, l: U64, r: U64) -> Built {
     rebuilding: false, done: false, carry: absent(), fault: ok() };
   return if !present(arena, l) then { arena, root: r, fault: ok() }
     else if !present(arena, r) then { arena, root: l, fault: ok() }
-    else if hr < 255u64 && hr + 1u64 < hl then finished(fold(start, rightStep, 66u64))
-    else if hl < 255u64 && hl + 1u64 < hr then finished(fold(start, leftStep, 66u64))
+    else if hr < 255u64 && hr + 1u64 < hl then finished(fold(start, rightStep, 32u64))
+    else if hl < 255u64 && hl + 1u64 < hr then finished(fold(start, leftStep, 32u64))
     else branch(arena, l, r);
 }
 
@@ -274,7 +275,7 @@ fn findStep(s: Find) -> Find {
 }
 
 fn find(arena: Arena, root: U64, offset: U64, after: Bool) -> Found {
-  let final = fold({ arena, cur: root, offset, after, done: !present(arena, root), fault: ok() }, findStep, 33u64);
+  let final = fold({ arena, cur: root, offset, after, done: !present(arena, root), fault: ok() }, findStep, 16u64);
   return { leaf: final.cur, local: final.offset, fault: if final.done then final.fault else incompleteFault() };
 }
 
@@ -282,7 +283,7 @@ fn find(arena: Arena, root: U64, offset: U64, after: Bool) -> Found {
 
 type Frame = { node: U64, wentRight: Bool };
 type Cut = {
-  arena: Arena, path: List<Frame, max=32>, remaining: U64, cur: U64, offset: U64,
+  arena: Arena, path: List<Frame, max=15>, remaining: U64, cur: U64, offset: U64,
   keepLeft: Bool, cutBreaks: U64, rebuilding: Bool, done: Bool, carry: U64, fault: U64,
 };
 
@@ -315,7 +316,7 @@ fn cutDown(s: Cut) -> Cut {
     else if whole then cutState(s, { arena: s.arena, root: s.cur, fault: ok() }, listLen(s.path), false)
     else if n.leaf then cutState(s, cutLeaf(s.arena, node(s.arena, s.cur), s.offset, s.keepLeft, s.cutBreaks), listLen(s.path), false)
     else if !open(s.arena, s.cur) then cutState(s, faulted(s.arena, closureFault()), 0u64, true)
-    else if !(listLen(s.path) < 32u64) then cutState(s, faulted(s.arena, capacityFault()), 0u64, true)
+    else if !(listLen(s.path) < 15u64) then cutState(s, faulted(s.arena, capacityFault()), 0u64, true)
     else if goLeft
       then { arena: s.arena, path: listAppend(s.path, { node: s.cur, wentRight: false }), remaining: 0u64,
         cur: n.left, offset: s.offset, keepLeft: s.keepLeft, cutBreaks: s.cutBreaks, rebuilding: false,
@@ -350,7 +351,7 @@ fn cutStep(s: Cut) -> Cut { return if s.done then s else if s.rebuilding then cu
 fn cut(arena: Arena, root: U64, offset: U64, keepLeft: Bool, cutBreaks: U64) -> Built {
   let start: Cut = { arena, path: [], remaining: 0u64, cur: root, offset, keepLeft, cutBreaks,
     rebuilding: false, done: false, carry: absent(), fault: ok() };
-  let final = fold(start, cutStep, 66u64);
+  let final = fold(start, cutStep, 32u64);
   return if !present(arena, root) then { arena, root: absent(), fault: ok() }
     else { arena: final.arena, root: final.carry, fault: if final.done then final.fault else incompleteFault() };
 }

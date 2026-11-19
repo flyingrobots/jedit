@@ -1,9 +1,9 @@
 package jedit.text.closure@1;
 
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
-use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
-use module jedit.text.rope@1 digest "sha256:6ed3b5546af704aec6cd322f6e1122734c4939a25babc42029e1d72c30f319f5" as rope;
+use module jedit.text.rope@1 digest "sha256:4838c1ce441c5d6d3116608dfd1aa2061244ce7d0b947c7b853773c34bc810f1" as rope;
 
 // The bounded closure read's selector and the arena it yields.
 //
