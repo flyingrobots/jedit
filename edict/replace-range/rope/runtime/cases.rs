@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR LicenseRef-MIND-UCAL-1.0
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 //! Loads a runtime case written by tests/runtime-cases.mjs into the
-//! consumer's graph form. Only nodes ordinary admission accepts are
-//! installed here; raw-store witnesses are installed by their own rows.
+//! consumer's graph form. Every node goes straight into the store; the case's
+//! `install` field records which ones ordinary admission would refuse.
 use crate::runner::{edge, CaseNode};
 use serde_json::Value as Json;
 use warp_core::{EdgeRecord, NodeId, TypeId, WarpId};
@@ -29,7 +29,6 @@ pub fn load(text: &str) -> LoadedCase {
         .as_array()
         .expect("nodes")
         .iter()
-        .filter(|node| field(node, "install") == "bridge")
         .map(|node| CaseNode {
             id: NodeId(id(field(node, "id"))),
             ty: TypeId(id(field(node, "nodeType"))),

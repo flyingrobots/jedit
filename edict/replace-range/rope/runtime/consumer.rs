@@ -172,5 +172,9 @@ fn the_admitted_basis_read_witness_reads_the_rows_canonical_head() {
     let observation = run(&case, &package);
     assert_eq!(observation.output, Ok(encode(&bytes(basis)).expect("canonical head id")));
     assert!(observation.mutations.is_empty(), "a read-only witness proposes no mutation");
+    assert!(
+        observation.reads.iter().any(|(class, id, _)| *class == 0 && *id == buffer.0),
+        "the witnessed read set names the Buffer node"
+    );
     println!("JEDIT_ROPE_BASIS_READ_WITNESS_OK derived={:?}", observation.derived_ops);
 }

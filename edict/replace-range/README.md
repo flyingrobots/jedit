@@ -144,6 +144,24 @@ authored-effect program, so it has not executed. Comments sit after the
 `use` lines in every source, because a comment before them breaks Echo's
 source-alias check (echo#1022).
 
+`tests/run-rows.mjs` is the row runner. It writes every runtime case,
+runs `rope/runtime/rows.rs` against a locked ReplaceRange package on
+`EffectPackageHost`, and judges each observation under the #296 read-set
+ruling. It reports retained passing out of 40 and the gap for each row. The
+Rust target is `#[ignore]`d and runs only through this script, because it
+needs a package that Echo admits (echo#1025). The runner observes outputs,
+effects, the witnessed read set and derivation. It does not yet observe the
+text after an edit, reachability or the committed write set: those need a
+committed Tick.
+
+Tick, WAL, receipt and recovery evidence is not reachable on the public
+host. `EffectPackageHost` ends at derivation, and Echo still exports its
+Tick, WAL and recovery types (`TrustedRuntimeHost`, `TrustedRuntimeWal`,
+`TrustedRuntimeWalRecovery`) only with the internal `native_rule_bootstrap`
+feature. The planned harness commits one edit per Tick (so echo#837 and
+echo#819 do not apply), records the receipt, reopens the WAL in a fresh
+host, and compares the recovered state with the pre-restart state.
+
 `rope/runtime/` is the test-only runtime consumer on Echo's public
 `EffectPackageHost` (`trusted_runtime` only). Its smoke test runs Echo's
 retained public link package end to end.

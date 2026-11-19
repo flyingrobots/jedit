@@ -55,6 +55,8 @@ pub struct PackageUnderTest {
 pub struct Observation {
     pub output: Result<Vec<u8>, EffectFrameError>,
     pub mutations: Vec<EffectMutation>,
+    /// The witnessed read set: (slot class, local id, range edge type) per row.
+    pub reads: Vec<(u8, [u8; 32], [u8; 32])>,
     /// The derived patch's operation count, or the derivation refusal.
     pub derived_ops: Option<Result<usize, String>>,
 }
@@ -226,12 +228,23 @@ pub fn run(case: &Case, package: &PackageUnderTest) -> Observation {
         .as_ref()
         .map(|completed| completed.mutations().to_vec())
         .unwrap_or_default();
+    let reads = completed
+        .as_ref()
+        .map(|completed| {
+            let image = completed.read_set_image();
+            let view = warp_core::edict_effects::EffectReadSetView::parse(image.as_bytes()).expect("read image");
+            view.rows()
+                .iter()
+                .map(|row| (row.slot.class, row.slot.local_id, row.slot.edge_type))
+                .collect()
+        })
+        .unwrap_or_default();
     let derived_ops = completed.map(|completed| {
         host.derive_echo_operation_effects(&admitted_invocation, completed)
             .map(|derived| derived.patch().ops().len())
             .map_err(|error| format!("{error:?}"))
     });
-    Observation { output, mutations, derived_ops }
+    Observation { output, mutations, reads, derived_ops }
 }
 
 /// The edge id helper the cases use for fixture edges.
