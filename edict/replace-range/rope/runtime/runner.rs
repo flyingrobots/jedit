@@ -44,7 +44,10 @@ pub struct PackageUnderTest {
     pub pin: [u8; 32],
     pub operation: &'static str,
     pub authority_label: &'static [u8],
+    /// The package's declared ceiling, which the exact policy matches.
     pub budget: (u64, u64, u64),
+    /// The budget delegated to the invocation and its frame, within the ceiling.
+    pub delegated: (u64, u64, u64),
     pub limits: EvaluationLimits,
 }
 
@@ -52,7 +55,8 @@ pub struct PackageUnderTest {
 pub struct Observation {
     pub output: Result<Vec<u8>, EffectFrameError>,
     pub mutations: Vec<EffectMutation>,
-    pub derived_ops: Option<usize>,
+    /// The derived patch's operation count, or the derivation refusal.
+    pub derived_ops: Option<Result<usize, String>>,
 }
 
 pub fn hash(domain: &[u8], data: &[u8]) -> [u8; 32] {
@@ -127,7 +131,7 @@ fn invocation(
     input: &[u8],
 ) -> Vec<u8> {
     let app = basis.application_basis();
-    let (steps, read_bytes, write_bytes) = package.budget;
+    let (steps, read_bytes, write_bytes) = package.delegated;
     encode(&map([
         ("schema", text("echo.operation-invocation/v1")),
         ("kind", text("edict-effect-program/v1")),
@@ -188,9 +192,11 @@ pub fn run(case: &Case, package: &PackageUnderTest) -> Observation {
     let parent = host
         .echo_operation_evaluation_basis_v1(head, application_basis(&case.input))
         .expect("evaluation basis");
+    let (steps, read_bytes, write_bytes) = package.delegated;
+    let delegated = EchoOperationBudgetV1::new(steps, read_bytes, write_bytes);
     let admitted_invocation = host
         .admit_echo_operation_invocation(
-            &EchoOperationInvocationAdmissionPolicy::new(authority, AUTHORITY_GRANT, budget),
+            &EchoOperationInvocationAdmissionPolicy::new(authority, AUTHORITY_GRANT, delegated),
             &invocation(&installed, head, parent, package, &case.input),
         )
         .expect("invocation admission");
@@ -204,7 +210,7 @@ pub fn run(case: &Case, package: &PackageUnderTest) -> Observation {
         .collect();
     let (output, completed) = {
         let mut frame = host
-            .effect_evaluation_frame_v1(parent, &case.edge_types, case.max_edge_scans, budget, package.limits)
+            .effect_evaluation_frame_v1(parent, &case.edge_types, case.max_edge_scans, delegated, package.limits)
             .expect("frame")
             .with_footprint_law(program.footprint_law().clone())
             .expect("footprint law");
@@ -222,10 +228,8 @@ pub fn run(case: &Case, package: &PackageUnderTest) -> Observation {
         .unwrap_or_default();
     let derived_ops = completed.map(|completed| {
         host.derive_echo_operation_effects(&admitted_invocation, completed)
-            .expect("the runtime owner derives the proposal")
-            .patch()
-            .ops()
-            .len()
+            .map(|derived| derived.patch().ops().len())
+            .map_err(|error| format!("{error:?}"))
     });
     Observation { output, mutations, derived_ops }
 }

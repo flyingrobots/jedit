@@ -16,6 +16,8 @@ const ADDRESSING = Object.freeze({ content: 0, mutable: 1 });
 const ID = 'Bytes<exact=32>';
 // Echo's effect-program configuration admits at most 16 MiB of allocation.
 const EFFECT_ALLOCATION_CEILING = 16777216;
+// Echo's footprint-law ceiling on resolved writes per operation.
+const EFFECT_WRITE_CEILING = 256;
 // A reference step ceiling, exact in JSON; the envelope budget is measured under v2.
 const REFERENCE_STEPS = Number.MAX_SAFE_INTEGER;
 
@@ -101,7 +103,7 @@ function footprintLaw(profile) {
   const nodeIds = ['Buffer', 'Head', 'Branch', 'Leaf'].map((kind) => profile.nodeTypes[kind].id);
   const edgeIds = ['canonicalHead', 'root', 'anchor', 'left', 'right'].map((edge) => profile.edgeTypes[edge].id);
   return cbor({
-    max_reads: envelope.maxClosureNodes * 2, max_writes: envelope.maxEffects, max_range_edges: envelope.maxClosureNodes * 2,
+    max_reads: envelope.maxClosureNodes * 2, max_writes: EFFECT_WRITE_CEILING, max_range_edges: envelope.maxClosureNodes * 2,
     atom_types: sortedIds(['Buffer', 'Head', 'Branch', 'Leaf'].map((kind) => profile.atomTypes[kind].id)),
     read_node_types: sortedIds(nodeIds), range_edge_types: sortedIds(edgeIds),
     write_node_types: sortedIds(nodeIds.slice(1)), write_edge_types: sortedIds(edgeIds), portal_owner_types: [],

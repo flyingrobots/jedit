@@ -129,3 +129,18 @@ test('every authored failure arm maps to an obstruction of the failure\'s author
     }
   }
 });
+
+// Echo's effect-profile ceilings for a footprint law (authored-operation-effects.md, Footprint law).
+const ECHO_LAW_CEILINGS = Object.freeze({ max_reads: 4096, max_writes: 256, max_range_edges: 65536 });
+
+test('both lawpacks keep their footprint laws within Echo\'s ceilings', async () => {
+  const { decode } = await import('cbor-x');
+  for (const file of ['edict.lawpack.json', 'basis-read.lawpack.json']) {
+    const { lawpack } = JSON.parse(readFileSync(path.join(ropeSourceRoot, '..', file), 'utf8'));
+    const config = lawpack.localResources.find((item) => item.name === 'echo-config').value;
+    const law = decode(Buffer.from(config.footprintLaw.$edictBytes, 'hex'));
+    for (const [count, ceiling] of Object.entries(ECHO_LAW_CEILINGS)) {
+      assert.ok(law[count] <= ceiling, `${file} ${count} ${law[count]} > ${ceiling}`);
+    }
+  }
+});

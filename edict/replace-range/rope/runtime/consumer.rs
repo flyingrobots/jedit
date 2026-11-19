@@ -2,6 +2,7 @@
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 //! The row runner's runtime consumer, proved on Echo's retained public
 //! graph-read package before a ReplaceRange package is admitted (#296).
+mod cases;
 mod runner;
 
 use echo_edict_canonical::{encode_canonical_cbor_v1 as encode, CanonicalValueV1 as Value};
@@ -40,6 +41,7 @@ fn link_package() -> PackageUnderTest {
         operation: "consumer.links.program@1.link",
         authority_label: b"consumer.links.authority/v1",
         budget: (16_384, 4096, 4096),
+        delegated: (16_384, 4096, 4096),
         limits: EvaluationLimits {
             max_package_bytes: 1_048_576,
             max_input_bytes: 65_536,
@@ -105,6 +107,70 @@ fn the_consumer_runs_an_admitted_public_effect_package_end_to_end() {
             ty: EDGE_TYPE,
         }]
     );
-    assert!(observation.derived_ops.is_some_and(|ops| ops > 0), "a derived patch");
+    assert!(matches!(observation.derived_ops, Some(Ok(ops)) if ops > 0), "a derived patch");
     println!("JEDIT_ROPE_RUNTIME_CONSUMER_OK");
+}
+
+const WITNESS_PACKAGE: &str = include_str!("fixtures/basis-read-executable-operation-package.hex");
+const WITNESS_PIN: &str = "9e12fee17830a87763b0eb90463aa9ef4199fb6e9f794ccb7097a22d7b176683";
+const MIDDLE_ASCII_INSERT: &str = include_str!("fixtures/middle-ascii-insert.case.json");
+/// The jedit.text@2 reference step ceiling and the Echo effect allocation ceiling.
+const REFERENCE_STEPS: u64 = 9_007_199_254_740_991;
+const EFFECT_ALLOCATION_CEILING: u64 = 16_777_216;
+const READ_WRITE_CEILING: u64 = 4_194_304;
+/// Echo's per-frame step ceiling; the invocation delegates at most this.
+const FRAME_STEPS: u64 = 1_048_576;
+
+/// The basis-read witness over the `middle-ascii-insert` row's basis: it reads
+/// the Buffer atom and its canonicalHead and returns the head it names.
+#[test]
+fn the_admitted_basis_read_witness_reads_the_rows_canonical_head() {
+    let loaded = cases::load(MIDDLE_ASCII_INSERT);
+    let field = |key: &str| loaded.input[key].as_str().expect("input field").to_owned();
+    let buffer = NodeId(cases::id(&field("bufferId")));
+    let basis = cases::id(&field("basisHeadId"));
+    let buffer_type = loaded.nodes.iter().find(|node| node.id == buffer).expect("buffer node").ty;
+    let canonical_type = loaded
+        .edges
+        .iter()
+        .find(|record| record.from == buffer && record.to == NodeId(basis))
+        .expect("canonicalHead edge")
+        .ty;
+    let input = encode(&Value::Map(vec![
+        (text("basisHeadId"), bytes(basis)),
+        (text("bufferId"), bytes(buffer.0)),
+        (text("warpId"), bytes(loaded.warp.0)),
+    ]))
+    .expect("canonical input");
+    let package_bytes = hex::decode(WITNESS_PACKAGE.trim()).expect("package hex");
+    println!("witness package identity {}", hex::encode(hash(b"echo:operation-package:v1\0", &package_bytes)));
+    let package = PackageUnderTest {
+        bytes: package_bytes,
+        pin: pin(WITNESS_PIN),
+        operation: "jedit.text.basis_read@1.basisRead",
+        authority_label: b"jedit.text.authority/v2",
+        budget: (REFERENCE_STEPS, READ_WRITE_CEILING, READ_WRITE_CEILING),
+        delegated: (FRAME_STEPS, READ_WRITE_CEILING, READ_WRITE_CEILING),
+        limits: EvaluationLimits {
+            max_package_bytes: 1_048_576,
+            max_input_bytes: 65_536,
+            max_steps: 1_048_576,
+            max_allocated_bytes: EFFECT_ALLOCATION_CEILING,
+            max_output_bytes: 4096,
+        },
+    };
+    let case = Case {
+        warp: loaded.warp,
+        root: buffer,
+        nodes: loaded.nodes,
+        edges: loaded.edges,
+        edge_types: vec![canonical_type],
+        max_edge_scans: 64,
+        typed_reads: vec![(buffer, buffer_type)],
+        input,
+    };
+    let observation = run(&case, &package);
+    assert_eq!(observation.output, Ok(encode(&bytes(basis)).expect("canonical head id")));
+    assert!(observation.mutations.is_empty(), "a read-only witness proposes no mutation");
+    println!("JEDIT_ROPE_BASIS_READ_WITNESS_OK derived={:?}", observation.derived_ops);
 }

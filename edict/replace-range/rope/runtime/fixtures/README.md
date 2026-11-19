@@ -6,3 +6,10 @@ copied byte for byte. Its `echo:operation-package:v1` identity is
 `31c092bec1c0b3a061232e01ab0fa2943469f22324f5e240f2d30d6fb1dbe4c1`. The consumer's smoke test
 runs it to prove the admission, invocation, frame and derivation path before
 a ReplaceRange package is admitted.
+
+`basis-read-executable-operation-package.hex` is the public build of
+`rope/probe/BasisRead.edict` (Amblicit `8d5b02b1`, Echo main `0d1f74a0`'s
+provider package), identity
+`9e12fee17830a87763b0eb90463aa9ef4199fb6e9f794ccb7097a22d7b176683`.
+`middle-ascii-insert.case.json` is that row's runtime case, written by
+`tests/runtime-cases.mjs` from the #404 fixtures.

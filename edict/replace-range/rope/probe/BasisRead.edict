@@ -1,6 +1,6 @@
 package jedit.text.basis_read@1;
 
-use lawpack jedit.text@2 digest "sha256:dc288b7ac4c3ee0d00bfc6729e7ed265690fc6b8201fc4032f5259583a5088a4" as text;
+use lawpack jedit.text@2 digest "sha256:049bd9fc3a3dc6259af4a80684f6517648a3984b8db8ce461a77c8333faa0860" as text;
 
 // Runtime-consumer witness: the first DL-0159 step alone. Reads the Buffer
 // atom and its canonicalHead and returns the head it names. It exercises the

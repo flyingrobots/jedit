@@ -1,6 +1,6 @@
 package jedit.text.replace_range@2;
 
-use lawpack jedit.text@2 digest "sha256:caa3687352cc0de8175e4780c863e60d1165c0161e4974a20de89e65d584aaf5" as text;
+use lawpack jedit.text@2 digest "sha256:171c9401d7ee088bbb348623736995bbee031573856029e606f2bb3cf747af50" as text;
 use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
 use module jedit.text.codec@1 digest "sha256:4a2e8dea86e9012b9de6e5ab817eb61f4c648f7a15fb02d7651d002058db8745" as codec;
 use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
