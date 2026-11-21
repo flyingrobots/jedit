@@ -1,3 +1,5 @@
+import { createFooterPreferences } from './footer-preferences.js';
+import type { FooterPreferencesPort } from '../ports/footer-preferences.js';
 import { filePreviewSource } from './file-preview.js';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
@@ -28,6 +30,7 @@ export interface WorkspaceAppOptions {
   perfEnabled: boolean;
   profileEnabled?: boolean;
   nowMs?: () => number;
+  footerPreferences?: FooterPreferencesPort;
   seed?: ReturnType<typeof createInitialModelSnapshot>;
 }
 
@@ -52,10 +55,12 @@ function workspaceRuntimeDependencies(
   productionText: WorkspaceProductionTextDependencies,
 ) {
   const editorFile = editorFilePort;
+  const footerPreferences = options.footerPreferences ?? createFooterPreferences();
   const graftDiagnostics = createGraftDiagnosticsPort();
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   return {
+    footerPreferences,
     jimSettings: options.jimSettings ?? createJimSettingsPort(),
     filePreviewSource,
     initialColumns: options.initialColumns,
@@ -69,7 +74,11 @@ function workspaceRuntimeDependencies(
     sourceHighlighter,
     profiler: createRaytracerProfilerPort(nowMs),
     profileOnStartup: options.profileEnabled ?? false,
-    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
+    initialModel: {
+      ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory)),
+      footerLayout: footerPreferences.load(),
+      filepathStyle: footerPreferences.loadFilepaths?.(),
+    },
     nowMs,
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,

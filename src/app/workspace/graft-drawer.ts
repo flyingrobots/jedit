@@ -77,10 +77,7 @@ function updateGraftPageSelectionIndex(
   outlineLength: number,
 ): number | undefined {
   const visible = graftVisibleOutlineRows(
-    workspaceBodyHeight({
-      rows: model.rows,
-      footerVisible: model.footerVisible,
-    }),
+    workspaceBodyHeight(model),
     DRAWER_INNER_PAD,
     graftMetaRows(model),
     GRAFT_CHANGE_ROWS,

@@ -1,3 +1,4 @@
+import type { FooterPreferencesPort } from '../../ports/footer-preferences.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
@@ -15,6 +16,7 @@ export type CreateStartupFileDrawerAnimationCmd = (
 ) => Cmd<WorkspaceMsg>[];
 
 export interface UpdateFromKeyDeps {
+  readonly footerPreferences?: FooterPreferencesPort;
   readonly jimSettings?: JimSettingsPort;
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;

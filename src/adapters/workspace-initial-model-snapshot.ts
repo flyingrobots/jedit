@@ -1,3 +1,4 @@
+import { discoverGitRoot } from './footer-filepaths.js';
 import { BijouI18nAdapter } from "./bijou-i18n-adapter.js";
 import type { WorkspaceInitialModelSnapshot } from "../app/workspace/init.js";
 import {
@@ -11,6 +12,7 @@ export function createInitialModelSnapshot(
   cwd: string,
 ): WorkspaceInitialModelSnapshot {
   return {
+    gitRoot: discoverGitRoot(cwd),
     entries: loadEntries(cwd),
     searchRoot: portableFileSearchPath(cwd),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
