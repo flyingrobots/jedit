@@ -1,0 +1,8 @@
+package jedit.iterative.module_fold@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+use module jedit.iterative.step@1 digest "STEP_DIGEST" as step;
+
+type Input = { value: Bool }; type Output = { value: Bool };
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let value = fold(input.value, step.advance, 3u64); return { value };
+}

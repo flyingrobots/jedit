@@ -1,0 +1,13 @@
+package jedit.iterative.indexed@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type State = { index: U64 };
+type Input = { initial: State };
+type Output = { final: State };
+fn step(state: State) -> State {
+  return if state.index < 3u64 then { index: state.index + 1u64 } else state;
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let final = fold(input.initial, step, 3u64);
+  return { final };
+}

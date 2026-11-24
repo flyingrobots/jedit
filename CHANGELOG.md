@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Relocked Jedit to Echo main `d527f47176d506deae30d3ee4bbf36b924e7bb30` and
+  Amblicit main `7dbcbc23d72705c5e224fc994a6c767881958912`, which carry the
+  public rope prerequisites (ContentAddressV1 identity, typed-edge and guided
+  closure reads, structured bounded effect execution). The relock regenerated
+  the Echo host bindings, the vendored `jedit.text@1` lawpack, the proof locks
+  and the ReplaceRange oracle source-set digest; the 40 oracle expectations are
+  unchanged. The schema-2 fixture artifact now pins the regenerated oracle bytes.
+
+- Published executable schema-2 ReplaceRange fixtures
+  (`contracts/jedit/acceptance/replace-range-schema-2/`) for all 40 retained
+  oracle ids plus schema-2 additions: exact facts, edges, ContentAddressV1 ids,
+  footprints, effects and counters for committed rows; typed outcome, deciding
+  check and precedence for obstructed rows. DL-0159 records the 12 counterpart
+  decisions. A test validates the artifact without executing any row; the
+  passing count stays 0/40 and the schema-1 oracle is unchanged.
+
 - Defined the schema-1 to schema-2 ReplaceRange acceptance obligations in
   DL-0159 for all 40 retained oracle cases. Representation-specific fault
   counterparts remain explicit gaps; text agreement or resource refusals do

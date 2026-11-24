@@ -1,0 +1,12 @@
+package jedit.iterative.scalar_guarded_add@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type Input = { index: U64 };
+type Output = { index: U64 };
+fn next(index: U64) -> U64 {
+  return if index <= 2u64 then index + 1u64 else index;
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let index = next(input.index);
+  return { index };
+}

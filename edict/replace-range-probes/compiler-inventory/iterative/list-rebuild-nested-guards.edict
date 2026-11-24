@@ -1,0 +1,21 @@
+package jedit.iterative.rebuild_nested@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type State = { source: List<U8,max=3>, index: U64, result: List<U8,max=3> };
+type Input = { items: List<U8,max=3> };
+type Output = { items: List<U8,max=3> };
+fn step(state: State) -> State {
+  return if state.index < listLen(state.source)
+    then if state.index < 3u64
+      then if listLen(state.result) < 3u64
+        then { source: state.source, index: state.index + 1u64,
+          result: listAppend(state.result, listAt(state.source, state.index)) }
+        else state
+      else state
+    else state;
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let initial: State = { source: input.items, index: 0u64, result: [] };
+  let final = fold(initial, step, 3u64);
+  return { items: final.result };
+}
