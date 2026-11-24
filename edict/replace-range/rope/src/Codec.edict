@@ -1,0 +1,177 @@
+package jedit.text.codec@1;
+
+use module jedit.text.octets@1 digest "sha256:b527845d58c702e621778cc7f570d45b8d199046f1e53a9b3e530d83a70d63b2" as octets;
+
+// Canonical CBOR for the schema-2 text facts (`edict.canonical-cbor/v1`).
+//
+// Each atom is a definite-length map keyed by field name, keys in canonical
+// order (shorter first, then bytewise), every integer in its shortest form.
+// Decoding is exact: a well-typed atom in any other spelling, with another
+// field set or with trailing bytes is Malformed.
+
+failure Malformed;
+
+// The largest atom a schema-2 text fact can have: a Leaf with 4,096 bytes.
+type Atom = Bytes<max=4352>;
+// A decoded Leaf keeps the atom's bound; decoding proves it holds at most 4,096 bytes.
+type LeafFact = { bytes: Atom, lineBreaks: U64 };
+type BranchFact = { byteLength: U64, lineBreaks: U64, height: U64 };
+type HeadFact = { byteLength: U64, lineCount: U64, sequence: U64 };
+// A Buffer's key stays in encoded form: the program never reads it, and
+// rewriting the atom keeps it byte for byte.
+type BufferFact = { version: U64, encodedKey: Atom };
+
+// ---- Encoding ----
+
+fn quot(v: U64, d: U64) -> U64 { return default(checkedDiv(v, d), 0u64); }
+fn rem(v: U64, d: U64) -> U64 { return default(checkedRem(v, d), 0u64); }
+fn be2(v: U64) -> Bytes<max=2> { return octets.octet(rem(quot(v, 256u64), 256u64)) + octets.octet(rem(v, 256u64)); }
+fn be4(v: U64) -> Bytes<max=4> { return be2(rem(quot(v, 65536u64), 65536u64)) + be2(rem(v, 65536u64)); }
+fn be8(v: U64) -> Bytes<max=8> { return be4(quot(v, 4294967296u64)) + be4(rem(v, 4294967296u64)); }
+
+// The initial octet major + info. Both are octets with a sum below 256 at
+// every call; a sum that is not an octet would encode as no octet at all.
+fn initial(major: U64, info: U64) -> Bytes<max=1> { return octets.octet(default(checkedAdd(major, info), 256u64)); }
+
+// The shortest header for major type `major` (already shifted: 0 unsigned,
+// 64 byte string, 96 text string, 160 map) and argument v.
+fn header(major: U64, v: U64) -> Bytes<max=9> {
+  return if v < 24u64 then initial(major, v)
+    else if v < 256u64 then initial(major, 24u64) + octets.octet(v)
+    else if v < 65536u64 then initial(major, 25u64) + be2(v)
+    else if v < 4294967296u64 then initial(major, 26u64) + be4(v)
+    else initial(major, 27u64) + be8(v);
+}
+fn uint(v: U64) -> Bytes<max=9> { return header(0u64, v); }
+
+fn leafAtom(bytes: Bytes<max=4096>, lineBreaks: U64) -> Atom {
+  return b"\xa2\x65bytes" + header(64u64, len(bytes)) + bytes + b"\x6alineBreaks" + uint(lineBreaks);
+}
+// A fresh leaf's atom over a piece slice; the slice keeps its piece's bound.
+fn pieceAtom(bytes: Bytes<max=12905>, lineBreaks: U64) -> Bytes<max=12941> {
+  return b"\xa2\x65bytes" + header(64u64, len(bytes)) + bytes + b"\x6alineBreaks" + uint(lineBreaks);
+}
+fn branchAtom(fact: BranchFact) -> Atom {
+  return b"\xa3\x66height" + uint(fact.height) + b"\x6abyteLength" + uint(fact.byteLength)
+    + b"\x6alineBreaks" + uint(fact.lineBreaks);
+}
+fn headAtom(fact: HeadFact) -> Atom {
+  return b"\xa3\x68sequence" + uint(fact.sequence) + b"\x69lineCount" + uint(fact.lineCount)
+    + b"\x6abyteLength" + uint(fact.byteLength);
+}
+fn bufferAtom(fact: BufferFact) -> Bytes<max=4400> {
+  return b"\xa2\x67version" + uint(fact.version) + b"\x69bufferKey" + fact.encodedKey;
+}
+
+// ---- Decoding ----
+//
+// The parsers are total and report `ok`, so a fold step or a closure
+// selector can use them; the `decode*` functions are the failing forms.
+
+type Parse = { value: U64, next: U64, ok: Bool };
+
+fn bad() -> Parse { return { value: 0u64, next: 0u64, ok: false }; }
+
+// The octet at i, widened.
+fn octetAt(a: Atom, i: U64) -> Parse {
+  return if i < len(a) && i < 4352u64 then { value: octets.widen(at(a, i)), next: i + 1u64, ok: true } else bad();
+}
+
+// The position after the literal lit, which must start at i.
+fn literal(a: Atom, i: U64, lit: Bytes<max=16>) -> Parse {
+  let end = checkedAdd(i, len(lit));
+  return if isSome(end) && i <= unwrap(end) && unwrap(end) <= len(a) && slice(a, i, unwrap(end)) == lit
+    then { value: 0u64, next: unwrap(end), ok: true } else bad();
+}
+
+// Appends the octet at p.next to the big-endian value p.value.
+fn more(a: Atom, p: Parse) -> Parse {
+  let b = octetAt(a, p.next);
+  let shifted = checkedMul(p.value, 256u64);
+  let value = if isSome(shifted) then checkedAdd(unwrap(shifted), b.value) else none();
+  return if p.ok && b.ok && isSome(value) then { value: unwrap(value), next: b.next, ok: true } else bad();
+}
+fn more2(a: Atom, p: Parse) -> Parse { return more(a, more(a, p)); }
+fn more4(a: Atom, p: Parse) -> Parse { return more2(a, more2(a, p)); }
+fn more8(a: Atom, p: Parse) -> Parse { return more4(a, more4(a, p)); }
+
+// Requires the shortest encoding: a wider argument holds a value the narrower one could not.
+fn atLeast(p: Parse, floor: U64) -> Parse { return if p.ok && floor <= p.value then p else bad(); }
+
+// The argument of a header whose additional information is info, starting at i.
+fn argument(a: Atom, i: U64, info: U64) -> Parse {
+  let origin: Parse = { value: 0u64, next: i, ok: true };
+  return if info < 24u64 then { value: info, next: i, ok: true }
+    else if info == 24u64 then atLeast(more(a, origin), 24u64)
+    else if info == 25u64 then atLeast(more2(a, origin), 256u64)
+    else if info == 26u64 then atLeast(more4(a, origin), 65536u64)
+    else if info == 27u64 then atLeast(more8(a, origin), 4294967296u64)
+    else bad();
+}
+
+// A data item header of major type major (shifted) at p.next.
+fn item(a: Atom, p: Parse, major: U64) -> Parse {
+  let h = octetAt(a, p.next);
+  let info = checkedSub(h.value, major);
+  return if p.ok && h.ok && isSome(info) && unwrap(info) < 32u64 then argument(a, h.next, unwrap(info)) else bad();
+}
+
+fn field(a: Atom, p: Parse, key: Bytes<max=16>) -> Parse {
+  return if p.ok then item(a, literal(a, p.next, key), 0u64) else bad();
+}
+fn opening(a: Atom, mapKey: Bytes<max=16>) -> Parse { return item(a, literal(a, 0u64, mapKey), 0u64); }
+fn complete(a: Atom, p: Parse) -> Bool { return p.ok && p.next == len(a); }
+
+type HeadParse = { fact: HeadFact, ok: Bool };
+type BranchParse = { fact: BranchFact, ok: Bool };
+type LeafParse = { fact: LeafFact, ok: Bool };
+
+fn headFact(a: Atom) -> HeadParse {
+  let sequence = opening(a, b"\xa3\x68sequence");
+  let lineCount = field(a, sequence, b"\x69lineCount");
+  let byteLength = field(a, lineCount, b"\x6abyteLength");
+  return { fact: { byteLength: byteLength.value, lineCount: lineCount.value, sequence: sequence.value },
+    ok: complete(a, byteLength) };
+}
+
+// A Branch height is a U8 in schema 2.
+fn branchFact(a: Atom) -> BranchParse {
+  let height = opening(a, b"\xa3\x66height");
+  let byteLength = field(a, height, b"\x6abyteLength");
+  let lineBreaks = field(a, byteLength, b"\x6alineBreaks");
+  return { fact: { byteLength: byteLength.value, lineBreaks: lineBreaks.value, height: height.value },
+    ok: complete(a, lineBreaks) && height.value <= 255u64 };
+}
+
+fn leafFact(a: Atom) -> LeafParse {
+  let size = item(a, literal(a, 0u64, b"\xa2\x65bytes"), 64u64);
+  let end = checkedAdd(size.next, size.value);
+  let fits = isSome(end) && size.next <= unwrap(end) && unwrap(end) <= len(a) && size.value <= 4096u64;
+  let bytes = if isSome(end) && size.next <= unwrap(end) && unwrap(end) <= len(a) then slice(a, size.next, unwrap(end)) else b"";
+  let breaks = field(a, { value: 0u64, next: default(end, 0u64), ok: size.ok && fits }, b"\x6alineBreaks");
+  return { fact: { bytes, lineBreaks: breaks.value }, ok: complete(a, breaks) };
+}
+
+fn decodeHead(a: Atom) -> HeadFact fails Malformed {
+  let parsed = headFact(a);
+  return if parsed.ok then parsed.fact else fail Malformed;
+}
+fn decodeBranch(a: Atom) -> BranchFact fails Malformed {
+  let parsed = branchFact(a);
+  return if parsed.ok then parsed.fact else fail Malformed;
+}
+fn decodeLeaf(a: Atom) -> LeafFact fails Malformed {
+  let parsed = leafFact(a);
+  return if parsed.ok then parsed.fact else fail Malformed;
+}
+
+fn decodeBuffer(a: Atom) -> BufferFact fails Malformed {
+  let version = opening(a, b"\xa2\x67version");
+  let keyStart = literal(a, version.next, b"\x69bufferKey");
+  let key = item(a, keyStart, 96u64);
+  let end = checkedAdd(key.next, key.value);
+  return if version.ok && keyStart.ok && key.ok && isSome(end) && unwrap(end) == len(a)
+      && keyStart.next <= len(a) && key.next <= len(a) && isUtf8(slice(a, key.next, len(a)))
+    then { version: version.value, encodedKey: slice(a, keyStart.next, len(a)) }
+    else fail Malformed;
+}

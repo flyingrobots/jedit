@@ -1,0 +1,24 @@
+[package]
+name = "jedit-rope-runtime-consumer"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Test-only trusted host for the schema-2 row runner (#296). Never a product
+# dependency and unreachable from Jim's production composition.
+[workspace]
+
+[dev-dependencies]
+blake3 = "1"
+echo-edict-canonical = { git = "https://github.com/flyingrobots/echo", rev = "0d1f74a0772d13040c122a941c1d68a50290997d" }
+hex = "0.4"
+serde_json = "1"
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "0d1f74a0772d13040c122a941c1d68a50290997d", features = ["trusted_runtime"] }
+
+[[test]]
+name = "consumer"
+path = "consumer.rs"
+
+[[test]]
+name = "rows"
+path = "rows.rs"

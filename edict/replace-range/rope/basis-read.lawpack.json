@@ -1,0 +1,526 @@
+{
+  "schema": "edict.lawpack-build/v1",
+  "outputDirectory": "vendor/jedit-text-2-basis-read",
+  "dependencyBundles": [],
+  "lawpack": {
+    "schema": "edict.lawpack-authoring/v1",
+    "id": "jedit.text",
+    "version": "2",
+    "acceptedCoreAbi": [
+      "edict.core/v1"
+    ],
+    "dependencies": [],
+    "exportsCoordinate": "jedit.text.exports/v2",
+    "exports": {
+      "types": [
+        {
+          "coordinate": "jedit.text@2.Guide",
+          "definition": "Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>"
+        },
+        {
+          "coordinate": "jedit.text@2.NodeRow",
+          "definition": "Record<atomBytes:Bytes<max=4352>,atomType:Bytes<max=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.ClosureQuery",
+          "definition": "Record<edgeTypes:List<Bytes<exact=32>,max=3>,guide:Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>,maxDepth:U64,maxNodes:U64,nodeId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.Closure",
+          "definition": "Record<edges:List<Record<edgeId:Bytes<exact=32>,from:U64,node:U64,slot:U64>,max=256>,nodes:List<Record<atomBytes:Bytes<max=4352>,atomType:Bytes<max=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>>,max=256>,occurrences:List<Record<depth:U64,edge:U64,guide:Record<end:U64,hi:U64,lo:U64,mode:U64,range:Bool,start:U64>,node:U64>,max=128>>"
+        },
+        {
+          "coordinate": "jedit.text@2.NodeId",
+          "definition": "Bytes<exact=32>"
+        },
+        {
+          "coordinate": "jedit.text@2.Atom",
+          "definition": "Bytes<max=4352>"
+        },
+        {
+          "coordinate": "jedit.text@2.Replacement",
+          "definition": "Bytes<max=4201>"
+        },
+        {
+          "coordinate": "jedit.text@2.Detail",
+          "definition": "String<max=256,canonical=raw-utf8>"
+        },
+        {
+          "coordinate": "jedit.text@2.Written",
+          "definition": "Record<>"
+        },
+        {
+          "coordinate": "jedit.text@2.AtomQuery",
+          "definition": "Record<nodeId:Bytes<exact=32>,typeId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.EdgeQuery",
+          "definition": "Record<edgeType:Bytes<exact=32>,nodeId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.Edges",
+          "definition": "List<Record<edgeId:Bytes<exact=32>,toId:Bytes<exact=32>>,max=2>"
+        },
+        {
+          "coordinate": "jedit.text@2.NodeWrite",
+          "definition": "Record<atomBytes:Bytes<max=12941>,atomType:Bytes<exact=32>,nodeId:Bytes<exact=32>,nodeType:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.AtomReplace",
+          "definition": "Record<atomBytes:Bytes<max=4400>,atomType:Bytes<exact=32>,expectedAtomDigest:Bytes<exact=32>,nodeId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.EdgeWrite",
+          "definition": "Record<edgeId:Bytes<exact=32>,edgeType:Bytes<exact=32>,fromId:Bytes<exact=32>,toId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        },
+        {
+          "coordinate": "jedit.text@2.EdgeReplace",
+          "definition": "Record<edgeId:Bytes<exact=32>,expectedToId:Bytes<exact=32>,toId:Bytes<exact=32>,warpId:Bytes<exact=32>>"
+        }
+      ],
+      "constants": [
+        {
+          "coordinate": "jedit.text@2.maxTreeHeight",
+          "type": "U64",
+          "value": 14
+        },
+        {
+          "coordinate": "jedit.text@2.maxWorkHeight",
+          "type": "U64",
+          "value": 15
+        },
+        {
+          "coordinate": "jedit.text@2.maxLeafBytes",
+          "type": "U64",
+          "value": 4096
+        },
+        {
+          "coordinate": "jedit.text@2.maxReplacementBytes",
+          "type": "U64",
+          "value": 4201
+        },
+        {
+          "coordinate": "jedit.text@2.maxClosureNodes",
+          "type": "U64",
+          "value": 256
+        },
+        {
+          "coordinate": "jedit.text@2.maxClosureOccurrences",
+          "type": "U64",
+          "value": 128
+        },
+        {
+          "coordinate": "jedit.text@2.maxClosureEdges",
+          "type": "U64",
+          "value": 256
+        },
+        {
+          "coordinate": "jedit.text@2.maxArenaNodes",
+          "type": "U64",
+          "value": 512
+        },
+        {
+          "coordinate": "jedit.text@2.maxFreshNodes",
+          "type": "U64",
+          "value": 256
+        },
+        {
+          "coordinate": "jedit.text@2.maxCreatedLeaves",
+          "type": "U64",
+          "value": 16
+        },
+        {
+          "coordinate": "jedit.text@2.maxCreatedBranches",
+          "type": "U64",
+          "value": 128
+        },
+        {
+          "coordinate": "jedit.text@2.maxEmittedNodes",
+          "type": "U64",
+          "value": 144
+        },
+        {
+          "coordinate": "jedit.text@2.maxNoOpLeaves",
+          "type": "U64",
+          "value": 64
+        },
+        {
+          "coordinate": "jedit.text@2.maxEffects",
+          "type": "U64",
+          "value": 1024
+        }
+      ],
+      "pureFunctions": [],
+      "effects": [
+        {
+          "coordinate": "jedit.text@2.readAtom",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.AtomQuery",
+          "outputType": "jedit.text@2.Atom",
+          "executionClass": "runtime",
+          "effectKindHint": "read",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {
+            "missing": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.AtomQuery"
+            },
+            "required": {
+              "authorityClass": "integrityFault",
+              "payloadType": "jedit.text@2.AtomQuery"
+            },
+            "wrongType": {
+              "authorityClass": "integrityFault",
+              "payloadType": "jedit.text@2.AtomQuery"
+            },
+            "tooLarge": {
+              "authorityClass": "integrityFault",
+              "payloadType": "jedit.text@2.AtomQuery"
+            }
+          },
+          "guardSupport": true
+        },
+        {
+          "coordinate": "jedit.text@2.outgoing",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.EdgeQuery",
+          "outputType": "jedit.text@2.Edges",
+          "executionClass": "runtime",
+          "effectKindHint": "read",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {
+            "sourceMissing": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.EdgeQuery"
+            },
+            "edgeBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.EdgeQuery"
+            },
+            "scanBound": {
+              "authorityClass": "resourceFault",
+              "payloadType": "jedit.text@2.EdgeQuery"
+            }
+          },
+          "guardSupport": true
+        },
+        {
+          "coordinate": "jedit.text@2.ensureNode",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.NodeWrite",
+          "outputType": "jedit.text@2.Written",
+          "executionClass": "runtime",
+          "effectKindHint": "ensure",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {},
+          "guardSupport": true
+        },
+        {
+          "coordinate": "jedit.text@2.ensureEdge",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.EdgeWrite",
+          "outputType": "jedit.text@2.Written",
+          "executionClass": "runtime",
+          "effectKindHint": "ensure",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {},
+          "guardSupport": true
+        },
+        {
+          "coordinate": "jedit.text@2.replaceAtom",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.AtomReplace",
+          "outputType": "jedit.text@2.Written",
+          "executionClass": "runtime",
+          "effectKindHint": "replace",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {},
+          "guardSupport": true
+        },
+        {
+          "coordinate": "jedit.text@2.replaceEdge",
+          "typeParameters": [],
+          "inputType": "jedit.text@2.EdgeReplace",
+          "outputType": "jedit.text@2.Written",
+          "executionClass": "runtime",
+          "effectKindHint": "replace",
+          "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+          "costObligation": "jedit.text@2.replaceRangeBudget",
+          "effectFailures": {},
+          "guardSupport": true
+        }
+      ],
+      "obstructions": [
+        {
+          "coordinate": "jedit.text@2.FactMissing",
+          "authorityClass": "resourceFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.FactMalformed",
+          "authorityClass": "integrityFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.BasisNotCanonical",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.RangeOrderInvalid",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.ReplacementNotUtf8",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.RangeOutOfBounds",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.ResourceLimitExceeded",
+          "authorityClass": "resourceFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.ContentIdentityMismatch",
+          "authorityClass": "integrityFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.MalformedRope",
+          "authorityClass": "integrityFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.ClosureInsufficient",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.Utf8BoundaryInvalid",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.NoOp",
+          "authorityClass": "domainMappable",
+          "payloadSchema": "jedit.text@2.Detail"
+        },
+        {
+          "coordinate": "jedit.text@2.ArithmeticOverflow",
+          "authorityClass": "integrityFault",
+          "payloadSchema": "jedit.text@2.Detail"
+        }
+      ],
+      "operationProfiles": {
+        "jedit.text@2.replaceRange": {
+          "opticTemplate": {
+            "opticKind": "affectReintegration",
+            "boundaryKind": "affect",
+            "supportPolicy": "jedit.text@2.basisBoundSupport",
+            "lossDisposition": "jedit.text@2.lossless",
+            "basisTemplate": "jedit.text@2.exactHeadBasis",
+            "apertureRequirement": {
+              "kind": "abstractFootprintObligation",
+              "reference": "jedit.text@2.replaceRangeFootprint"
+            }
+          },
+          "effectPredicate": "jedit.text@2.replaceRangeEffects"
+        }
+      }
+    },
+    "targetAdapters": [
+      {
+        "coordinate": "jedit.text.echo-adapter/v2",
+        "output": "adapter.cbor",
+        "acceptedTargetProfile": {
+          "id": "echo.dpo@2",
+          "digest": "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50"
+        },
+        "acceptedTargetIr": {
+          "id": "echo.span-ir/v3",
+          "digest": "sha256:1322c07670035b2aff3ad959584d19cb506b877ce79873b0de664c94adf45276"
+        },
+        "operationProfiles": {
+          "jedit.text@2.replaceRange": {
+            "core": "continuum.profile.graph-effects/v1",
+            "semanticEffects": [
+              "jedit.text@2.readAtom",
+              "jedit.text@2.outgoing",
+              "jedit.text@2.ensureNode",
+              "jedit.text@2.ensureEdge",
+              "jedit.text@2.replaceAtom",
+              "jedit.text@2.replaceEdge"
+            ],
+            "budgetObligation": "jedit.text@2.replaceRangeBudget",
+            "targetConfiguration": {
+              "local": "echo-config"
+            }
+          }
+        },
+        "effectImplementations": {
+          "jedit.text@2.readAtom": {
+            "targetIntrinsic": "echo.dpo@2.node-atom-read",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "read",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {
+              "missing": "atomMissing",
+              "required": "atomRequired",
+              "wrongType": "atomTypeMismatch",
+              "tooLarge": "atomByteBoundExceeded"
+            }
+          },
+          "jedit.text@2.outgoing": {
+            "targetIntrinsic": "echo.dpo@2.outgoing-edge-read",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "read",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {
+              "sourceMissing": "edgeSourceMissing",
+              "edgeBound": "edgeBoundExceeded",
+              "scanBound": "edgeScanBoundExceeded"
+            }
+          },
+          "jedit.text@2.ensureNode": {
+            "targetIntrinsic": "echo.dpo@2.ensure-node",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "ensure",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {}
+          },
+          "jedit.text@2.ensureEdge": {
+            "targetIntrinsic": "echo.dpo@2.ensure-edge",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "ensure",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {}
+          },
+          "jedit.text@2.replaceAtom": {
+            "targetIntrinsic": "echo.dpo@2.replace-atom",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "replace",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {}
+          },
+          "jedit.text@2.replaceEdge": {
+            "targetIntrinsic": "echo.dpo@2.replace-edge",
+            "targetConfiguration": {
+              "local": "echo-config"
+            },
+            "writeClass": "replace",
+            "footprintObligation": "jedit.text@2.replaceRangeFootprint",
+            "costObligation": "jedit.text@2.replaceRangeBudget",
+            "failureMappings": {}
+          }
+        },
+        "budgets": {
+          "jedit.text@2.replaceRangeBudget": {
+            "maxSteps": 9007199254740991,
+            "maxAllocatedBytes": 16777216,
+            "maxOutputBytes": 1048576
+          }
+        }
+      }
+    ],
+    "verifier": {
+      "class": "declarative",
+      "ruleset": {
+        "local": "verifier-rules"
+      }
+    },
+    "compatibility": {
+      "local": "compatibility"
+    },
+    "conformanceFixtureCorpus": {
+      "local": "fixtures"
+    },
+    "localResources": [
+      {
+        "name": "echo-config",
+        "coordinate": "echo.operation-lowering-configuration/v1",
+        "output": "echo-operation-configuration.cbor",
+        "value": {
+          "apiVersion": "echo.operation-lowering-configuration/v1",
+          "programKind": "edict-effect-program/v1",
+          "identityLaw": 1,
+          "intrinsicCatalog": {
+            "$edictBytes": "a3657479706573a1776563686f2e64706f40322e4f7574676f696e674564676578335265636f72643c65646765547970653a42797465733c65786163743d33323e2c746f3a42797465733c65786163743d33323e3e6a61706956657273696f6e782265646963742e7461726765742d70726f66696c652e696e7472696e736963732f76326a696e7472696e73696373ac756563686f2e64706f40322e736c6f74456467654964aa68636f737452756c65a2646261736518456e706572417267756d656e744d6178830000006a72657475726e547970656f42797465733c65786163743d33323e6a7772697465436c617373646e6f6e656c636f737454656d706c617465781a6563686f2e64706f40322e736c6f744564676549642e636f73746c6775617264537570706f7274f46d617267756d656e745479706573836f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6e696e7472696e736963436c61737364707572656e74797065506172616d6574657273806f636f6e747261637456657273696f6e776563686f2e636f6e74656e742d616464726573732f763171666f6f747072696e7454656d706c617465781f6563686f2e64706f40322e736c6f744564676549642e666f6f747072696e74766563686f2e64706f40322e6372656174652d6e6f6465ab6a6566666563744b696e64666372656174656a72657475726e54797065781d6563686f2e64706f40322e6372656174652d6e6f64652e726573756c746a7772697465436c617373666372656174656c636f737454656d706c617465781b6563686f2e64706f40322e6372656174652d6e6f64652e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781c6563686f2e64706f40322e6372656174652d6e6f64652e696e7075746e6566666563744661696c75726573a06e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578206563686f2e64706f40322e6372656174652d6e6f64652e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5766563686f2e64706f40322e656e737572652d65646765ab6a6566666563744b696e6466656e737572656a72657475726e54797065781d6563686f2e64706f40322e656e737572652d656467652e726573756c746a7772697465436c61737366656e737572656c636f737454656d706c617465781b6563686f2e64706f40322e656e737572652d656467652e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781c6563686f2e64706f40322e656e737572652d656467652e696e7075746e6566666563744661696c75726573a06e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578206563686f2e64706f40322e656e737572652d656467652e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5766563686f2e64706f40322e656e737572652d6e6f6465ab6a6566666563744b696e6466656e737572656a72657475726e54797065781d6563686f2e64706f40322e656e737572652d6e6f64652e726573756c746a7772697465436c61737366656e737572656c636f737454656d706c617465781b6563686f2e64706f40322e656e737572652d6e6f64652e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781c6563686f2e64706f40322e656e737572652d6e6f64652e696e7075746e6566666563744661696c75726573a06e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578206563686f2e64706f40322e656e737572652d6e6f64652e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5776563686f2e64706f40322e636c6f737572652d72656164ab6a6566666563744b696e6464726561646a72657475726e54797065781e6563686f2e64706f40322e636c6f737572652d726561642e726573756c746a7772697465436c61737364726561646c636f737454656d706c617465781c6563686f2e64706f40322e636c6f737572652d726561642e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e6566666563744661696c75726573a773636c6f7375726553746172744d697373696e67a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c7477636c6f7375726553746f726167654d616c666f726d6564a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736e696e746567726974794661756c747818636c6f737572654e6f6465426f756e644578636565646564a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c747818636c6f737572655363616e426f756e644578636565646564a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c747818636c6f73757265576f726b426f756e644578636565646564a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c747819636c6f737572654465707468426f756e644578636565646564a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c74781b636c6f7375726553656c6563746f72496e73756666696369656e74a26b7061796c6f616454797065781d6563686f2e64706f40322e636c6f737572652d726561642e696e7075746e617574686f72697479436c6173736e646f6d61696e4d61707061626c656e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578216563686f2e64706f40322e636c6f737572652d726561642e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5776563686f2e64706f40322e7265706c6163652d61746f6dab6a6566666563744b696e64677265706c6163656a72657475726e54797065781e6563686f2e64706f40322e7265706c6163652d61746f6d2e726573756c746a7772697465436c617373677265706c6163656c636f737454656d706c617465781c6563686f2e64706f40322e7265706c6163652d61746f6d2e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781d6563686f2e64706f40322e7265706c6163652d61746f6d2e696e7075746e6566666563744661696c75726573a06e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578216563686f2e64706f40322e7265706c6163652d61746f6d2e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5776563686f2e64706f40322e7265706c6163652d65646765ab6a6566666563744b696e64677265706c6163656a72657475726e54797065781e6563686f2e64706f40322e7265706c6163652d656467652e726573756c746a7772697465436c617373677265706c6163656c636f737454656d706c617465781c6563686f2e64706f40322e7265706c6163652d656467652e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781d6563686f2e64706f40322e7265706c6163652d656467652e696e7075746e6566666563744661696c75726573a06e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578216563686f2e64706f40322e7265706c6163652d656467652e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f578186563686f2e64706f40322e636f6e74656e74456467654964aa68636f737452756c65a2646261736518466e706572417267756d656e744d617884000000006a72657475726e547970656f42797465733c65786163743d33323e6a7772697465436c617373646e6f6e656c636f737454656d706c617465781d6563686f2e64706f40322e636f6e74656e744564676549642e636f73746c6775617264537570706f7274f46d617267756d656e745479706573846f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6e696e7472696e736963436c61737364707572656e74797065506172616d6574657273806f636f6e747261637456657273696f6e776563686f2e636f6e74656e742d616464726573732f763171666f6f747072696e7454656d706c61746578226563686f2e64706f40322e636f6e74656e744564676549642e666f6f747072696e7478196563686f2e64706f40322e636f6e74656e7441646472657373aa68636f737452756c65a2646261736518476e706572417267756d656e744d6178850000000118436a72657475726e547970656f42797465733c65786163743d33323e6a7772697465436c617373646e6f6e656c636f737454656d706c617465781e6563686f2e64706f40322e636f6e74656e74416464726573732e636f73746c6775617264537570706f7274f46d617267756d656e745479706573856f42797465733c65786163743d33323e6f42797465733c65786163743d33323e6f42797465733c65786163743d33323e7242797465733c6d61783d313034383537363e78244c6973743c6563686f2e64706f40322e4f7574676f696e67456467652c6d61783d31363e6e696e7472696e736963436c61737364707572656e74797065506172616d6574657273806f636f6e747261637456657273696f6e776563686f2e636f6e74656e742d616464726573732f763171666f6f747072696e7454656d706c61746578236563686f2e64706f40322e636f6e74656e74416464726573732e666f6f747072696e7478196563686f2e64706f40322e6e6f64652d61746f6d2d72656164ab6a6566666563744b696e6464726561646a72657475726e5479706578206563686f2e64706f40322e6e6f64652d61746f6d2d726561642e726573756c746a7772697465436c61737364726561646c636f737454656d706c617465781e6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e636f73746c6775617264537570706f7274f56d617267756d656e74547970657381781f6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e696e7075746e6566666563744661696c75726573a46b61746f6d4d697373696e67a26b7061796c6f616454797065781f6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c746c61746f6d5265717569726564a26b7061796c6f616454797065781f6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e696e7075746e617574686f72697479436c6173736e696e746567726974794661756c747061746f6d547970654d69736d61746368a26b7061796c6f616454797065781f6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e696e7075746e617574686f72697479436c6173736e696e746567726974794661756c747561746f6d42797465426f756e644578636565646564a26b7061796c6f616454797065781f6563686f2e64706f40322e6e6f64652d61746f6d2d726561642e696e7075746e617574686f72697479436c6173736e696e746567726974794661756c746e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578236563686f2e64706f40322e6e6f64652d61746f6d2d726561642e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f5781d6563686f2e64706f40322e6f7574676f696e672d656467652d72656164ab6a6566666563744b696e6464726561646a72657475726e5479706578246563686f2e64706f40322e6f7574676f696e672d656467652d726561642e726573756c746a7772697465436c61737364726561646c636f737454656d706c61746578226563686f2e64706f40322e6f7574676f696e672d656467652d726561642e636f73746c6775617264537570706f7274f56d617267756d656e7454797065738178236563686f2e64706f40322e6f7574676f696e672d656467652d726561642e696e7075746e6566666563744661696c75726573a37165646765426f756e644578636565646564a26b7061796c6f61645479706578236563686f2e64706f40322e6f7574676f696e672d656467652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c747165646765536f757263654d697373696e67a26b7061796c6f61645479706578236563686f2e64706f40322e6f7574676f696e672d656467652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c7475656467655363616e426f756e644578636565646564a26b7061796c6f61645479706578236563686f2e64706f40322e6f7574676f696e672d656467652d726561642e696e7075746e617574686f72697479436c6173736d7265736f757263654661756c746e696e7472696e736963436c617373666566666563746e74797065506172616d65746572738071666f6f747072696e7454656d706c61746578276563686f2e64706f40322e6f7574676f696e672d656467652d726561642e666f6f747072696e74781b63616e5061727469636970617465496e41746f6d69634775617264f578206563686f2e64706f40322e6174746163686d656e7456616c7565446967657374aa68636f737452756c65a2646261736518446e706572417267756d656e744d61788200016a72657475726e547970656f42797465733c65786163743d33323e6a7772697465436c617373646e6f6e656c636f737454656d706c61746578256563686f2e64706f40322e6174746163686d656e7456616c75654469676573742e636f73746c6775617264537570706f7274f46d617267756d656e745479706573826f42797465733c65786163743d33323e7242797465733c6d61783d313034383537363e6e696e7472696e736963436c61737364707572656e74797065506172616d6574657273806f636f6e747261637456657273696f6e776563686f2e636f6e74656e742d616464726573732f763171666f6f747072696e7454656d706c617465782a6563686f2e64706f40322e6174746163686d656e7456616c75654469676573742e666f6f747072696e74"
+          },
+          "graphSchema": {
+            "$edictBytes": "a26a656467655f7479706573a5582002443815798ab1c21df3b8970d6c0fd13f5fd8b49cffc7accb7674db4644686e81825820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf61055820906fe105fba1110212217cbb65e3dffcba87f0b1a9f59b5724923f655191d32458200b1acd29f4c52c617022213e07829ac86533a762f4de8d968e87b58cdb3302a4828258206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4d8258206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca58206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca582086cfcaf44347f037488b936a6548880bcfe4f53f86e2ce81b29ee5adda57669882825820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf6105582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4d825820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf610558206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca5820888e7a21b61991786e03ce126175ab097a9146183afbb454e2de12c6c63ab775818258202a3f0e127b7460a4908be5af8fe14f50c0925873169efb74881a9ff8092f0ae35820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf61055820eeb5f551a09872c623e5176f6c1ff24a5c7225d2154b2a7cd3e68ad80760203e828258206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4d8258206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca58206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca6a6e6f64655f7479706573a558202a3f0e127b7460a4908be5af8fe14f50c0925873169efb74881a9ff8092f0ae3a26a61646472657373696e67016a61746f6d5f7479706573815820127bc59cb62ae814080c3d6864c911f7b954470e3fc2e55a51925c32046f5412582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4da26a61646472657373696e67006a61746f6d5f747970657381582088a303feca830b5a394aa72d561c76a469ead99866297207bb196af47a70d1345820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf6105a26a61646472657373696e67006a61746f6d5f747970657381582040613c7ac9f397ed4cb8894fc008cdc3fb1f8e1135587a240b13a26b69858d9d58206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981caa26a61646472657373696e67006a61746f6d5f74797065738158202e455f1812422c4a066f8ffdec605bbde6ed4f5c4ec5131d044c226cd17ba2f35820906fe105fba1110212217cbb65e3dffcba87f0b1a9f59b5724923f655191d324a26a61646472657373696e67006a61746f6d5f747970657381582062d17b4295730fc141b714dcfae66910b31e7b414a5fb43280a9fdccb582b200"
+          },
+          "footprintLaw": {
+            "$edictBytes": "a9696d61785f72656164731902006a61746f6d5f7479706573845820127bc59cb62ae814080c3d6864c911f7b954470e3fc2e55a51925c32046f541258202e455f1812422c4a066f8ffdec605bbde6ed4f5c4ec5131d044c226cd17ba2f3582040613c7ac9f397ed4cb8894fc008cdc3fb1f8e1135587a240b13a26b69858d9d582088a303feca830b5a394aa72d561c76a469ead99866297207bb196af47a70d1346a6d61785f7772697465731901006f6d61785f72616e67655f65646765731902006f726561645f6e6f64655f74797065738458202a3f0e127b7460a4908be5af8fe14f50c0925873169efb74881a9ff8092f0ae3582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4d5820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf610558206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca7072616e67655f656467655f747970657385582002443815798ab1c21df3b8970d6c0fd13f5fd8b49cffc7accb7674db4644686e58200b1acd29f4c52c617022213e07829ac86533a762f4de8d968e87b58cdb3302a4582086cfcaf44347f037488b936a6548880bcfe4f53f86e2ce81b29ee5adda5766985820888e7a21b61991786e03ce126175ab097a9146183afbb454e2de12c6c63ab7755820eeb5f551a09872c623e5176f6c1ff24a5c7225d2154b2a7cd3e68ad80760203e7077726974655f656467655f747970657385582002443815798ab1c21df3b8970d6c0fd13f5fd8b49cffc7accb7674db4644686e58200b1acd29f4c52c617022213e07829ac86533a762f4de8d968e87b58cdb3302a4582086cfcaf44347f037488b936a6548880bcfe4f53f86e2ce81b29ee5adda5766985820888e7a21b61991786e03ce126175ab097a9146183afbb454e2de12c6c63ab7755820eeb5f551a09872c623e5176f6c1ff24a5c7225d2154b2a7cd3e68ad80760203e7077726974655f6e6f64655f747970657383582044c3a6684e69720b3d72d161261ad7f18f9b590e5c0288727116e80f7e47ce4d5820651659f3e2b556e0fb11892df540c6a22cd0427c11237c0b74b6a783bfcf610558206b8cb03c2f17ccd38d35f2b6d9c39a7de82955b125b396ac5020d5158f7981ca72706f7274616c5f6f776e65725f747970657380"
+          },
+          "graphReads": {
+            "maxEdgeScans": 64,
+            "maxClosureNodes": 0,
+            "maxClosureDepth": 0
+          },
+          "maxInputBytes": 65536,
+          "maxResultBytes": 4096,
+          "maxAllocatedBytes": 16777216,
+          "budgetCeiling": {
+            "steps": 9007199254740991,
+            "readBytes": 4194304,
+            "writeBytes": 4194304
+          },
+          "authorityProfile": "jedit.text.authority/v2"
+        }
+      },
+      {
+        "name": "verifier-rules",
+        "coordinate": "jedit.text.verifier-rules/v2",
+        "output": "verifier-rules.cbor",
+        "value": {
+          "schema": "jedit.text.schema@2",
+          "oracleIsExecutableInput": false,
+          "runtimeOntology": "generic-bounded-graph"
+        }
+      },
+      {
+        "name": "compatibility",
+        "coordinate": "jedit.text.compatibility/v2",
+        "output": "compatibility.cbor",
+        "value": {
+          "core": "edict.core/v1",
+          "target": "echo.span-ir/v3"
+        }
+      },
+      {
+        "name": "fixtures",
+        "coordinate": "jedit.text.ReplaceRange.schema-2-fixtures/v1",
+        "output": "fixtures.cbor",
+        "value": {
+          "fixtures": "contracts/jedit/acceptance/replace-range-schema-2"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,133 @@
+package jedit.text.replace_range@2;
+
+use lawpack jedit.text@2 digest "sha256:726c52efd0707571fc8b63719f08ea5ae552215341dff451a28734a2b3e5f3ca" as text;
+use target echo.dpo@2 digest "sha256:7cadb97e7e2d3f586f3e16ebfe5b357346a33a4e27f3beeb63f0b8889835cc50" as echo;
+use module jedit.text.codec@1 digest "sha256:1510fea37ca4cf23cc8a74f17328f04c6461c2173e0b541ba9734148befc2198" as codec;
+use module jedit.text.identity@1 digest "sha256:5a9c36eddade979810be7c2806bbf5eae43c69b7a8eda598152309e4c6b54011" as ids;
+use module jedit.text.closure@1 digest "sha256:643c540febac25226594faaaaf5eca5280ff16e72c30e10b3675c25708985a90" as closure;
+use module jedit.text.proposal@1 digest "sha256:2758d99a7b84fc67ef262649a6cfdda9186f3ef72296908a54d81983918ed347" as proposal;
+use module jedit.text.plan@1 digest "sha256:111a12780aaa57d92d0898b87f66d45965e9c5e5f1c0401c495120cd5068397b" as plan;
+
+// The authored persistent-rope ReplaceRange (DL-0159, #296).
+//
+// 1. Read the Buffer and its canonicalHead; require the invocation basis.
+// 2. Check the range order and the replacement; the replacement bound is its type.
+// 3. One bounded closure read from the basis Head over root, left and right.
+// 4. The pure plan: Head checks, validated arena, construction, boundaries,
+//    no-op, counters and the normalized proposal.
+// 5. Ensure every fresh node and edge, the new Head with its root and anchor,
+//    retarget canonicalHead and bump Buffer.version, all in one atomic proposal.
+//
+// The Buffer version bump replaces the atom it read, guarded by Echo's
+// attachment-value digest of those exact bytes.
+
+type Input = {
+  warpId: text.NodeId, bufferId: text.NodeId, basisHeadId: text.NodeId,
+  startByte: U64, endByte: U64, replacement: text.Replacement,
+};
+type Output = { headId: text.NodeId, byteLength: U64, lineCount: U64, sequence: U64 };
+
+// The closure selector the lowering configuration names.
+fn select(candidate: closure.Candidate) -> closure.Decision { return closure.select(candidate); }
+
+intent replaceRange(input: Input) returns Output
+  profile text.replaceRange
+  basis input.basisHeadId
+  budget <= text.replaceRangeBudget
+{
+  let bufferAtom: text.Atom = text.readAtom({ nodeId: input.bufferId, typeId: ids.bufferAtomType(), warpId: input.warpId })
+    else {
+      missing(query) => text.FactMissing,
+      required(query) => text.FactMalformed,
+      wrongType(query) => text.FactMalformed,
+      tooLarge(query) => text.FactMalformed,
+    };
+  let buffer = codec.decodeBuffer(bufferAtom) else text.FactMalformed;
+  let canonical: text.Edges = text.outgoing({ edgeType: ids.canonicalHeadEdge(), nodeId: input.bufferId, warpId: input.warpId })
+    else {
+      sourceMissing(query) => text.FactMissing,
+      edgeBound(query) => text.ResourceLimitExceeded,
+      scanBound(query) => text.ResourceLimitExceeded,
+    };
+  let current = if listLen(canonical) == 1u64 && 0u64 < listLen(canonical) then listAt(canonical, 0u64).toId else ids.leafType();
+  require current == input.basisHeadId else text.BasisNotCanonical;
+  require input.startByte <= input.endByte else text.RangeOrderInvalid;
+  require isUtf8(input.replacement) else text.ReplacementNotUtf8;
+
+  let anchors: text.Edges = text.outgoing({ edgeType: ids.anchorEdge(), nodeId: input.basisHeadId, warpId: input.warpId })
+    else {
+      sourceMissing(query) => text.FactMissing,
+      edgeBound(query) => text.ResourceLimitExceeded,
+      scanBound(query) => text.ResourceLimitExceeded,
+    };
+  let anchor = if 0u64 < listLen(anchors) then listAt(anchors, 0u64).toId else ids.leafType();
+  let range = input.startByte <= input.endByte && input.endByte - input.startByte == len(input.replacement);
+  let edgeTypes: List<text.NodeId, max=3> = [ids.rootEdge(), ids.leftEdge(), ids.rightEdge()];
+  let read: text.Closure = text.closure({
+    edgeTypes, guide: closure.headGuide(input.startByte, input.endByte, range),
+    maxDepth: 15u64, maxNodes: 256u64, nodeId: input.basisHeadId, warpId: input.warpId,
+  })
+    else {
+      startMissing(query) => text.FactMissing,
+      nodeBound(query) => text.ResourceLimitExceeded,
+      depthBound(query) => text.ResourceLimitExceeded,
+      scanBound(query) => text.ResourceLimitExceeded,
+      workBound(query) => text.ResourceLimitExceeded,
+      selectorInsufficient(query) => text.ClosureInsufficient,
+      storageMalformed(query) => text.MalformedRope,
+    };
+
+  let p = plan.plan(read, {
+    warp: input.warpId, basis: input.basisHeadId, anchor, anchors: listLen(anchors),
+    start: input.startByte, end: input.endByte, replacement: input.replacement,
+  });
+  require p.code != plan.headMalformed() else text.FactMalformed;
+  require p.code != plan.rangeOutOfBounds() else text.RangeOutOfBounds;
+  require p.code != plan.identityMismatch() else text.ContentIdentityMismatch;
+  require p.code != plan.factMalformed() else text.FactMalformed;
+  require p.code != plan.malformedRope() else text.MalformedRope;
+  require p.code != plan.resourceLimit() else text.ResourceLimitExceeded;
+  require p.code != plan.closureInsufficient() else text.ClosureInsufficient;
+  require p.code != plan.arithmeticOverflow() else text.ArithmeticOverflow;
+  require p.code != plan.boundaryInvalid() else text.Utf8BoundaryInvalid;
+  require p.code != plan.noOp() else text.NoOp;
+  require p.code == plan.committed() else text.MalformedRope;
+
+  for index in p.proposal.emitted bounded 144 {
+    let node: text.NodeWrite = proposal.nodeWrite(p.proposal.context, index);
+    let ensured: text.Written = text.ensureNode(node);
+    if proposal.isBranch(p.proposal.context, index) {
+      let leftEdge: text.EdgeWrite = proposal.childWrite(p.proposal.context, index, false);
+      let leftEnsured: text.Written = text.ensureEdge(leftEdge);
+      let rightEdge: text.EdgeWrite = proposal.childWrite(p.proposal.context, index, true);
+      let rightEnsured: text.Written = text.ensureEdge(rightEdge);
+    }
+  }
+  let headAtom = codec.headAtom(p.head);
+  let headId = if p.rooted then ids.rootedHeadId(input.warpId, headAtom, p.rootId, anchor)
+    else ids.emptyHeadId(input.warpId, headAtom, anchor);
+  let headNode: text.NodeWrite = { atomBytes: headAtom, atomType: ids.headAtomType(), nodeId: headId,
+    nodeType: ids.headType(), warpId: input.warpId };
+  let headEnsured: text.Written = text.ensureNode(headNode);
+  if p.rooted {
+    let rootEnsured: text.Written = text.ensureEdge({ edgeId: ids.edgeId(input.warpId, headId, ids.rootEdge(), p.rootId),
+      edgeType: ids.rootEdge(), fromId: headId, toId: p.rootId, warpId: input.warpId });
+  }
+  let anchorEnsured: text.Written = text.ensureEdge({ edgeId: ids.edgeId(input.warpId, headId, ids.anchorEdge(), anchor),
+    edgeType: ids.anchorEdge(), fromId: headId, toId: anchor, warpId: input.warpId });
+  let retargeted: text.Written = text.replaceEdge({ edgeId: ids.canonicalHeadSlot(input.warpId, input.bufferId),
+    expectedToId: input.basisHeadId, toId: headId, warpId: input.warpId });
+
+  let version = checkedAdd(buffer.version, 1u64);
+  require isSome(version) else text.ArithmeticOverflow;
+  let bumped = codec.bufferAtom({ version: default(version, 0u64), encodedKey: buffer.encodedKey });
+  let expectedAtomDigest = echo.attachmentValueDigest(ids.bufferAtomType(), bufferAtom);
+  let bump: text.AtomReplace = { atomBytes: bumped, atomType: ids.bufferAtomType(), expectedAtomDigest,
+    nodeId: input.bufferId, warpId: input.warpId };
+  let replaced: text.Written = text.replaceAtom(bump);
+
+  let byteLength = p.head.byteLength;
+  let lineCount = p.head.lineCount;
+  let sequence = p.head.sequence;
+  return { headId, byteLength, lineCount, sequence };
+}

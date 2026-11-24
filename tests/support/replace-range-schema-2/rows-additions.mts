@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR LicenseRef-MIND-UCAL-1.0
 // © James Ross Ω FLYING•ROBOTS <https://github.com/flyingrobots>
 // Schema-2-only rows. They supplement the 40 retained ids and replace none.
-import { encodeFact, U64_MAX } from './schema-2-facts.mts';
+import { encodeFact, MAX_INSERTED_BYTES, U64_MAX } from './schema-2-facts.mts';
 import { repeat, utf8 } from './fixture-basis.mts';
 import { branch, buffer, claims, ExpectCommitted, ExpectObstructed, head, invoke, leaf, RowSpec } from './row-spec.mts';
 
@@ -39,12 +39,15 @@ export const ADDITION_ROWS: readonly RowSpec[] = [
     'Two equal new leaves: the proposal ensures one node, and both text positions remain'),
   [buffer('equal-content-new-leaves', head(null))],
   invoke(0n, 0n, repeat('z', 8192)),
-  new ExpectCommitted([utf8(''), repeat('z', 8192)], [4096, 4096])),
+  // Decision (#296 intermediate v1 envelope): 8,192 inserted bytes exceed 4,201.
+  new ExpectObstructed('ResourceLimitExceeded', 'envelope')),
   ...[4097, 8193, 8194].map((length) => new RowSpec(addition(`constructor-${length}-bytes`,
     `fromBytes over ${length} bytes: leaf and branch counts follow the constructor, not ceil(n / 4096)`),
   [buffer(`constructor-${length}-bytes`, head(null))],
   invoke(0n, 0n, alphabet(length)),
-  new ExpectCommitted([utf8(''), alphabet(length)], CONSTRUCTOR_LEAVES.get(length)!))),
+  // Decision (#296 intermediate v1 envelope): above 4,201 inserted bytes is an envelope refusal.
+  length > MAX_INSERTED_BYTES ? new ExpectObstructed('ResourceLimitExceeded', 'envelope')
+    : new ExpectCommitted([utf8(''), alphabet(length)], CONSTRUCTOR_LEAVES.get(length)!))),
   new RowSpec(addition('invalid-utf8-replacement',
     'Invalid UTF-8 replacement bytes: typed outcome at the replacement check'),
   [buffer('invalid-utf8-replacement', head(leaf('abc')))],
