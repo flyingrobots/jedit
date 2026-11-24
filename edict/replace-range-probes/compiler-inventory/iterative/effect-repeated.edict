@@ -1,0 +1,10 @@
+package jedit.iterative.effect_repeated@1;
+use lawpack jedit.inventory.effects@1 digest "sha256:0000000000000000000000000000000000000000000000000000000000000000" as cell;
+type Output = { key: String<max=64>, message: String<max=256> };
+intent create(input: cell.CreateInput) returns Output
+  profile cell.createValue basis input.basis budget <= cell.createBudget
+{
+  let first: cell.CreateReceipt = cell.createValue(input) else { alreadyExists(existing) => cell.AlreadyCreated };
+  let last: cell.CreateReceipt = cell.createValue(input) else { alreadyExists(existing) => cell.AlreadyCreated };
+  return { key: last.key, message: input.message };
+}

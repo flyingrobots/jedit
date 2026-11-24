@@ -1,0 +1,106 @@
+{
+  "schema": "edict.lawpack-build/v1",
+  "outputDirectory": "vendor/jedit-inventory-effects",
+  "dependencyBundles": [],
+  "lawpack": {
+    "schema": "edict.lawpack-authoring/v1",
+    "id": "jedit.inventory.effects",
+    "version": "1",
+    "acceptedCoreAbi": ["edict.core/v1"],
+    "dependencies": [],
+    "exportsCoordinate": "jedit.inventory.effects.exports/v1",
+    "exports": {
+      "types": [
+        { "coordinate": "jedit.inventory.effects@1.CreateInput", "definition": "Record<basis:String<max=128,canonical=raw-utf8>,key:String<max=64,canonical=raw-utf8>,message:String<max=256,canonical=raw-utf8>>" },
+        { "coordinate": "jedit.inventory.effects@1.CreateReceipt", "definition": "Record<key:String<max=64,canonical=raw-utf8>>" },
+        { "coordinate": "jedit.inventory.effects@1.ExistingValue", "definition": "Record<key:String<max=64,canonical=raw-utf8>,message:String<max=256,canonical=raw-utf8>>" }
+      ],
+      "constants": [],
+      "pureFunctions": [],
+      "effects": [{
+        "coordinate": "jedit.inventory.effects@1.createValue",
+        "typeParameters": [],
+        "inputType": "jedit.inventory.effects@1.CreateInput",
+        "outputType": "jedit.inventory.effects@1.CreateReceipt",
+        "executionClass": "runtime",
+        "effectKindHint": "create",
+        "footprintObligation": "jedit.inventory.effects@1.createFootprint",
+        "costObligation": "jedit.inventory.effects@1.createBudget",
+        "effectFailures": { "alreadyExists": { "authorityClass": "domainMappable", "payloadType": "jedit.inventory.effects@1.ExistingValue" } },
+        "guardSupport": true
+      }],
+      "obstructions": [
+        { "coordinate": "jedit.inventory.effects@1.AlreadyCreated", "authorityClass": "domainMappable", "payloadSchema": "jedit.inventory.effects@1.ExistingValue" },
+        { "coordinate": "jedit.inventory.effects@1.NoOp", "authorityClass": "domainMappable", "payloadSchema": "jedit.inventory.effects@1.ExistingValue" }
+      ],
+      "operationProfiles": {
+        "jedit.inventory.effects@1.createValue": {
+          "opticTemplate": {
+            "opticKind": "affectReintegration",
+            "boundaryKind": "affect",
+            "supportPolicy": "jedit.inventory.effects@1.directSupport",
+            "lossDisposition": "jedit.inventory.effects@1.lossless",
+            "apertureRequirement": { "kind": "abstractFootprintObligation", "reference": "jedit.inventory.effects@1.createFootprint" }
+          },
+          "effectPredicate": "jedit.inventory.effects@1.createEffect"
+        }
+      }
+    },
+    "targetAdapters": [{
+      "coordinate": "jedit.inventory.effects.echo-adapter/v1",
+      "output": "adapter.cbor",
+      "acceptedTargetProfile": { "id": "echo.dpo@1", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000" },
+      "acceptedTargetIr": { "id": "echo.span-ir/v1", "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000" },
+      "operationProfiles": {
+        "jedit.inventory.effects@1.createValue": {
+          "core": "continuum.profile.create/v1",
+          "semanticEffects": ["jedit.inventory.effects@1.createValue"]
+        }
+      },
+      "effectImplementations": {
+        "jedit.inventory.effects@1.createValue": {
+          "targetIntrinsic": "echo.dpo@1.anchored-node-attachment-create-if-absent",
+          "targetConfiguration": { "local": "create-config" },
+          "writeClass": "create",
+          "footprintObligation": "jedit.inventory.effects@1.createFootprint",
+          "costObligation": "jedit.inventory.effects@1.createBudget",
+          "failureMappings": { "alreadyExists": "echo.executable-operation/precondition-mismatch/v1" }
+        }
+      },
+      "budgets": {
+        "jedit.inventory.effects@1.createBudget": { "maxSteps": 131072, "maxAllocatedBytes": 2097152, "maxOutputBytes": 8192 }
+      }
+    }],
+    "verifier": { "class": "declarative", "ruleset": { "local": "rules" } },
+    "compatibility": { "local": "compatibility" },
+    "conformanceFixtureCorpus": { "local": "fixtures" },
+    "localResources": [
+      {
+        "name": "create-config",
+        "coordinate": "echo.operation-lowering-configuration/v1",
+        "output": "create-configuration.cbor",
+        "value": {
+          "apiVersion": "echo.operation-lowering-configuration/v1",
+          "programKind": "anchored-node-attachment-create-if-absent/v1",
+          "requiredNodeTypeProfile": "jedit.inventory.node.value/v1",
+          "requiredAttachmentTypeProfile": "jedit.inventory.attachment.value/v1",
+          "maxReplacementBytes": 1024,
+          "authorityProfile": "jedit.inventory.authority.local/v1",
+          "budgetCeiling": { "steps": 131072, "readBytes": 4096, "writeBytes": 4096 },
+          "invocationBinding": {
+            "nodeKeyField": "key",
+            "replacementField": "message",
+            "nodeIdDerivation": "sha256-utf8/v1",
+            "warpIdSource": "action-lane/v1"
+          }
+        }
+      },
+      { "name": "rules", "coordinate": "jedit.inventory.effects.rules/v1", "output": "rules.cbor",
+        "value": { "effect": "jedit.inventory.effects@1.createValue", "writeClass": "create" } },
+      { "name": "compatibility", "coordinate": "jedit.inventory.effects.compatibility/v1", "output": "compatibility.cbor",
+        "value": { "core": "edict.core/v1", "target": "echo.span-ir/v1" } },
+      { "name": "fixtures", "coordinate": "jedit.inventory.effects.fixtures/v1", "output": "fixtures.cbor",
+        "value": { "keyScalars": 64, "messageScalars": 256, "replacementBytes": 1024 } }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+package jedit.iterative.concat@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type Input = { left: List<U8,max=2>, right: List<U8,max=3> };
+type Output = { items: List<U8,max=5> };
+fn join(left: List<U8,max=2>, right: List<U8,max=3>) -> List<U8,max=5> {
+  return listConcat(left, right);
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let items = join(input.left, input.right);
+  return { items };
+}

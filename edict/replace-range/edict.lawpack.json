@@ -186,11 +186,11 @@
     },
     "compatibility": {
       "id": "jedit.text.compatibility/v1",
-      "digest": "sha256:5224cedf272a1b01a34f0a0b29f2557bfc1a0e6b4da0b2ce969d38f72d2d7e7e"
+      "digest": "sha256:dffc6a9ec45cd60c14728f58880dd69f00368dcac8408398a05d9d4b7d818ee5"
     },
     "conformanceFixtureCorpus": {
       "id": "jedit.text.ReplaceRange.oracle@1",
-      "digest": "sha256:89a15993d9317383f8b7bf4c36d6d00a4c9b13e7684f91916a926bea74f1eb01"
+      "digest": "sha256:c818acabf846271432b2e738b7eb1db0f49b2d5a211ec8af06a3a4f544855df1"
     },
     "localResources": [
       {

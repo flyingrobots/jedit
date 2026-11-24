@@ -1,0 +1,17 @@
+package jedit.iterative.variant_state@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as text;
+
+type State = variant { Pending(U8), Done(U8) };
+type Input = { value: U8 };
+type Output = { value: U8 };
+fn step(state: State) -> State {
+  return match state { Pending(value) => State::Done(value), Done(value) => State::Done(value), };
+}
+fn result(state: State) -> U8 {
+  return match state { Pending(value) => 0u8, Done(value) => value, };
+}
+intent evaluate(input: Input) returns Output profile text.replaceRange basis none budget <= text.replaceRangeBudget {
+  let final = fold(State::Pending(input.value), step, 3u64);
+  let value = result(final);
+  return { value };
+}

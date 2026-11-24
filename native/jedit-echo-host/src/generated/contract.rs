@@ -7,7 +7,7 @@ pub const REGISTRY_VERSION: u32 = 1u32;
 pub const WESLEY_GENERATOR_VERSION: &str = "echo-wesley-gen/0.1.0";
 pub const CONTRACT_HOST_HELPER_API_VERSION: u32 = 1;
 pub const GENERATED_RUST_ARTIFACT_HASH: &str =
-    "4a186faf1bc9e58bd7a61227b61e7e1220161e590ecd9e77db95fe220e7848cf";
+    "ff555f96950974cc02ff6853483b88e2a69fe04e0a176d2062a0e45b26941f29";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BufferWorldline {
     pub bufferId: String,
@@ -697,7 +697,7 @@ pub mod __echo_wesley_generated {
     pub const OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL: &str = "observer:query/20bbc7b704437f29e1f97e6a6cac44d12f888c0f5155298bbdbfe8d83c98362a/2414231278/textWindow";
     /// Stable artifact hash for this generated query observer helper.
     pub const OP_TEXT_WINDOW_OBSERVER_ARTIFACT_HASH: &str =
-        "fcae36a141d5df5546e2fbfd4229ed30408ccf98cd24b11b019c9a5f6bf563dd";
+        "82c64fcf784bd31335de6cf36151a44efb5b5a9af2028460e85b019fefe4dc47";
     /// Build the authored observer plan stamped onto readings emitted
     /// by this generated query observer.
     pub fn text_window_observer_plan() -> warp_core::AuthoredObserverPlan {
@@ -708,9 +708,9 @@ pub mod __echo_wesley_generated {
                 249u8, 105u8, 202u8, 137u8, 16u8, 126u8, 58u8,
             ]),
             artifact_hash: [
-                252u8, 174u8, 54u8, 161u8, 65u8, 213u8, 223u8, 85u8, 70u8, 226u8, 251u8, 253u8,
-                66u8, 41u8, 237u8, 48u8, 64u8, 140u8, 207u8, 152u8, 205u8, 36u8, 177u8, 27u8, 1u8,
-                156u8, 154u8, 95u8, 107u8, 245u8, 99u8, 221u8,
+                130u8, 198u8, 79u8, 207u8, 120u8, 75u8, 211u8, 19u8, 53u8, 222u8, 108u8, 243u8,
+                97u8, 81u8, 164u8, 78u8, 251u8, 91u8, 90u8, 154u8, 242u8, 2u8, 132u8, 96u8, 232u8,
+                91u8, 1u8, 159u8, 239u8, 228u8, 220u8, 71u8,
             ],
             schema_hash: [
                 32u8, 187u8, 199u8, 183u8, 4u8, 67u8, 127u8, 41u8, 225u8, 249u8, 126u8, 106u8,
@@ -718,19 +718,19 @@ pub mod __echo_wesley_generated {
                 189u8, 191u8, 232u8, 216u8, 60u8, 152u8, 54u8, 42u8,
             ],
             state_schema_hash: [
-                181u8, 57u8, 244u8, 87u8, 247u8, 182u8, 128u8, 145u8, 170u8, 197u8, 172u8, 178u8,
-                16u8, 90u8, 96u8, 95u8, 113u8, 167u8, 130u8, 113u8, 31u8, 113u8, 22u8, 112u8, 32u8,
-                14u8, 247u8, 94u8, 66u8, 38u8, 15u8, 197u8,
+                74u8, 54u8, 234u8, 84u8, 111u8, 29u8, 218u8, 34u8, 117u8, 152u8, 59u8, 209u8, 85u8,
+                178u8, 246u8, 87u8, 170u8, 127u8, 245u8, 194u8, 26u8, 22u8, 154u8, 192u8, 149u8,
+                128u8, 138u8, 30u8, 41u8, 250u8, 103u8, 221u8,
             ],
             update_law_hash: [
-                130u8, 131u8, 177u8, 92u8, 197u8, 28u8, 141u8, 223u8, 30u8, 113u8, 23u8, 164u8,
-                171u8, 228u8, 134u8, 223u8, 239u8, 87u8, 232u8, 210u8, 243u8, 241u8, 47u8, 125u8,
-                173u8, 142u8, 41u8, 69u8, 38u8, 108u8, 221u8, 204u8,
+                80u8, 202u8, 189u8, 3u8, 53u8, 169u8, 151u8, 248u8, 119u8, 252u8, 100u8, 221u8,
+                89u8, 22u8, 255u8, 32u8, 102u8, 95u8, 86u8, 213u8, 55u8, 180u8, 251u8, 141u8,
+                252u8, 109u8, 226u8, 139u8, 61u8, 45u8, 34u8, 217u8,
             ],
             emission_law_hash: [
-                209u8, 183u8, 38u8, 154u8, 154u8, 225u8, 226u8, 170u8, 111u8, 8u8, 34u8, 144u8,
-                252u8, 132u8, 254u8, 81u8, 206u8, 53u8, 223u8, 208u8, 16u8, 64u8, 144u8, 77u8,
-                114u8, 145u8, 121u8, 206u8, 30u8, 66u8, 148u8, 152u8,
+                162u8, 133u8, 33u8, 220u8, 223u8, 253u8, 106u8, 1u8, 204u8, 164u8, 246u8, 14u8,
+                83u8, 235u8, 23u8, 35u8, 36u8, 106u8, 188u8, 100u8, 229u8, 80u8, 177u8, 213u8,
+                189u8, 189u8, 8u8, 196u8, 120u8, 254u8, 126u8, 186u8,
             ],
         }
     }

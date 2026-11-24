@@ -1,0 +1,3 @@
+package jedit.iterative.step@1;
+use module jedit.iterative.leaf@1 digest "LEAF_DIGEST" as leaf;
+fn advance(value: Bool) -> Bool { return leaf.flip(value); }

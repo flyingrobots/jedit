@@ -1,6 +1,297 @@
 # Re-run the ReplaceRange compiler inventory
 
-This measures the current boundary between authored rope drafts, Core lowering,
+## Reachable iterative probes
+
+`iterative.mts` builds the existing flat-text positive control and reachable
+authored sources in `iterative/`. The default `controls` group measures scalar,
+bounded-list and record-list folds plus a dynamic-bound refusal. Add
+`--group lists` to measure nine more list/record/variant shapes, including
+composed rebuilding and smaller probes that isolate its provider refusal.
+`--group ranges` compares branch guards with an intent input constraint and
+an unsafe-addition refusal control.
+`--group modules` invokes a fold through two digest-bound source modules and
+includes changed-leaf and missing-leaf authentication controls. See
+[the source-closure measurement](source-closures.md) for exact evidence.
+`--group primitives` measures [arithmetic and byte shapes](primitives.md).
+`--group drafts` retains the [complete supplied draft source closures](draft-closures.md)
+and separately exposes their undigested version-2 lawpack import.
+`--group effects` measures [structured effect emission](structured-effects.md)
+through a standalone effect lawpack published beside the basis.
+[Upstream reconciliation](upstream-status.md) distinguishes landed prerequisites
+from broader open requirements and joins the groups into one
+[boundary table](upstream-status.md#measured-boundary-of-each-shape).
+This remains a bounded subset of
+[DL-0162](../../../docs/design/0162-iterative-rope-capability-inventory.md);
+the requested version-2 lawpack closure remains part of that cycle.
+
+Run inside the admitted guarded Docker worker, with copied sources, the pinned
+Node/Rust toolchain, installed Jedit dependencies, and clean selected Amblicit
+and Echo checkouts. `EDICT_REPO` and `ECHO_REPO` select those producer checkouts.
+The provider directory is an independent byte selection; its file hashes bind
+the selected components without claiming that an arbitrary directory was built
+from `ECHO_REPO`.
+
+```sh
+node edict/replace-range-probes/compiler-inventory/iterative.mts \
+  --provider "$ECHO_REPO/schemas/edict-provider/package/v1" \
+  --output "$INVENTORY"
+```
+
+`INVENTORY` must be a new directory under the worker's accounted data root.
+The command builds the real public compiler, republishes the basis lawpack,
+pins each authored import to that publication, and retains all source/config,
+provider, lawpack, output-package, verifier-report, and diagnostic bytes. The
+v3 report records their hashes plus the compiler binary, drivers, and
+producer checkout identities. It retains the driver, original fixtures, and
+repinned authored sources separately, including each case's full supplied
+module graph. Only a completed run receives
+`measurement: complete`; producer identity changes leave it incomplete.
+The `drafts` group additionally binds its source-pin driver. A completed
+measurement records all process outcomes; it does not imply that every
+requested dependency was supplied or that every source compiled.
+A failed baseline invalidates the inventory.
+The report deliberately leaves runtime and full-operation evidence unmeasured.
+Each case hardlinks dependency files from the retained basis copy. These links
+stay within the new evidence directory; external producer files are copied.
+The runner rechecks the basis and external selections after the builds. This
+reduces physical storage without changing the 20 MiB logical evidence limit.
+
+Record the printed `INVENTORY_REPORT_SHA256`. The separate Rust consumer binds
+that exact report, requires complete file inventories, checks each case against
+the selected source/provider/lawpack snapshots, requires the application to
+select that source graph with its root first, and checks the independent
+verifier's package/Target/projection bindings before calling generic Echo pure
+evaluation. It checks scalar parity, exact three-item list results, repeat at
+observed resource usage, one-unit-short refusals, and invalid identity/input
+controls. The budget checks are boundary/metamorphic evidence, not independently
+derived absolute cost formulas. No Tick, graph edit, receipt, or rope acceptance
+is established by these pure evaluations.
+
+In the same guarded worker, copy `iterative-runtime.rs` to a new owned example
+path `xtask/examples/jedit_iterative_inventory.rs` in the selected Echo checkout.
+Copy `iterative-evidence.rs` to the new owned module path
+`xtask/examples/jedit_iterative_inventory/evidence.rs` and `iterative-lists.rs`
+to `xtask/examples/jedit_iterative_inventory/lists.rs`. Also copy
+`iterative-stages.rs` to `xtask/examples/jedit_iterative_inventory/stages.rs`.
+Copy `iterative-primitives.rs` to `xtask/examples/jedit_iterative_inventory/primitives.rs`.
+From that Echo checkout, run:
+
+```sh
+cargo +1.96.0 run --locked -p xtask --example jedit_iterative_inventory -- \
+  "$INVENTORY" "$EXPECTED_REPORT_SHA256"
+```
+
+Use the hash recorded at build completion; do not recompute it after a suspected
+substitution. Retain the copied consumer's exact source hash and output, then
+remove only those owned example/module copies before another clean-producer inventory.
+The source remains in Jedit. Required CI and the broader #388 acceptance checks
+remain separate gates.
+
+The consumer prints a separate `STAGE_INVENTORY` JSON record with schema
+`jedit.iterative-stages/v1`, bound to the exact v2 or v3 inventory hash. Per-case
+source/Core/Target/lowerer/verifier/runtime facts distinguish accepted, refused,
+failed, unreached and unmeasured stages. Earlier-stage inference applies only
+to the inspected compiler revision; an uninspected revision retains observed
+verifier facts without inheriting that inference. Every accepted package,
+including the baseline, must bind its verifier report before runtime starts.
+Diagnostic metadata and exit codes must corroborate the retained CLI streams.
+A failed runtime witness is recorded, and later cases still run. Component
+regeneration and full operation remain unmeasured.
+
+From the Jedit checkout, exercise admission against the built consumer:
+
+```sh
+INVENTORY_INPUT="$INVENTORY" \
+INVENTORY_REPORT_SHA256="$EXPECTED_REPORT_SHA256" \
+INVENTORY_RUNTIME="$CARGO_TARGET_DIR/debug/examples/jedit_iterative_inventory" \
+INVENTORY_TEST_OUTPUT="$NEW_TEST_OUTPUT" \
+node --test edict/replace-range-probes/compiler-inventory/iterative-admission.test.mts
+```
+
+`NEW_TEST_OUTPUT` must be a fresh accounted directory. These tests share
+unchanged public inputs through hardlinks and atomically replace each candidate
+file before a mutation. They retain each altered report/file and process result
+without synthesizing Core or packages. Cleanup verifies that original input
+bytes never changed and that the restored derivative matches, then removes
+only the duplicate working tree.
+Use the release consumer path to repeat admission with an optimized build.
+The positive-control assertion requires four runtime inputs for `controls`,
+thirty for `lists`, seven for `ranges`, six for `modules`, and twenty-eight for
+`primitives`; `drafts` and `effects` execute the four existing control inputs. Use the same environment with
+`iterative-stage.test.mts` against a `ranges` inventory for stage assertions.
+Use `iterative-module.test.mts` against `modules` for authenticated-import assertions.
+Use `iterative-primitives.test.mts` against `primitives` for its stage assertions.
+Use `iterative-drafts.test.mts` against `drafts` for unchanged source closures and first refusals.
+Use `iterative-effects.test.mts` against `effects` for structured-effect stage boundaries.
+
+The repository's `tsconfig.json` covers only `src/`, so `npm run build` does
+not type-check the nine inventory `.mts` files. After `npm ci`, check them
+from the Jedit checkout with the pinned Node. This needs no compiler, provider
+or worker:
+
+```sh
+node node_modules/typescript/bin/tsc --noEmit --allowJs --checkJs false \
+  --module nodenext --target es2023 --strict --skipLibCheck \
+  --allowImportingTsExtensions \
+  edict/replace-range-probes/compiler-inventory/*.mts
+```
+
+The consumer rejects v1 reports: those lack the retained source snapshots and
+completion marker required by v2. Historical measurements below retain their
+original identities and can be replayed with their matching consumer revision.
+The consumer still admits complete v2 single-source reports; v3 requires its
+separate source-closure inventory and closure-driver identity.
+
+### List composition and the provider boundary
+
+The expanded fourteen-case report is
+`10c208ec142b1118d7197756005b1c7dd3f47dbbab99494669928269283dce17`.
+It selects the same Amblicit/Echo/compiler/provider tuple recorded below.
+Ten public builds accept, including the baseline; one refuses in source type
+checking and three refuse in the provider lowerer.
+
+| Additional reachable shape | Public build | Generic pure runtime |
+| --- | --- | --- |
+| Guarded list lookup | Accepted | Six empty, valid, end and maximum-index inputs |
+| Concatenation | Accepted | Four empty/full combinations, preserving order |
+| Record-state fold | Accepted | Two Bool/payload states, exact final records |
+| Variant-state fold | Accepted | Three payloads through Pending/Done matching |
+| Lookup through record fields | Accepted | Six empty, valid, end and maximum-index inputs |
+| Guarded list transfer | Accepted | Five append/full/out-of-range inputs |
+| Indexed record fold | `ProviderLowererRefused` | Unreached |
+| List-rebuilding fold | `ProviderLowererRefused` | Unreached |
+| Rebuilding with nested guards | `ProviderLowererRefused` | Unreached |
+
+The indexed fold is the smaller refusal: a record carries an index, and each
+step uses `index < 3` before incrementing it. Guarded selection and transfer
+publish separately. Both conjunctive and nested guards refuse in the composed
+rebuilding fold. These observations narrow the boundary; the generic diagnostic
+does not establish the exact rejected expression or prove that every index
+advancement form fails.
+
+| Stage | Evidence for the three provider refusals |
+| --- | --- |
+| Source / Core / Target | Prior stages passed, inferred from this compiler's command order |
+| Provider lowerer | Observed `UnsupportedSemantics` for `core.source-functions` |
+| Independent provider verifier | Unreached |
+| Published components | Exact checked component bytes selected; regeneration not measured |
+| Generic runtime / full operation | Unreached / unmeasured |
+
+The inference uses the pinned public
+[application-build path#318:66bf6bac369f67e32ddaee099c3198bd30f885a1](https://github.com/flyingrobots/amblicit/blob/66bf6bac369f67e32ddaee099c3198bd30f885a1/crates/amblicit-cli/src/application_build.rs#L318):
+Core compilation and Target lowering precede provider invocation. It does not
+claim independently emitted Core/Target artifacts for the refused cases.
+[Echo #960](https://github.com/flyingrobots/echo/issues/960) describes related
+range-judgment differences for effect programs. The range probes below isolate
+a separate branch-context gap; publication of its proposed owner is pending.
+
+The consumer executes 26 new inputs plus the four earlier controls. Each checks
+literal expected output, exact-budget replay, three one-unit-short budget
+refusals, and a wrong package identity. Twelve additional malformed inputs
+refuse (oversized lists, invalid U8 values, and negative U64 indices); the three
+earlier malformed-input checks also remain. Debug and optimized results agree.
+Six wrong-expectation calibrations, one per new accepted shape, each fail the
+named result check before restored GREEN. The earlier consumer first failed the
+expanded obligation because it executed only four of thirty required inputs.
+These are consumer checks, not repaired compiler/runtime defects.
+
+All fifteen admission tests now pass against this expanded tree in debug and
+optimized builds. They include the original ten controls and refusal cases,
+unknown groups, mismatched diagnostics/status, a substituted baseline verifier
+report, and disabled inference for an uninspected compiler. Full operation
+acceptance remains 0/40.
+
+### Range facts and corroborated stages
+
+The twelve-case range report is
+`95af84cce76d08c96664b5491ad3b2839f19c87f5baed9fc63cb179f5287def5`.
+It uses the same compiler/provider tuple. Five builds accept, two refuse in
+source checking, and five refuse in the provider lowerer.
+
+| Range shape | First observed result |
+| --- | --- |
+| Record fold guarded by `< 3`, `<= 2`, or `== 2` | Provider lowerer refuses all three |
+| Scalar helper guarded by `<= 2` | Provider lowerer refuses |
+| Inline intent expression guarded by `<= 2` | Provider lowerer refuses |
+| Addition under `where input.index <= 2` | Public build and generic runtime accept |
+| Unguarded addition | Source `typeCheck/UnsupportedSourceShape` refuses |
+
+The accepted constrained addition maps 0, 1 and 2 to 1, 2 and 3. Inputs 3 and
+U64::MAX refuse at `where.0`. All seven runtime inputs, including earlier
+controls, agree in debug and optimized builds with exact/insufficient budgets.
+The inline branch refusal removes both records and folds from the reproducer;
+accepting non-strict comparison operators alone cannot resolve it.
+
+In the pinned lowerer,
+[branch predicates#592:089c849f766d5331835e7d10148a378cdb1237d5](https://github.com/flyingrobots/echo/blob/089c849f766d5331835e7d10148a378cdb1237d5/crates/echo-edict-provider-lowerer/src/executable_operation/source_functions.rs#L592)
+enter `self.path`, while the
+[addition proof#722:089c849f766d5331835e7d10148a378cdb1237d5](https://github.com/flyingrobots/echo/blob/089c849f766d5331835e7d10148a378cdb1237d5/crates/echo-edict-provider-lowerer/src/executable_operation/source_functions.rs#L722)
+receives proven predicates, local caps and count bounds. Branch facts do not
+reach that call. Runtime support for these refused forms remains unreached.
+
+Four stage assertions first failed against the preceding consumer, then passed
+in debug and optimized builds. Two further metadata-tampering tests first
+demonstrated invented stage/status claims, then refused after CLI stream
+corroboration. All fifteen admission tests also pass on the range inventory.
+Deliberately failing the scalar result records a failed runtime witness while
+the later constrained-addition witness still succeeds; restoration is GREEN.
+
+### Complete-evidence admission
+
+The v2 report is
+`b5bb52568e7958b901ae43baa91b066b5b22400b8ec543009a0ac965074eb02e`.
+It selects the same producer tuple below, and all four accepted public
+package/report pairs remain byte-identical to v1. The stronger contract changes
+evidence admission, not the emitted programs.
+
+Ten admission tests pass in debug and optimized builds. Before the repair, the
+unchanged positive control and wrong-report-hash refusal passed, while eight
+regressions demonstrated missed refusals: invalid baseline, missing compiler
+identity, omitted provider/lawpack files, duplicate paths, incomplete run, and
+self-consistent case source/provider substitutions. A case's file hash alone
+cannot establish that its bytes match the separately retained selection.
+
+These checks validate retained evidence and metadata consistency. The compiler
+binary hash identifies the selected executable; it is not an independent
+reproducible-build attestation. Full module closures and the remaining source
+shapes remain unfinished #388 work.
+
+### First portable measurement (v1)
+
+The 2026-11-08 checkpoint selects Amblicit
+[`66bf6bac`](https://github.com/flyingrobots/amblicit/commit/66bf6bac369f67e32ddaee099c3198bd30f885a1)
+and Echo
+[`089c849f`](https://github.com/flyingrobots/echo/commit/089c849f766d5331835e7d10148a378cdb1237d5).
+The exact compiler binary SHA-256 is
+`12d169ac6d4acccd7dcd614bb9cc11939982c5aa48531a98dc2875936849f872`;
+the selected provider manifest SHA-256 is
+`492b2ac958c49f113500c5b29c12cc41e1b85f4071ef0c9f6424e5aeba3cbe98`.
+The retained inventory report is
+`a42c204d0c424f33e0c7329bf09bc6f8fa5ac18a6e0db7eb597ccadd6bfb5604`.
+
+| Probe | Public build | Generic pure runtime |
+| --- | --- | --- |
+| Flat-text baseline | Accepted | Not measured by this consumer |
+| Scalar fold | Accepted | Both Bool inputs produce their opposite |
+| Bounded-list fold | Accepted | Exactly `[7, 7, 7]` |
+| Record-list fold | Accepted | Exactly three `{ index: 7 }` records |
+| Dynamic fold bound | `InvalidBound` at `typeCheck` | Unreached |
+
+The public package/report pairs match the preceding exploratory build byte for
+byte. Debug and optimized runtime results agree. Changing the consumer's list
+expectation from 7 to 8 fails its result assertion; restoring it passes. A
+substituted inventory hash refuses before evaluation. This calibrates the
+consumer assertion, not a compiler defect. Record-list accumulation does not
+yet demonstrate worklist traversal, popping, tree rebuilding, or rope edits.
+
+## Earlier declaration inventory
+
+The reports and commands below describe their recorded historical producer
+revisions. They are not current-main capability claims: in particular, the
+historical `--source-modules` publisher flag is absent from the Echo revision
+selected by the new iterative probes. Use the command above for those probes.
+
+This measured the boundary between authored rope drafts, Core lowering,
 provider schema admission, and provider lowering/verification. It does not make
 the drafts executable or establish graph effects, rope behavior, or recovery.
 

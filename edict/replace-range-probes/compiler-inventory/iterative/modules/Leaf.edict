@@ -1,0 +1,2 @@
+package jedit.iterative.leaf@1;
+fn flip(value: Bool) -> Bool { return !value; }

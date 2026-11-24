@@ -1,0 +1,7 @@
+package jedit.iterative.draft_dependency@1;
+use lawpack jedit.text@1 digest "sha256:f50872ced6d229170258ad145c4d1d14ee341716f5b454ab50a27538787eed0b" as control;
+use lawpack jedit.text@2 as text;
+type Input = { marker: U8 }; type Output = { marker: U8 };
+intent evaluate(input: Input) returns Output profile control.replaceRange basis none budget <= control.replaceRangeBudget {
+  let marker = input.marker; return { marker };
+}

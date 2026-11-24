@@ -34,14 +34,14 @@ and five host-resource refusals. It performs no native replacement and links
 no native rope planner. The package-chain harness runs both the boundary and
 flat-text targets, and the build closure includes both test sources.
 
-The toolchain pins Edict main `980c3ae3ff2ef96a0d026f9afdd77d61758cd57c`
-and Echo main `9c32e0b5e633ca68383ef09b5da7a4bc2d6b8e9e`. The generated
+The toolchain pins Amblicit main `7dbcbc23d72705c5e224fc994a6c767881958912`
+and Echo main `d527f47176d506deae30d3ee4bbf36b924e7bb30`. The generated
 build and executable-subject locks bind the changed source, vendor publication,
-provider and test closure. The local Docker build reproduces the locked package
-and verifier-report bytes; the required CI job checks the package chain on native
-Linux. Cross-platform reproduction has not been established for these pins. The
+provider and test closure. The relock reproduces the locked package and
+verifier-report bytes on macOS; the required CI job checks the package chain on
+native Linux. Cross-platform reproduction has not been established for these pins. The
 package identity is
-`sha256:7502a7a1d6821e56ddb8415f6b3e578e1ab09b14e02e3ce27afffd8e5bc2fb92`.
+`sha256:4baaaf40b2ac67c329c4300562b428eaa08a8f0e7b1ab4034a43a864361ba3fe`.
 The package-chain gate checks the exact clean Git toolchains, rebuilds
 through the public CLI, verifies the locks, runs both runtime targets and
 refuses mutation of authoritative inputs.
