@@ -203,6 +203,7 @@ function focusSelectedGraftItem(model: WorkspaceModel): [WorkspaceModel, Cmd<Wor
     withFocusPane({
       ...model,
       editor,
+      fileSearchEditing: false,
     }, FocusPanes.Editor),
     [],
   ];

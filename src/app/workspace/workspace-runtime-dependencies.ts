@@ -6,7 +6,7 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
-import type { SourceHighlighter } from '../../ports/source-highlighter.js';
+import type { SourceHighlighter, PreviewHighlighter } from '../../ports/source-highlighter.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
 import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
@@ -24,6 +24,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly footerPreferences?: FooterPreferencesPort;
   readonly jimSettings?: JimSettingsPort;
   readonly filePreviewSource?: FilePreviewSource;
+  readonly previewHighlighter?: PreviewHighlighter;
   readonly initialColumns: number;
   readonly initialRows: number;
   readonly initialWorkingDirectory: string;

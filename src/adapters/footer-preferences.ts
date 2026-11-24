@@ -1,20 +1,18 @@
 import { FILEPATH_STYLE } from '../ports/filepath-style.js';
 import { closeSync, existsSync, fchmodSync, fsyncSync, openSync, lstatSync, readFileSync,
   realpathSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { JIMRC_CREATE_MODE, JIMRC_FILENAME, JIMRC_PERMISSION_BITS } from './jimrc-file.js';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { FOOTER_LAYOUT } from '../ports/footer-preferences.js';
 import type { FooterPreferencesPort } from '../ports/footer-preferences.js';
-import { footerPreferenceDocument } from './footer-preference-json.js';
+import { EMPTY_PREFERENCE_DOCUMENT, footerPreferenceDocument } from './footer-preference-json.js';
 
-const PRIVATE_MODE = 0o600;
-const PERMISSION_MASK = 0o777;
-const DEFAULT_DOCUMENT = '{}\n';
 
-export function createFooterPreferences(path = join(homedir(), '.jimrc')): FooterPreferencesPort {
+export function createFooterPreferences(path = join(homedir(), JIMRC_FILENAME)): FooterPreferencesPort {
   return {
-    load: () => {
+    loadLayout: () => {
       try { return footerPreferenceDocument(readDocument(path)).layout; }
       catch { return FOOTER_LAYOUT.Focused; }
     },
@@ -22,26 +20,29 @@ export function createFooterPreferences(path = join(homedir(), '.jimrc')): Foote
       try { return footerPreferenceDocument(readDocument(path)).filepathStyle; }
       catch { return FILEPATH_STYLE.GitRoot; }
     },
-    save: (layout) => savePreference(path, (document) => document.withLayout(layout)),
+    saveLayout: (layout) => savePreference(path, (document) => document.withLayout(layout)),
     saveFilepaths: (style) => savePreference(path, (document) => document.withFilepaths(style)),
   };
 }
 
 function readDocument(path: string): string {
-  return existsSync(path) ? readFileSync(path, 'utf8') : DEFAULT_DOCUMENT;
+  return existsSync(path) ? readFileSync(path, 'utf8') : EMPTY_PREFERENCE_DOCUMENT;
 }
 
 type PreferenceEdit = (document: ReturnType<typeof footerPreferenceDocument>) => string;
 
+// No lock file: a lock the leader-key writer ignores would exclude nobody, and a
+// stale one would refuse every later save. The document is re-read just before
+// the rename instead, and a change observed at that read refuses the save.
+// Another writer can still change the document between that read and rename.
 function saveDocument(path: string, edit: PreferenceEdit): void {
-  const target = preferenceTarget(path);
-  withPreferenceLock(target, () => replaceDocument(target, edit));
+  replaceDocument(preferenceTarget(path), edit);
 }
 
 function replaceDocument(target: string, edit: PreferenceEdit): void {
   const source = readDocument(target);
   const next = edit(footerPreferenceDocument(source));
-  const mode = existsSync(target) ? statSync(target).mode & PERMISSION_MASK : PRIVATE_MODE;
+  const mode = existsSync(target) ? statSync(target).mode & JIMRC_PERMISSION_BITS : JIMRC_CREATE_MODE;
   const temporary = `${target}.${randomUUID()}.tmp`;
   try {
     writeTemporary(temporary, next, mode);
@@ -53,10 +54,11 @@ function replaceDocument(target: string, edit: PreferenceEdit): void {
 }
 
 function writeTemporary(path: string, source: string, mode: number): void {
-  const fd = openSync(path, 'wx', mode);
+  const fd = openSync(path, 'wx', JIMRC_CREATE_MODE);
   try {
-    fchmodSync(fd, mode);
     writeFileSync(fd, source, 'utf8');
+    // Applied after writing: a write by a non-root owner clears setuid/setgid.
+    fchmodSync(fd, mode);
     fsyncSync(fd);
   } finally { closeSync(fd); }
 }
@@ -73,14 +75,4 @@ function savePreference(path: string, edit: PreferenceEdit) {
 function preferenceTarget(path: string): string {
   const entry = lstatSync(path, { throwIfNoEntry: false });
   return entry == null ? path : realpathSync(path);
-}
-
-function withPreferenceLock(path: string, write: () => void): void {
-  const lock = `${path}.lock`;
-  const fd = openSync(lock, 'wx', PRIVATE_MODE);
-  try { write(); }
-  finally {
-    try { closeSync(fd); }
-    finally { unlinkSync(lock); }
-  }
 }

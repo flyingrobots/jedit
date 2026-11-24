@@ -28,7 +28,7 @@ function openGraftDrawer(
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const [next, cmds] = beginGraftRefresh({
-    ...withFocusPane({ ...model, graftDrawerOpen: true }, FocusPanes.Graft),
+    ...withFocusPane({ ...model, graftDrawerOpen: true, fileSearchEditing: false }, FocusPanes.Graft),
   }, { force: false });
   if (model.graftDrawerOpen) {
     return [next, cmds];
@@ -79,7 +79,7 @@ export function closeDrawer(
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const next = kind === DrawerKinds.Files
     ? { ...model, fileDrawerOpen: false, fileSearchEditing: false, fileHoveredIndex: undefined }
-    : { ...model, graftDrawerOpen: false };
+    : { ...model, graftDrawerOpen: false, fileSearchEditing: false };
 
   const focusState: Omit<FocusCycleState, 'focusPane'> = {
     fileDrawerOpen: kind === DrawerKinds.Files ? false : next.fileDrawerOpen,

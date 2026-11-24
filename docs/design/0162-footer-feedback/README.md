@@ -41,5 +41,7 @@ set passed 49 tests. Coverage includes every built-in light/dark badge contrast,
 normal emphasis versus muted text, opaque Settings cells, filepath save failure
 and restart, raw JSON preservation, nested and linked Git worktree roots,
 non-repository fallback, retained queries, Unicode caret clicks, list/preview
-ownership and the one-row Compact viewport. Shard coverage assigns all 137 specs.
-Final published-head CI is recorded on the PR.
+ownership and the one-row Compact viewport. These are historical results;
+shard coverage must be checked on the candidate head. Final-head validation for PR #344
+remains pending until stacked PR #349 lands; explorer review evidence belongs
+to PR #349.

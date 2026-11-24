@@ -64,3 +64,9 @@ export interface SourceHighlightReading {
 export interface SourceHighlighter {
   highlight(input: SourceHighlightInput): Promise<SourceHighlightReading>;
 }
+
+export type PreviewHighlightInput = Pick<SourceHighlightInput, 'path' | 'text' | 'startLine' | 'lineCount'>;
+
+export interface PreviewHighlighter {
+  highlightPreview(input: PreviewHighlightInput): Promise<SourceHighlightReading>;
+}

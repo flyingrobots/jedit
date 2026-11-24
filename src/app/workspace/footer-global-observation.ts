@@ -2,6 +2,11 @@ import type { WorkspaceModel } from './model.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import { WorkspaceBufferIntentDurabilityKinds } from './workspace-buffer-durability.js';
 
+const COPY = Object.freeze({
+  ModifiedCount: 'footer.status.modified_count', PendingCount: 'footer.status.pending_count', BufferCount: 'footer.status.buffer_count',
+} as const);
+const SUMMARY_SEPARATOR = ' · ';
+
 /** Count known buffers, replacing a cached active projection with its live state. */
 export function footerGlobalObservation(model: WorkspaceModel) {
   const records = Object.values(model.buffers ?? {});
@@ -15,12 +20,12 @@ export function footerGlobalObservation(model: WorkspaceModel) {
   const modified = editors.filter((editor) => editor.dirty).length;
   const pending = intents.filter((intent) => intent.kind === WorkspaceBufferIntentDurabilityKinds.Pending).length;
   const bufferCount = Math.max(records.length, editors.length);
-  const modifiedText = model.i18n.t('footer.status.modified_count', { count: modified });
-  const pendingText = pending > 0 ? model.i18n.t('footer.status.pending_count', { count: pending }) : '';
+  const modifiedText = model.i18n.t(COPY.ModifiedCount, { count: modified });
+  const pendingText = pending > 0 ? model.i18n.t(COPY.PendingCount, { count: pending }) : '';
   return {
     workspace: model.workspaceRoot,
     globalEmphasis: [modified > 0 ? modifiedText : '', pendingText].filter(Boolean),
-    globalSummary: [modifiedText, pendingText, model.i18n.t('footer.status.buffer_count', { count: bufferCount })].filter(Boolean).join(' · '),
-    globalCompact: [modifiedText, pendingText].filter(Boolean).join(' · '),
+    globalSummary: [modifiedText, pendingText, model.i18n.t(COPY.BufferCount, { count: bufferCount })].filter(Boolean).join(SUMMARY_SEPARATOR),
+    globalCompact: [modifiedText, pendingText].filter(Boolean).join(SUMMARY_SEPARATOR),
   };
 }

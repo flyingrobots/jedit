@@ -2,6 +2,7 @@ import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import { FocusPanes } from "../../ui/panel-focus.js";
 import type { WorkspaceModel } from "./model.js";
 import { clampIndex } from "./viewport.js";
+import { cwdEntries } from './file-tree-expansion.js';
 
 export interface StartupFileModalState {
   readonly startupIntroComplete: boolean;
@@ -104,7 +105,7 @@ export function startupFileModalRows(
 export function startupFileModalSelectedRow(
   model: WorkspaceModel,
 ): StartupFileModalRow | undefined {
-  const rows = startupFileModalRows(model.entries);
+  const rows = startupFileModalRows(cwdEntries(model));
   return rows[clampIndex(model.startupFileModalSelectedIndex, rows.length)];
 }
 
@@ -112,7 +113,7 @@ export function moveStartupFileModalSelection(
   model: WorkspaceModel,
   delta: number,
 ): WorkspaceModel {
-  const rows = startupFileModalRows(model.entries);
+  const rows = startupFileModalRows(cwdEntries(model));
   return {
     ...model,
     startupFileModalSelectedIndex: clampIndex(

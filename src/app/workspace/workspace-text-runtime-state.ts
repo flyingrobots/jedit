@@ -129,6 +129,7 @@ function openedTextModel(
     }),
     viewMode: ViewModes.Source,
     focusPane: FOCUS_PANE_EDITOR,
+    fileSearchEditing: false,
     graftInfo: undefined,
     graftLoading: false,
     graftSelectedIndex: 0,

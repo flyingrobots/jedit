@@ -38,6 +38,7 @@ import {
 import { openWorkspaceFileEntry } from "./file-tree.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 import { workspaceHasOpenFile } from "./workspace-model-query.js";
+import { cwdEntries } from './file-tree-expansion.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -127,7 +128,7 @@ function updateCommandLineCompletionKey(
 ): KeyBindingResult | undefined {
   const completions = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     hasOpenFile: workspaceHasOpenFile(model),
   });
   if (isCommandLineCompletionPreviousKey(msg)) {
@@ -168,7 +169,7 @@ function acceptCommandLineCompletion(
 ): KeyBindingResult {
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected == null
@@ -190,7 +191,7 @@ function openSelectedEditDirectoryCompletion(
 ): KeyBindingResult | undefined {
   const selected = selectedWorkspaceCommandLineFileCompletion({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     hasOpenFile: workspaceHasOpenFile(model),
   });
   if (
@@ -226,7 +227,7 @@ function acceptChangingCommandLineCompletion(
 ): KeyBindingResult | undefined {
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected != null &&
@@ -309,7 +310,7 @@ function withCommandLineFilePreviewRefresh(
 
   const selection = selectedWorkspaceCommandLineFilePreviewSelection({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     hasOpenFile: workspaceHasOpenFile(model),
   });
   if (selection == null) {

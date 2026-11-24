@@ -1,6 +1,6 @@
 {
-  "implementation": "82060e45",
-  "finalImplementation": "c9ef3063",
+  "implementation": "82060e45d7f5cb89b17b74477846d6becd8ae52a",
+  "finalImplementation": "c9ef3063babca1d184e429211c7c2fec35885e1a",
   "widthImplementation": "8a10e9a615dd0b76ca6685cabe055d70991841d4",
   "method": "Native production Echo/Bijou PTY; captured Surface cells rendered with Menlo, including bold and underline",
   "captures": [
@@ -27,12 +27,6 @@
       "columns": 100,
       "rows": 32,
       "cellsSha256": "e5f4e55748c7053019abbcb5ec237a5be5e1db88d21b0b30333a7f50caa0bce4"
-    },
-    {
-      "image": "feedback-filter-60x16.png",
-      "columns": 60,
-      "rows": 16,
-      "cellsSha256": "a6b3326d0463599c5279671319cfdb21c1b096a5b29884f7279d426f1e7cfe7b"
     },
     {
       "image": "feedback-final-filter-60x16.png",

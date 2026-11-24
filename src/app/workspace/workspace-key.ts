@@ -44,11 +44,7 @@ export function isWorkspaceRefreshKey(msg: KeyMsg): boolean {
 }
 
 export function isWorkspaceBackKey(msg: KeyMsg): boolean {
-  return (
-    msg.key === WorkspaceKeys.Backspace ||
-    msg.key === WorkspaceKeys.ArrowLeft ||
-    msg.key === WorkspaceKeys.H
-  );
+  return msg.key === WorkspaceKeys.Backspace;
 }
 
 export function isWorkspaceDownKey(msg: KeyMsg): boolean {
@@ -59,6 +55,8 @@ export function isWorkspaceUpKey(msg: KeyMsg): boolean {
   return msg.key === WorkspaceKeys.ArrowUp || msg.key === WorkspaceKeys.K;
 }
 
+// Right/l reach this only for files and the `..` row: updateInlineDirectoryKey
+// intercepts them on folders.
 export function isWorkspaceOpenKey(msg: KeyMsg): boolean {
   return (
     msg.key === WorkspaceKeys.Enter ||

@@ -3,6 +3,7 @@ import {
   SOURCE_HIGHLIGHT_ROLE,
   type SourceHighlightReading,
   type SourceHighlighter,
+  type PreviewHighlighter, type PreviewHighlightInput,
   type SourceHighlightInput,
   type SourceHighlightRole,
   type SourceHighlightSpan,
@@ -75,7 +76,7 @@ interface GraftProjectionBundle {
 }
 
 interface GraftProjectionOptions {
-  readonly basis: {
+  readonly basis?: {
     readonly kind: typeof EDITOR_HEAD_BASIS_KIND;
     readonly headId: string;
     readonly tick: number;
@@ -166,42 +167,43 @@ export function createGraftSourceHighlighterProcessRunner(): GraftProcessRunner 
   };
 }
 
-export function createGraftSourceHighlighter(options: GraftSourceHighlighterOptions = {}): SourceHighlighter {
+export function createGraftSourceHighlighter(options: GraftSourceHighlighterOptions = {}): SourceHighlighter & PreviewHighlighter {
   const loadRuntime = options.loadRuntime ?? defaultRuntimeLoader();
 
   return {
-    async highlight(input: SourceHighlightInput): Promise<SourceHighlightReading> {
-      const runtime = await loadRuntime();
-      await runtime.ensureParserReady();
-      const bundle = readProjectionBundle(runtime, input);
+    highlight: (input) => highlightInput(loadRuntime, input),
+    highlightPreview: (input) => highlightInput(loadRuntime, input),
+  };
+}
 
-      return {
-        path: input.path,
-        partial: bundle.partial,
-        spans: graftSyntaxSpansToSourceHighlights(bundle.spans, input.textStartLine),
-        projection: input.projection,
-        ...(bundle.reason == null ? {} : { notice: bundle.reason }),
-      };
-    },
+async function highlightInput(
+  loadRuntime: LoadGraftSourceHighlighterRuntime,
+  input: SourceHighlightInput | PreviewHighlightInput,
+): Promise<SourceHighlightReading> {
+  const runtime = await loadRuntime();
+  await runtime.ensureParserReady();
+  const bundle = readProjectionBundle(runtime, input);
+  const textStartLine = 'textStartLine' in input ? input.textStartLine : undefined;
+  return {
+    path: input.path, partial: bundle.partial,
+    spans: graftSyntaxSpansToSourceHighlights(bundle.spans, textStartLine),
+    projection: 'projection' in input ? input.projection : undefined,
+    ...(bundle.reason == null ? {} : { notice: bundle.reason }),
   };
 }
 
 function readProjectionBundle(
   runtime: GraftSourceHighlighterRuntime,
-  input: SourceHighlightInput,
+  input: SourceHighlightInput | PreviewHighlightInput,
 ): {
   readonly partial: boolean;
   readonly spans: readonly GraftSyntaxSpan[];
   readonly reason?: string;
 } {
   try {
-    const textStartLine = input.textStartLine ?? FIRST_PROJECTED_LINE;
+    const textStartLine = ('textStartLine' in input ? input.textStartLine : undefined) ?? FIRST_PROJECTED_LINE;
     const bundle = runtime.createProjectionBundle(input.path, input.text, {
-      basis: {
-        kind: EDITOR_HEAD_BASIS_KIND,
-        headId: input.headId,
-        tick: input.tick,
-      },
+      ...projectionBasis(input),
       viewport: {
         start: { row: input.startLine - textStartLine, column: VIEWPORT_START_COLUMN },
         end: { row: input.startLine - textStartLine + input.lineCount, column: VIEWPORT_END_COLUMN },
@@ -221,6 +223,10 @@ function readProjectionBundle(
         : `${DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX}: ${String(cause)}`,
     };
   }
+}
+
+function projectionBasis(input: SourceHighlightInput | PreviewHighlightInput): Pick<GraftProjectionOptions, 'basis'> {
+  return 'headId' in input ? { basis: { kind: EDITOR_HEAD_BASIS_KIND, headId: input.headId, tick: input.tick } } : {};
 }
 
 export function graftSyntaxSpansToSourceHighlights(

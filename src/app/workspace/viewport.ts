@@ -1,4 +1,4 @@
-import { footerLayoutRows, type FooterLayout } from '../../ui/footer-layout.js';
+import { footerRowsFor, type FooterRowsState } from './footer-rows.js';
 export { wrapIndex } from '../list-index.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import { sourceViewerGutterWidth } from '../../ui/source-viewer.js';
@@ -27,11 +27,8 @@ export interface WorkspaceViewport {
   readonly height: number;
 }
 
-export interface WorkspaceBodyHeightOptions {
+export interface WorkspaceBodyHeightOptions extends FooterRowsState {
   readonly rows: number;
-  readonly footerVisible: boolean;
-  readonly footerLayout?: FooterLayout;
-  readonly fileSearchEditing?: boolean;
 }
 
 export function clamp01(value: number): number {
@@ -64,8 +61,8 @@ export function listScrollOffset(
   return Math.max(0, Math.min(total - visibleRows, centred));
 }
 
-export function workspaceFooterRows(options: Pick<WorkspaceBodyHeightOptions, 'footerVisible' | 'footerLayout' | 'fileSearchEditing'>): number {
-  return options.footerVisible ? footerLayoutRows(options.footerLayout) : options.fileSearchEditing ? 1 : 0;
+export function workspaceFooterRows(options: FooterRowsState): number {
+  return footerRowsFor(options);
 }
 
 export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {

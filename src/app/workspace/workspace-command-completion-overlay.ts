@@ -16,6 +16,7 @@ import {
   MIN_ROWS,
 } from './viewport.js';
 import { workspaceHasOpenFile } from './workspace-model-query.js';
+import { cwdEntries } from './file-tree-expansion.js';
 
 const COMMAND_COMPLETION_POPUP_MAX_WIDTH = 64;
 const COMMAND_COMPLETION_POPUP_EDGE_INSET = 1;
@@ -62,7 +63,7 @@ export function paintWorkspaceCommandCompletionOverlay(
 function commandLineCompletionPopupContext(model: WorkspaceModel) {
   const items = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
-    entries: model.entries,
+    entries: cwdEntries(model),
     i18n: model.i18n,
     hasOpenFile: workspaceHasOpenFile(model),
   });
@@ -74,7 +75,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
     items,
     preview: workspaceCommandLineCompletionPreview({
       commandLine: model.commandLine,
-      entries: model.entries,
+      entries: cwdEntries(model),
       hasOpenFile: workspaceHasOpenFile(model),
       filePreview: model.commandLineFilePreview,
     }),

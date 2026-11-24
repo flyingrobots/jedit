@@ -16,11 +16,12 @@ export interface LeaderSettingsState {
   readonly leaderSettingsIssue?: JimSettingsIssue;
 }
 
-const COPY = Object.freeze({
+export const LEADER_SETTINGS_COPY = Object.freeze({
   Section: 'settings.sections.keybindings',
   Label: 'settings.rows.leader.label',
   Description: 'settings.rows.leader.description',
   Capture: 'settings.rows.leader.capture',
+  CaptureHint: 'settings.rows.leader.capture_hint',
   CapturingValue: 'settings.rows.leader.capturing_value',
   Space: 'settings.rows.leader.space',
   Backslash: 'settings.rows.leader.backslash',
@@ -32,10 +33,10 @@ const COPY = Object.freeze({
 } as const);
 
 const ISSUE_COPY = new Map([
-  [JimSettingsIssueKinds.Invalid, COPY.Invalid],
-  [JimSettingsIssueKinds.Read, COPY.Read],
-  [JimSettingsIssueKinds.Write, COPY.Write],
-  [JimSettingsIssueKinds.Unavailable, COPY.Unavailable],
+  [JimSettingsIssueKinds.Invalid, LEADER_SETTINGS_COPY.Invalid],
+  [JimSettingsIssueKinds.Read, LEADER_SETTINGS_COPY.Read],
+  [JimSettingsIssueKinds.Write, LEADER_SETTINGS_COPY.Write],
+  [JimSettingsIssueKinds.Unavailable, LEADER_SETTINGS_COPY.Unavailable],
 ]);
 
 export function leaderSettingsRow(
@@ -44,11 +45,11 @@ export function leaderSettingsRow(
   const key = state.leaderKey ?? LeaderKey.Default;
   return {
     id: LEADER_SETTING_ROW_ID,
-    section: state.i18n.t(COPY.Section),
-    label: state.i18n.t(COPY.Label),
+    section: state.i18n.t(LEADER_SETTINGS_COPY.Section),
+    label: state.i18n.t(LEADER_SETTINGS_COPY.Label),
     description: leaderDescription(state),
     valueLabel: state.leaderCaptureActive
-      ? state.i18n.t(COPY.CapturingValue)
+      ? state.i18n.t(LEADER_SETTINGS_COPY.CapturingValue)
       : leaderValueLabel(key, state.i18n),
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.CaptureLeader,
@@ -56,18 +57,18 @@ export function leaderSettingsRow(
 }
 
 function leaderValueLabel(key: LeaderKey, i18n: JeditSettingsI18nState): string {
-  if (key.value === LEADER_INPUT_KEYS.LiteralSpace) return i18n.t(COPY.Space);
-  return key.value === LeaderKey.Default.value ? i18n.t(COPY.Backslash) : key.value;
+  if (key.value === LEADER_INPUT_KEYS.LiteralSpace) return i18n.t(LEADER_SETTINGS_COPY.Space);
+  return key.value === LeaderKey.Default.value ? i18n.t(LEADER_SETTINGS_COPY.Backslash) : key.value;
 }
 
 function leaderDescription(state: LeaderSettingsState & { readonly i18n: JeditSettingsI18nState }): string {
   if (state.leaderCaptureActive) {
-    return state.i18n.t(state.leaderCaptureInvalid ? COPY.Input : COPY.Capture);
+    return state.i18n.t(state.leaderCaptureInvalid ? LEADER_SETTINGS_COPY.Input : LEADER_SETTINGS_COPY.Capture);
   }
   const issue = state.leaderSettingsIssue;
   if (issue != null) {
-    const message = state.i18n.t(ISSUE_COPY.get(issue.kind) ?? COPY.Invalid);
+    const message = state.i18n.t(ISSUE_COPY.get(issue.kind) ?? LEADER_SETTINGS_COPY.Invalid);
     return issue.detail == null ? message : `${message} ${issue.detail}`;
   }
-  return state.i18n.t(COPY.Description);
+  return state.i18n.t(LEADER_SETTINGS_COPY.Description);
 }

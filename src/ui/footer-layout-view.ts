@@ -4,10 +4,11 @@ import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijo
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken } from './jedit-theme.js';
 import { emphasizeFooterPhrases } from './footer-cell-style.js';
-import { renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
-import { FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, type FooterLayout } from './footer-layout.js';
+import { FILE_FILTER_PROMPT_LABEL, renderFileSearchInput, type FileSearchInputOptions } from './file-search-input.js';
+import { FOOTER_GAP, FOOTER_LAYOUT, footerLayoutRows, footerGlobalWidth, halfFooterWidth, type FooterLayout } from './footer-layout.js';
 import { visibleLineLength, fitLine } from './fit-line.js';
 import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterRenderState } from './workspace-command-line-footer.js';
+const PANE_DIVIDER = '│';
 
 export interface FooterSurfaceObservation extends FooterSurfaceFacts {
   readonly x: number;
@@ -37,7 +38,7 @@ export interface FooterLayoutViewOptions {
 const ONE_ROW = 1;
 const LOCAL_ROW = 0;
 const GLOBAL_ROW = 1;
-const GAP = '  ';
+const GAP = FOOTER_GAP;
 
 export function renderFooterLayout(options: FooterLayoutViewOptions): Surface {
   options = { ...options, background: options.presentation.mutedToken };
@@ -72,7 +73,7 @@ function paintLocal(surface: Surface, options: FooterLayoutViewOptions): void {
 function paintPaneStatuses(surface: Surface, options: FooterLayoutViewOptions): void {
   for (const observation of options.presentation.surfaces) {
     const inset = observation.x > 0 ? 1 : 0;
-    if (inset > 0) paintLine(surface, '│', { row: LOCAL_ROW, x: observation.x, width: inset }, options.background);
+    if (inset > 0) paintLine(surface, PANE_DIVIDER, { row: LOCAL_ROW, x: observation.x, width: inset }, options.background);
     paintLocalObservation(surface, { ...observation, x: observation.x + inset }, observation.width - inset, options);
   }
 }
@@ -113,7 +114,7 @@ function paintLine(surface: Surface, text: string, bounds: { row: number; x: num
 
 export function joinFooterSides(left: string, right: string, width: number, direction: I18nDirection = I18N_TEXT_DIRECTION.Ltr): string {
   if (right.length === 0) return direction === I18N_TEXT_DIRECTION.Rtl ? fitRight(left, width) : clipToWidth(left, width);
-  const rightWidth = Math.min(visibleLineLength(right), Math.floor(width / 2));
+  const rightWidth = Math.min(visibleLineLength(right), halfFooterWidth(width));
   const leftWidth = Math.max(0, width - rightWidth - GAP.length);
   return direction === I18N_TEXT_DIRECTION.Rtl
     ? `${fitLine(right, rightWidth)}${GAP}${fitRight(left, leftWidth)}`
@@ -121,7 +122,7 @@ export function joinFooterSides(left: string, right: string, width: number, dire
 }
 
 function localObservationLine(observation: FooterSurfaceObservation, width: number, direction: I18nDirection): string {
-  const detailWidth = Math.min(visibleLineLength(observation.detail), Math.floor(width / 2));
+  const detailWidth = Math.min(visibleLineLength(observation.detail), halfFooterWidth(width));
   const gapWidth = detailWidth === 0 ? 0 : GAP.length;
   const prefix = [observation.label, observation.emphasis].filter(Boolean).join(' ');
   const identityWidth = Math.max(0, width - detailWidth - gapWidth - visibleLineLength(prefix) - 1);
@@ -145,7 +146,7 @@ function paintFilter(surface: Surface, options: FooterLayoutViewOptions): void {
   const globalWidth = footerGlobalWidth({ width: options.width, summary: options.presentation.globalCompact, compact });
   const width = options.width - globalWidth;
   const rtl = options.presentation.direction === I18N_TEXT_DIRECTION.Rtl;
-  surface.blit(renderFileSearchInput({ ...input, label: '/', width }), rtl ? globalWidth : 0, LOCAL_ROW);
+  surface.blit(renderFileSearchInput({ ...input, label: FILE_FILTER_PROMPT_LABEL, width }), rtl ? globalWidth : 0, LOCAL_ROW);
   if (globalWidth > 0) paintLine(surface, `${GAP}${options.presentation.globalCompact}`,
     { row: LOCAL_ROW, x: rtl ? 0 : width, width: globalWidth }, options.background);
 }
@@ -154,7 +155,7 @@ function paintGlobalEmphasis(surface: Surface, options: FooterLayoutViewOptions)
   const row = surface.height - 1;
   emphasizeFooterPhrases(surface, { row, x: 0, width: options.width }, options.presentation.globalEmphasis, options.presentation.normalToken);
   if (options.presentation.filterInput != null && row !== LOCAL_ROW) {
-    emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: Math.floor(options.width / 2), width: Math.ceil(options.width / 2) },
+    emphasizeFooterPhrases(surface, { row: LOCAL_ROW, x: halfFooterWidth(options.width), width: options.width - halfFooterWidth(options.width) },
       options.presentation.globalEmphasis, options.presentation.normalToken);
   }
 }

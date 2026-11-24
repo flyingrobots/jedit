@@ -302,25 +302,57 @@ continues through the native Echo text-import path.
 a future workspace or symbol index must remain a rebuildable projection and
 declare its observation basis and staleness policy.
 
+The Files explorer owns ephemeral inline-tree metadata alongside its visible
+entry list. Directory click/Enter toggle immediate children in place through the
+filesystem port, preserving cwd and other branches. Disclosure, indentation,
+selection and hover derive from the same rows used by pointer hit testing.
+Filtering retains ancestors of matching known rows without recursively reading
+closed directories; it selects the first actual match. Collapse drops descendant
+metadata, and refresh/root changes reset expansion. The startup picker retains
+its existing directory-changing behavior.
+
+Preview syntax is a disposable Graft projection through a basis-free preview
+highlighting port, separate from editor-head highlighting. Both parse and render
+use the same sanitized bounded text. Open-buffer text remains preferred, and
+request/entry identity rejects stale text and spans together. Parser failure
+retains plain text. Preview colors do not introduce a buffer, head, Tick or save
+authority. [DX-0164](design/0164-explorer-inline-tree-preview-syntax.md) refines
+[DX-0161](design/0161-file-explorer-search.md) and owns this cycle's evidence.
+
 The footer layout is a Jedit presentation preference, remembered across launches
-through an injected preferences port and the `~/.jimrc` JSON adapter. The
-`filepathStyle` preference shares that adapter and chooses paths relative to
-the Git root or fully qualified paths. A bounded startup Git query discovers
-the root; outside-root paths and non-repository workspaces keep absolute paths.
-Formatting changes display only, preserving native open/save and buffer identity.
-Its three
-layouts derive the same focused-surface observations and known-buffer counts.
-They reserve two, two, or one rows; hidden footer reserves none. This setting
-does not advance a Jim worldline, submit an Echo Tick, or change buffer history.
-Saving edits only the owned `footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes
-and existing file permissions, and refuses malformed or ambiguous documents.
+through an injected `FooterPreferencesPort` and the `~/.jimrc` adapter in
+`src/adapters/footer-preferences.ts`. The `filepathStyle` preference shares
+that adapter and chooses paths relative to the Git root or fully qualified
+paths. A bounded startup Git query discovers the root; outside-root paths and
+non-repository workspaces keep absolute paths. Formatting changes display only,
+preserving native open/save and buffer identity. Its three layouts derive the
+same focused-surface observations and known-buffer counts. They reserve two,
+two, or one rows; a hidden footer reserves none, except one row while the Files
+filter prompt owns input. This setting does not advance
+a Jim worldline, submit an Echo Tick, or change buffer history.
+
+`~/.jimrc` currently has two writers, which share the file name, create mode and
+permission mask in `src/adapters/jimrc-file.ts` (not a write protocol), and both
+apply the preserved mode after writing so setuid and sticky bits survive. The footer adapter edits only the owned
+`footerLayout` or `filepathStyle` JSON value, preserves unrelated bytes, line
+endings and file permissions (including setuid and sticky bits), and refuses
+malformed or ambiguous documents. The leader-key adapter in
+`src/adapters/jim-settings.ts` rewrites the whole document for
+`keybindings.leader`. A leader save parses and reformats the whole document;
+duplicate keys collapse during parsing. Neither takes a lock: the footer adapter
+re-reads the document just before its atomic rename and refuses changes observed
+at that read. A write between that read and rename can still be lost. The
+leader-key adapter has no such re-read check, so concurrent saves from two
+processes can lose an update through either writer. Consolidating both is
+tracked in [#391](https://github.com/flyingrobots/jedit/issues/391).
+
 The model changes after a successful save. A failed save reports an error and
 retains the previous layout. Other Appearance settings keep their current
 session lifetime. Active modes use a filled theme badge; ordinary status text
 is muted and emphasized facts use normal foreground. Settings owns opaque
-borders and filled selections independent of terminal cursor inversion.
-This refines projection and I/O ownership without changing
-the target causal model or claiming general settings replay support.
+borders and filled selections independent of terminal cursor inversion. This
+refines projection and I/O ownership without changing the target causal model
+or claiming general settings replay support.
 [DX-0162](design/0162-selectable-footer-layouts.md) owns the implementation evidence.
 
 > **Intuition to carry forward:** semantic ownership and storage authority are

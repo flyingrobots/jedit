@@ -8,10 +8,10 @@ export type FooterPreferenceSave = { readonly ok: true } | { readonly ok: false 
 
 /** Application preferences live outside authoritative text and its causal history. */
 export interface FooterPreferencesPort {
+  loadLayout(): FooterLayout;
+  saveLayout(layout: FooterLayout): FooterPreferenceSave;
   loadFilepaths(): FilepathStyle;
   saveFilepaths(style: FilepathStyle): FooterPreferenceSave;
-  load(): FooterLayout;
-  save(layout: FooterLayout): FooterPreferenceSave;
 }
 
 const LAYOUTS: readonly FooterLayout[] = Object.values(FOOTER_LAYOUT);

@@ -8,10 +8,14 @@ import {
   fileSearchListHeight, listScrollOffset,
 } from './viewport.js';
 import { applyBackground, fillSurface } from './surface-fill.js';
+import { FOOTER_COPY } from './footer-copy.js';
 
 const PAD_MULTIPLIER = 2;
 const MIN_WIDTH = 1;
 const SEARCH_EMPTY_KEY = 'fileExplorer.empty';
+const HEADER_COPY = FOOTER_COPY;
+const HEADER_GAP = '  ';
+const QUERY_SEPARATOR = ': ';
 
 export { fileSearchInputOptions } from '../../ui/workspace-file-filter-prompt.js';
 
@@ -20,8 +24,8 @@ export function renderFileExplorer(model: WorkspaceModel, width: number, height:
   fillSurface(surface, model.jeditTheme.surface.drawer);
   const innerWidth = Math.max(MIN_WIDTH, width - DRAWER_INNER_PAD * PAD_MULTIPLIER);
   const query = fileSearchState(model).input;
-  const header = query.length === 0 ? `${model.i18n.t('footer.mode.files')}  ${model.i18n.t('footer.hints.slash_filter')}`
-    : `${model.i18n.t('footer.status.filter')}: ${query}`;
+  const header = query.length === 0 ? `${model.i18n.t(HEADER_COPY.Files)}${HEADER_GAP}${model.i18n.t(HEADER_COPY.FilterHint)}`
+    : `${model.i18n.t(HEADER_COPY.Filter)}${QUERY_SEPARATOR}${query}`;
   const title = stringToSurface(fitBlock(header, innerWidth, 1), innerWidth, 1);
   applyBackground(title, model.jeditTheme.surface.drawer);
   surface.blit(title, DRAWER_INNER_PAD, FILE_SEARCH_ROW);
@@ -36,8 +40,8 @@ function paintFileSearchResults(surface: Surface, model: WorkspaceModel, width: 
   const offset = listScrollOffset(selected, entries.length, height);
   const lines = entries.length === 0
     ? [model.i18n.t(SEARCH_EMPTY_KEY)]
-    : entries.slice(offset, offset + height).map(({ entry, index }) => formatTreeLine(entry, {
-      selected: index === model.selectedIndex,
+    : entries.slice(offset, offset + height).map(({ entry, index, depth, expanded }) => formatTreeLine(entry, {
+      selected: index === model.selectedIndex, depth, expanded,
     }));
   const content = stringToSurface(fitBlock(lines.join('\n'), width, height), width, height);
   applyBackground(content, model.jeditTheme.surface.drawer);
