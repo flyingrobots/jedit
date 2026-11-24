@@ -438,21 +438,17 @@ function testTextBasis(endByte, basisHeadId) {
   };
 }
 
-test('footer renders durability posture separately from cursor coordinates', async () => {
+test('footer renders focused coordinates separately from observed workspace counts', async () => {
   const harness = await openedHarness();
   harness.setModel({ ...harness.model, columns: 191 });
   const text = harness.renderWorkspaceText();
   const footerMode = text.split('\n').at(-2) ?? '';
   const footerContext = text.split('\n').at(-1) ?? '';
 
-  assert.match(footerMode, /NORMAL 1:1/);
-  assert.equal(footerContext.startsWith('/repo/notes.md'), true);
-  assert.equal(
-    footerContext.endsWith(
-      '[intent:idle | causal:admitted | file:saved | git:unknown | remote:unknown]',
-    ),
-    true,
-  );
+  assert.match(footerMode, /^NORMAL \/repo\/notes.md\s+1:1$/);
+  assert.equal(footerContext.startsWith('/repo'), true);
+  assert.match(footerContext, /0 modified.*1 buffers/);
+  assert.doesNotMatch(footerContext, /git:unknown|remote:unknown|intent:idle/);
 });
 
 test('source highlighting consumes reading material after production edit', async () => {
